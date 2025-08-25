@@ -76,3 +76,25 @@ var coven = new MagikBuilder<string, double>()
 - Else, pick the candidate with the highest capability overlap; tie-break on registration order.
 - Board emits `by:<BlockTypeName>` after each step.
 - Scoping: Tags are scoped to a single `PostWork` call; nested or concurrent executions maintain isolation via `AsyncLocal` scoping.
+
+## Canonical Magical Tags
+
+These tags have special, built-in behavior in the router. Use sparingly.
+
+- `to:#<index>`: Explicitly select the next block by registry index. Overrides all other selection.
+- `to:<BlockTypeName>`: Explicitly select the next block by type name. Overrides all other selection.
+- `by:<BlockTypeName>`: Emitted by the Board after each step for observability and tracing only.
+- `prefer:<name>`: Persistent preference tag. Considered alongside current-step tags during capability scoring to bias tie-breaks across steps.
+
+Notes:
+
+- Non-magical tags (e.g., `want:*`, `role:*`, `route:*`) remain user-defined context/capability markers. The selector primarily considers tags emitted in the immediately preceding step, plus any `prefer:*` tags.
+- We do not plan to add more magical tags. Over time we intend to reduce and remove magic tags where practical (e.g., `only:*`), in favor of explicit APIs (like internal selection fences) and capability-based routing.
+
+## Step-Scoped Tag Semantics (Implementation Detail)
+
+Internally, the Board journals tags by step (epoch) to enable “next-hop” decisions without destructive mutation:
+
+- Tags added by a block are stamped with the next epoch so they apply to the following selection.
+- Selection prefers tags from the current epoch (the immediate previous block), with `prefer:*` acting as persistent preferences.
+- This preserves deterministic routing while keeping observability tags (like `by:*`) available in the full tag set.

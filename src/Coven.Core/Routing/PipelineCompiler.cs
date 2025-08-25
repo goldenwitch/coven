@@ -36,12 +36,15 @@ internal sealed class PipelineCompiler
 
             for (int step = 0; step < maxSteps; step++)
             {
+                var fence = Tag.GetFenceForCurrentEpoch();
+                Tag.Log($"building forward; fence={(fence?.Count ?? 0)} epochTags=[{string.Join(',', Tag.CurrentEpochTags())}]");
                 var forward = new List<RegisteredBlock>();
                 for (int i = 0; i < candidates.Length; i++)
                 {
                     var c = candidates[i];
                     if (c.RegistryIndex <= lastIndex) continue;
                     if (!c.InputType.IsInstanceOfType(current)) continue;
+                    if (fence is not null && !fence.Contains(c.Descriptor.BlockInstance)) continue;
                     forward.Add(c);
                 }
 
@@ -55,7 +58,10 @@ internal sealed class PipelineCompiler
                 }
 
                 var chosen = selector.SelectNext(forward);
+                Tag.Log($"selected {chosen.BlockTypeName} at idx={chosen.RegistryIndex}");
 
+                // Bump epoch so tags added by this block apply to the next selection.
+                Tag.IncrementEpoch();
                 current = await chosen.Invoke(current).ConfigureAwait(false);
                 Tag.Add($"by:{chosen.BlockTypeName}");
                 lastIndex = chosen.RegistryIndex;
@@ -93,4 +99,3 @@ internal sealed class PipelineCompiler
         return false;
     }
 }
-
