@@ -6,18 +6,36 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 {
     private readonly List<MagikBlockDescriptor> registry = new();
 
-    public MagikBlockRegistration<T, TOutput> MagikBlock(IMagikBlock<T, TOutput> block)
+    
+
+    public IMagikBuilder<T, TOutput> MagikBlock(IMagikBlock<T, TOutput> block)
     {
         registry.Add(new MagikBlockDescriptor(typeof(T), typeof(TOutput), block));
-        return new MagikBlockRegistration<T, TOutput>(this, block);
+        return this;
     }
 
-    public MagikBlockRegistration<T, TOutput> MagikBlock(Func<T, Task<TOutput>> func)
+    public IMagikBuilder<T, TOutput> MagikBlock(Func<T, Task<TOutput>> func)
     {
         var mb = new MagikBlock<T, TOutput>(func);
         registry.Add(new MagikBlockDescriptor(typeof(T), typeof(TOutput), mb));
-        return new MagikBlockRegistration<T, TOutput>(this, mb);
+        return this;
     }
+
+    // Heterogeneous registration overloads
+    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block)
+    {
+        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), block));
+        return this;
+    }
+
+    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func)
+    {
+        var mb = new MagikBlock<TIn, TOut>(func);
+        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), mb));
+        return this;
+    }
+
+    
 
     public ICoven Done()
     {
