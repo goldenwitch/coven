@@ -56,6 +56,15 @@ ICoven coven = new MagikBuilder<string, double>()
 
 This enables concise, per-step dynamic routing.
 
+### Magic Tags Summary (current)
+
+- `to:#<index>`: Force the next block by registry index; overrides everything else.
+- `to:<BlockTypeName>`: Force the next block by type name; overrides everything else.
+- `by:<BlockTypeName>`: Emitted by the Board after each step for tracing only; does not affect selection.
+- `prefer:<name>`: A persistent “soft” preference considered alongside current-step tags during capability scoring.
+
+> We do not plan to add more magical tags. Where possible we will remove magic in favor of explicit APIs and capability routing.
+
 ## End-to-End Builder Example
 
 Although `ICoven` exposes a simple API `Ritual<TIn, TOut>(TIn input)`, what happens in between is flexible and decided at runtime by tags and capabilities. Here’s a minimal end‑to‑end workflow that routes across multiple blocks to produce a final result.
@@ -121,11 +130,13 @@ Key points:
 - Capabilities can be advertised by a block (`ITagCapabilities`) and/or assigned at registration time with builder overloads.
 
 ## Split between handlers
-Use .MagikTrick(params ...) to connect two or more agents to the output of one of them conditionally.
+Use `.MagikTrick(...)` to create a “fork” that selects among multiple downstream candidates with the same input type.
 
-> When MagikTrick gets code control, it checks the tags and matches the output option by most matching tags and then order as a tie breaker.
-
-MagikTrick passes tags through. In other words if the previous step produces tags A and B then both of those tags will be attached to the outgoing message.
+How it works (current behavior):
+- Trick is an `IMagikBlock<T,T>` that returns the input unchanged (identity) and emits intent tags you choose (e.g., `want:*`, `prefer:*`).
+- Trick applies a one-hop selection fence internally so the very next selection can only pick from the Trick’s registered candidates.
+- Within that fence, Trick computes the best candidate (capability overlap vs its emitted tags) and adds an explicit `to:<BlockTypeName>` so the intended candidate wins deterministically.
+- Tags pass through; candidates can still emit additional tags that influence later steps. The fence is single-hop and does not leak further.
 
 ## Type limitations
 Each MagikBlock supports generic TOutput and T, T2 ... T20 inputs.

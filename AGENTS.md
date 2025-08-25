@@ -201,6 +201,24 @@ Troubleshooting
 4) Build and run tests locally.
 5) Keep changes minimal and consistent with existing patterns.
 
+## Tooling: Preferred Commands in This Repo
+
+Use these commands/utilities when working on Coven. They’re fast, reliable, and play well with the CLI harness.
+
+- `apply_patch`: Make all code and docs changes via this tool. It creates atomic patches and avoids partial edits. Prefer this over manual file writes.
+- `rg` (ripgrep): The fastest way to search files and symbols.
+  - Examples: `rg -n "IMagikBlock"`, `rg --files src/Coven.Core`
+- `sed -n`: Read specific file ranges to keep output small.
+  - Example: `sed -n '1,200p' src/Coven.Core/Board.cs`
+- `nl -ba`: Show files with line numbers when reviewing or patching.
+  - Example: `nl -ba src/Coven.Core/Routing/DefaultSelectionStrategy.cs | sed -n '1,200p'`
+- `ls`, `find`: Inspect project layout quickly.
+  - Example: `find src -maxdepth 3 -type f -printf "%p\n"`
+
+Notes
+- Prefer ripgrep (`rg`) for searches; it’s much faster than `grep`.
+- Keep patches focused; avoid refactors outside your scope even if spotted (mention them in PR notes).
+
 You’re set. If you want a concrete starting point, copy one of the test examples into a small console app, build a `MagikBuilder`, and iterate from there.
 
 ## Board Internals (Contributors)
