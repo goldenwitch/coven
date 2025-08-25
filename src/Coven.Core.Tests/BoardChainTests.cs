@@ -39,9 +39,9 @@ public class BoardChainTests
     }
 
     [Fact]
-    public async Task PostWork_ComposesChain_AndPrefersSpecificInput()
+    public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
     {
-        // Competing first step: object->int vs string->int; should prefer the specific string->int.
+        // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
         var generic = new MagikBlockDescriptor(typeof(object), typeof(int), new ObjectToIntBlock(999));
         var specific = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
         // Second step to complete chain to target double
@@ -50,8 +50,8 @@ public class BoardChainTests
         var board = NewPushBoard(generic, specific, step2);
 
         var result = await board.PostWork<string, double>("abcd");
-        // Expect length(4) -> 4d, proving both composition and specificity.
-        Assert.Equal(4d, result);
+        // Expect generic first (999) -> 999d, proving order preference.
+        Assert.Equal(999d, result);
     }
 
     [Fact]
@@ -60,6 +60,13 @@ public class BoardChainTests
         var board = NewPushBoard();
         var result = await board.PostWork<string, object>("hello");
         Assert.Equal("hello", result);
+    }
+
+    [Fact]
+    public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
+    {
+        var board = NewPushBoard();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, int>("hello"));
     }
 
     [Fact]

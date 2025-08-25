@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace Coven.Core.Algos;
 
-public static class Distance
+internal static class Distance
 {
     // Returns the minimal number of hops from `start` to `goal` using BFS over `neighbors`.
     // If `goal` is not reachable within `maxDepth`, returns int.MaxValue.
-    public static int MinHops<T>(
+    internal static int MinHops<T>(
         T start,
         T goal,
         Func<T, IEnumerable<T>> neighbors,
@@ -40,7 +40,7 @@ public static class Distance
     }
 
     // Returns a dictionary of minimal hops from `start` to every reachable node (including start with distance 0).
-    public static Dictionary<T, int> AllMinHops<T>(
+    internal static Dictionary<T, int> AllMinHops<T>(
         T start,
         Func<T, IEnumerable<T>> neighbors,
         IEqualityComparer<T>? comparer = null,
