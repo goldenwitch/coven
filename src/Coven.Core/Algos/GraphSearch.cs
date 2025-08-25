@@ -3,10 +3,10 @@ using System.Collections.Generic;
 
 namespace Coven.Core.Algos;
 
-public static class GraphSearch
+internal static class GraphSearch
 {
     // Node-path BFS: returns the sequence of nodes from start to goal (inclusive end, exclusive start if you prefer adjust outside).
-    public static List<TNode>? BfsNodes<TNode>(
+    internal static List<TNode>? BfsNodes<TNode>(
         TNode start,
         Func<TNode, bool> isGoal,
         Func<TNode, IEnumerable<TNode>> neighbors,
@@ -46,7 +46,7 @@ public static class GraphSearch
     }
 
     // Edge-path BFS: returns the sequence of edges leading from start to a goal node.
-    public static List<TEdge>? BfsEdges<TNode, TEdge>(
+    internal static List<TEdge>? BfsEdges<TNode, TEdge>(
         TNode start,
         Func<TNode, bool> isGoal,
         Func<TNode, IEnumerable<(TNode next, TEdge edge)>> expand,
@@ -86,7 +86,7 @@ public static class GraphSearch
     }
 
     // Annotated edge-path BFS: builds a per-node annotation once, then uses it to order neighbors.
-    public static List<TEdge>? BfsEdges<TNode, TEdge, TAnno>(
+    internal static List<TEdge>? BfsEdges<TNode, TEdge, TAnno>(
         TNode start,
         Func<TNode, bool> isGoal,
         Func<TNode, IEnumerable<(TNode next, TEdge edge)>> expand,
