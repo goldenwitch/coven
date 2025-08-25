@@ -13,6 +13,7 @@ public static class GraphSearch
         IEqualityComparer<TNode>? comparer = null,
         int maxDepth = int.MaxValue,
         Func<IEnumerable<TNode>, IEnumerable<TNode>>? order = null)
+        where TNode : notnull
     {
         comparer ??= EqualityComparer<TNode>.Default;
         var visited = new HashSet<TNode>(comparer) { start };
@@ -52,6 +53,7 @@ public static class GraphSearch
         IEqualityComparer<TNode>? comparer = null,
         int maxDepth = int.MaxValue,
         Func<TNode, IEnumerable<(TNode next, TEdge edge)>, IEnumerable<(TNode next, TEdge edge)>>? orderNeighbors = null)
+        where TNode : notnull
     {
         comparer ??= EqualityComparer<TNode>.Default;
         var visited = new HashSet<TNode>(comparer) { start };
@@ -92,6 +94,7 @@ public static class GraphSearch
         Func<TNode, TAnno, IEnumerable<(TNode next, TEdge edge)>, IEnumerable<(TNode next, TEdge edge)>> orderNeighbors,
         IEqualityComparer<TNode>? comparer = null,
         int maxDepth = int.MaxValue)
+        where TNode : notnull
     {
         comparer ??= EqualityComparer<TNode>.Default;
         var visited = new HashSet<TNode>(comparer) { start };

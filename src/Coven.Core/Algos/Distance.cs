@@ -13,6 +13,7 @@ public static class Distance
         Func<T, IEnumerable<T>> neighbors,
         IEqualityComparer<T>? comparer = null,
         int maxDepth = int.MaxValue)
+        where T : notnull
     {
         comparer ??= EqualityComparer<T>.Default;
         if (comparer.Equals(start, goal)) return 0;
@@ -44,6 +45,7 @@ public static class Distance
         Func<T, IEnumerable<T>> neighbors,
         IEqualityComparer<T>? comparer = null,
         int maxDepth = int.MaxValue)
+        where T : notnull
     {
         comparer ??= EqualityComparer<T>.Default;
         var dist = new Dictionary<T, int>(comparer) { [start] = 0 };

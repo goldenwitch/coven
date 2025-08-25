@@ -163,3 +163,7 @@ Autumn Wyborny
 - LinkedIn (Must be desperate): https://www.linkedin.com/in/autumn-wyborny/
 
 > I promise I don't bite (even if you have tough compliance constraints).
+
+## Support the project
+
+[![Support on Patreon](https://img.shields.io/badge/Support-Patreon-e85b46?logo=patreon)](https://www.patreon.com/c/Goldenwitch)
