@@ -1,0 +1,54 @@
+# Build artifacts
+**/bin/
+**/obj/
+artifacts/
+
+# Local .NET SDK installed to workspace
+.dotnet/
+dotnet-install.sh
+
+# IDEs / Editors
+.vs/
+.vscode/
+.idea/
+
+# User-specific
+*.user
+*.suo
+*.userprefs
+*.rsuser
+
+# Logs / Temp
+*.log
+*.tlog
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Testing / Coverage
+TestResult*/
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage*/
+
+# NuGet
+packages/
+*.nupkg
+*.snupkg
+*.nuspec
+NuGet.Config
+
+# Rider / Resharper
+_ReSharper.Caches/
+_ReSharper.*/
+*.DotSettings.user
+
+# Misc
+*.swp
+*.swo
+*.orig
+*.rej
+
