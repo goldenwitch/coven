@@ -8,20 +8,7 @@ namespace Coven.Core.Tests;
 
 public class TagRoutingTests
 {
-    private static Board NewPushBoard(params MagikBlockDescriptor[] descriptors)
-    {
-        var registry = new List<MagikBlockDescriptor>(descriptors);
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        return (Board)ctor!.Invoke(new object?[] { pushEnum, registry });
-    }
+    // Routing precedence per step: to:* → capability overlap → registration order.
 
     private sealed class ReturnConstInt : IMagikBlock<string, int>
     {
@@ -47,7 +34,7 @@ public class TagRoutingTests
         var b0 = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(1)); // index 0
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(2)); // index 1
         var step2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDouble());
-        var board = NewPushBoard(b0, b1, step2);
+        var board = TestBoardFactory.NewPushBoard(b0, b1, step2);
 
         var result = await board.PostWork<string, double>("x", new List<string> { "to:#1" });
         Assert.Equal(2d, result);
@@ -69,11 +56,10 @@ public class TagRoutingTests
         var first = new MagikBlockDescriptor(typeof(string), typeof(int), new EmitNextPreference());
         var normal = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDouble());
         var addOne = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleAddOne());
-        var board = NewPushBoard(first, normal, addOne);
+        var board = TestBoardFactory.NewPushBoard(first, normal, addOne);
 
         var result = await board.PostWork<string, double>("abc");
         // length=3, routed to AddOne -> 4
         Assert.Equal(4d, result);
     }
 }
-

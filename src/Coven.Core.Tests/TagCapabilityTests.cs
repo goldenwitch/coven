@@ -8,20 +8,6 @@ namespace Coven.Core.Tests;
 
 public class TagCapabilityTests
 {
-    private static Board NewPushBoard(params MagikBlockDescriptor[] descriptors)
-    {
-        var registry = new List<MagikBlockDescriptor>(descriptors);
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        return (Board)ctor!.Invoke(new object?[] { pushEnum, registry });
-    }
 
     private sealed class Counter { public int Value { get; init; } }
 
@@ -53,9 +39,9 @@ public class TagCapabilityTests
     [Fact]
     public async Task Capability_Matching_Prefers_MaxOverlap_Then_Order()
     {
-        // Emit tags: a, b
+        // Emit tags: a, b; expect B due to overlap=2.
         // Candidates: A supports {a}; B supports {a,b}; C supports {b}
-        var board = NewPushBoard(
+        var board = TestBoardFactory.NewPushBoard(
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new TagEmit("a", "b")), // idx 0
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("A", "a")), // idx 1
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("B", "a", "b")), // idx 2
@@ -72,7 +58,7 @@ public class TagCapabilityTests
     public async Task Explicit_To_Overrides_Capability_Scoring()
     {
         // Even though B would be chosen by capability, we direct to C by index
-        var board = NewPushBoard(
+        var board = TestBoardFactory.NewPushBoard(
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new TagEmit("x", "y")), // idx 0
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("A", "x")), // idx 1
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("B", "x", "y")), // idx 2
@@ -84,4 +70,3 @@ public class TagCapabilityTests
         Assert.Equal(5d, result);
     }
 }
-

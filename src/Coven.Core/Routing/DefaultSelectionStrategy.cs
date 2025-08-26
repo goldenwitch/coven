@@ -13,18 +13,18 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
 
         var epochTags = Tag.CurrentEpochTags();
 
-        // 1) Explicit index override: to:#<index>
+        // 1) Explicit index override: to:#<index> (only consider tags from the current epoch)
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
-            if (Tag.Contains($"to:#{c.RegistryIndex}")) return c;
+            if (System.Linq.Enumerable.Contains(epochTags, $"to:#{c.RegistryIndex}")) return c;
         }
 
-        // 2) Explicit type name override: to:<BlockTypeName>
+        // 2) Explicit type name override: to:<BlockTypeName> (current-epoch only)
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
-            if (Tag.Contains($"to:{c.BlockTypeName}")) return c;
+            if (System.Linq.Enumerable.Contains(epochTags, $"to:{c.BlockTypeName}")) return c;
         }
 
         // 3) After the first hop (epoch has by:*), prefer Tricks as forks to run first
@@ -41,7 +41,9 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
 
         // 4) Capability overlap using current-epoch tags plus persistent preferences (prefer:*);
         // tie-break by registration order (smallest index wins)
-        int bestScore = int.MinValue;
+        // Best fit rules: type already filtered; choose by total capability matches across all tags,
+        // including forward-preference tags (next:*), then break ties by registration order.
+        int bestTotalScore = int.MinValue;
         int bestIdx = int.MaxValue;
         RegisteredBlock? chosen = null;
         // Union: epoch tags + persistent prefer:* from all-time tags
@@ -53,17 +55,17 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
-            int score = 0;
+            int total = 0;
             if (c.Capabilities.Count > 0)
             {
                 foreach (var t in effectiveTags)
                 {
-                    if (c.Capabilities.Contains(t)) score++;
+                    if (c.Capabilities.Contains(t)) total++;
                 }
             }
-            if (score > bestScore || (score == bestScore && c.RegistryIndex < bestIdx))
+            if (total > bestTotalScore || (total == bestTotalScore && c.RegistryIndex < bestIdx))
             {
-                bestScore = score;
+                bestTotalScore = total;
                 bestIdx = c.RegistryIndex;
                 chosen = c;
             }

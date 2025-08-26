@@ -56,6 +56,10 @@ ICoven coven = new MagikBuilder<string, double>()
 
 This enables concise, per-step dynamic routing.
 
+Auto forward preference
+- Each registered block automatically advertises a soft capability `next:<BlockTypeName>`.
+- After a step runs, the Board adds `next:<DownstreamBlockTypeName>` for all reachable downstream blocks (by type) to bias selection forward by default. This is a preference, not a `to:*` override; more capable candidates can still win.
+
 ### Magic Tags Summary (current)
 
 - `to:#<index>`: Force the next block by registry index; overrides everything else.
@@ -144,6 +148,15 @@ Each MagikBlock supports generic TOutput and T, T2 ... T20 inputs.
 
 I also have helped you out by adding a Roslyn analyzer that enforces that all MagikBlocks have only immutable records as input. You are welcome.
 
+## Pull Mode (Design Pin)
+
+Pull mode advances work step-by-step under an orchestrator while preserving the simple `Ritual<TIn, TOut>` API.
+
+- Selection: Reuses push-mode scoring (`to:*` > capability overlap > registration order); no forward-only constraint.
+- Execution: Each step runs under a tag scope. After running, the Board adds `by:<BlockTypeName>` and persists tags for the next step.
+- Strongly-typed sink: The Board compiles a per-block pull wrapper that executes `DoMagik` and then calls `FinalizePullStep<TOut>` which invokes `IOrchestratorSink.Complete<TOut>(...)` with a strict generic `TOut` (declared block output type), avoiding per-call reflection.
+- Finality: The orchestrator completes when the step’s `TOut` is assignable to the requested final type; otherwise it issues the next `GetWork` call.
+
 # Board
 The Board is where MagikBlocks find their next work. Each block can only get work from board postings that match the type and tags of the data on the board. Board schemas are automatically generated from the wired up MagikBlocks.
 
@@ -166,15 +179,12 @@ In Push mode the board dispatches work to blocks as it gets it.
 It keeps a promise that represents the works completion and seamlessly starts the next task in the engine.
 
 ### Pull
-In Pull mode the board waits until an operator reaches out with a request.
+In Pull mode the orchestration loop repeatedly calls `GetWork<TIn>(request)`; the Board advances one step per call and completes with a typed output.
 
-The request must contain:
-- The MagikBlock that is trying to execute.
-- Which tags it says it wants.
-
-After a request hits the box the board finds a posting that exactly matches the tags and magikblock. In the event of two postings that match the board will use the posting that came first. You can override this logic when the board gets registered.
-
-Answering when a Pull lands on the board requires a lock on an index that the board uses internally to decide how to answer. This lock happens for EVERY lookup. Yes, this is totally something that can be fixed. I'll fix it if people send me enough money.
+- Selection: Board picks the next block using Push scoring (`to:*` > capability overlap > registration order) against merged tags (board + request).
+- Execute: Board runs that block with `request.Input`, emits `by:*`, updates tags, and calls `Complete<TOut>(output)` back to the orchestrator.
+- No forward-only: Pull doesn’t enforce index monotonicity; a Roslyn analyzer ensures reachability.
+- Async stepping-stone: Call multiple `GetWork<TIn>(request)` concurrently to run branches in parallel (each with its own input/tags/branch id).
 
 # How to write fancy AI stuff.
 We offer a secondary library (Coven.Spellcasting) with some built in constructs you might need for coordinating LLMs.

@@ -72,7 +72,7 @@ public class HaloE2ETests
     [Fact]
     public async Task Halo_EndToEnd_ExplicitOverride_ToLowercase()
     {
-        // Build board directly to pass tags to PostWork
+        // Build board directly to pass tags to PostWork (ICoven doesn't carry tags)
         var registry = new List<MagikBlockDescriptor>
         {
             new(typeof(string), typeof(Doc), new ParseAndTag()),                     // idx 0

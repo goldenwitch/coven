@@ -10,11 +10,13 @@ internal sealed class PipelineCompiler
 {
     private readonly IReadOnlyList<RegisteredBlock> registry;
     private readonly ISelectionStrategy selector;
+    private readonly SelectionEngine engine;
 
     internal PipelineCompiler(IReadOnlyList<RegisteredBlock> registry, ISelectionStrategy? selector = null)
     {
         this.registry = registry;
         this.selector = selector ?? new DefaultSelectionStrategy();
+        this.engine = new SelectionEngine(registry, this.selector);
     }
 
     internal Func<TIn, Task<TOut>> Compile<TIn, TOut>(Type startType, Type targetType)
@@ -38,17 +40,9 @@ internal sealed class PipelineCompiler
             {
                 var fence = Tag.GetFenceForCurrentEpoch();
                 Tag.Log($"building forward; fence={(fence?.Count ?? 0)} epochTags=[{string.Join(',', Tag.CurrentEpochTags())}]");
-                var forward = new List<RegisteredBlock>();
-                for (int i = 0; i < candidates.Length; i++)
-                {
-                    var c = candidates[i];
-                    if (c.RegistryIndex <= lastIndex) continue;
-                    if (!c.InputType.IsInstanceOfType(current)) continue;
-                    if (fence is not null && !fence.Contains(c.Descriptor.BlockInstance)) continue;
-                    forward.Add(c);
-                }
+                var chosen = engine.SelectNext(current, fence, lastIndex, forwardOnly: true);
 
-                if (forward.Count == 0)
+                if (chosen is null)
                 {
                     if (targetType.IsInstanceOfType(current))
                     {
@@ -56,14 +50,17 @@ internal sealed class PipelineCompiler
                     }
                     throw new InvalidOperationException($"No next step available from type {current.GetType().Name} after index {lastIndex} to reach {targetType.Name}.");
                 }
-
-                var chosen = selector.SelectNext(forward);
                 Tag.Log($"selected {chosen.BlockTypeName} at idx={chosen.RegistryIndex}");
 
                 // Bump epoch so tags added by this block apply to the next selection.
                 Tag.IncrementEpoch();
                 current = await chosen.Invoke(current).ConfigureAwait(false);
                 Tag.Add($"by:{chosen.BlockTypeName}");
+                // Emit forward-preference tags for downstream candidates of this block to bias next selection
+                if (chosen.ForwardNextTags is { Count: > 0 })
+                {
+                    foreach (var t in chosen.ForwardNextTags) Tag.Add(t);
+                }
                 lastIndex = chosen.RegistryIndex;
 
                 if (targetType.IsInstanceOfType(current))

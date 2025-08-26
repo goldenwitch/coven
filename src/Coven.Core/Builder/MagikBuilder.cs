@@ -65,11 +65,16 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 
     
 
-    public ICoven Done()
-    {
-        // Build a Board in push mode with precompiled pipelines
-        var board = new Board(Board.BoardMode.Push, registry.AsReadOnly(), precompile: true);
+    public ICoven Done() => Done(pull: false);
 
+    public ICoven Done(bool pull)
+        => Done(pull, pullOptions: null);
+
+    public ICoven Done(bool pull, PullOptions? pullOptions = null)
+    {
+        var mode = pull ? Board.BoardMode.Pull : Board.BoardMode.Push;
+        // Always precompile pipelines at Done() time for consistent performance
+        var board = new Board(mode, registry.AsReadOnly(), pullOptions: pullOptions);
         return new Coven(board);
     }
 }

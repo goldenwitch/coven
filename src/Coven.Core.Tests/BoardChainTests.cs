@@ -8,35 +8,8 @@ namespace Coven.Core.Tests;
 
 public class BoardChainTests
 {
-    private static Board NewPushBoard(params MagikBlockDescriptor[] descriptors)
-    {
-        var registry = new List<MagikBlockDescriptor>(descriptors);
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        return (Board)ctor!.Invoke(new object?[] { pushEnum, registry });
-    }
 
-    private static Board NewPrecompiledPushBoard(params MagikBlockDescriptor[] descriptors)
-    {
-        var registry = new List<MagikBlockDescriptor>(descriptors);
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>), typeof(bool) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        return (Board)ctor!.Invoke(new object?[] { pushEnum, registry, true });
-    }
+    
 
     [Fact]
     public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
@@ -47,7 +20,7 @@ public class BoardChainTests
         // Second step to complete chain to target double
         var step2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleBlock());
 
-        var board = NewPushBoard(generic, specific, step2);
+        var board = TestBoardFactory.NewPushBoard(generic, specific, step2);
 
         var result = await board.PostWork<string, double>("abcd");
         // Expect generic first (999) -> 999d, proving order preference.
@@ -57,7 +30,7 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_DirectAssignable_ReturnsInput()
     {
-        var board = NewPushBoard();
+        var board = TestBoardFactory.NewPushBoard();
         var result = await board.PostWork<string, object>("hello");
         Assert.Equal("hello", result);
     }
@@ -65,7 +38,7 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
     {
-        var board = NewPushBoard();
+        var board = TestBoardFactory.NewPushBoard();
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, int>("hello"));
     }
 
@@ -73,19 +46,11 @@ public class BoardChainTests
     public async Task PostWork_NoChain_Throws()
     {
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
-        var board = NewPushBoard(b1);
+        var board = TestBoardFactory.NewPushBoard(b1);
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, double>("abcd"));
     }
 
-    [Fact]
-    public async Task PostWork_UsesPrecompiledPipeline()
-    {
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
-        var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleBlock());
-        var board = NewPrecompiledPushBoard(b1, b2);
-        var result = await board.PostWork<string, double>("abc");
-        Assert.Equal(3d, result);
-    }
+    
 
     private sealed class StringLengthBlock : IMagikBlock<string, int>
     {
@@ -109,7 +74,7 @@ public class BoardChainTests
     {
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncStringLengthBlock());
         var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncIntToDoubleAddOne());
-        var board = NewPushBoard(b1, b2);
+        var board = TestBoardFactory.NewPushBoard(b1, b2);
         var result = await board.PostWork<string, double>("abcd");
         Assert.Equal(5d, result);
     }
@@ -119,7 +84,7 @@ public class BoardChainTests
     {
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
         var b2 = new MagikBlockDescriptor(typeof(int), typeof(BaseAnimal), new IntToDogBlock());
-        var board = NewPushBoard(b1, b2);
+        var board = TestBoardFactory.NewPushBoard(b1, b2);
         BaseAnimal result = await board.PostWork<string, BaseAnimal>("abc");
         Assert.IsType<Dog>(result);
     }
@@ -129,7 +94,7 @@ public class BoardChainTests
     {
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncDelayThenLength(50));
         var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncDelayThenToDouble(50));
-        var board = NewPushBoard(b1, b2);
+        var board = TestBoardFactory.NewPushBoard(b1, b2);
 
         var sw = Stopwatch.StartNew();
         var result = await board.PostWork<string, double>("abcd");
@@ -145,7 +110,7 @@ public class BoardChainTests
         var first = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(1));
         var second = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(2));
         var step2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleBlock());
-        var board = NewPushBoard(first, second, step2);
+        var board = TestBoardFactory.NewPushBoard(first, second, step2);
         var result = await board.PostWork<string, double>("ignored");
         Assert.Equal(1d, result);
     }
@@ -154,7 +119,7 @@ public class BoardChainTests
     public async Task PostWork_PropagatesBlockException()
     {
         var failing = new MagikBlockDescriptor(typeof(string), typeof(int), new ThrowingBlock());
-        var board = NewPushBoard(failing);
+        var board = TestBoardFactory.NewPushBoard(failing);
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, int>("x"));
     }
 

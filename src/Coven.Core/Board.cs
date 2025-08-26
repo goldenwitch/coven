@@ -17,6 +17,8 @@ public class Board : IBoard
     internal IReadOnlyList<MagikBlockDescriptor> Registry { get; }
     private readonly IReadOnlyList<RegisteredBlock> registeredBlocks;
     private readonly PipelineCompiler compiler;
+    private readonly ConcurrentDictionary<string, HashSet<string>> pullBranchTags = new(StringComparer.Ordinal);
+    private readonly PullOptions? pullOptions;
 
     internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry)
     {
@@ -24,21 +26,55 @@ public class Board : IBoard
         Registry = registry;
         registeredBlocks = BuildRegisteredBlocks(registry);
         compiler = new PipelineCompiler(registeredBlocks);
+        // Always precompile pipelines to eliminate first-run latency
+        PrecompileAllPipelines();
     }
-    
-    internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry, bool precompile)
+
+    internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry, PullOptions? pullOptions)
     {
         currentMode = mode;
         Registry = registry;
         registeredBlocks = BuildRegisteredBlocks(registry);
         compiler = new PipelineCompiler(registeredBlocks);
-        if (precompile)
-        {
-            PrecompileAllPipelines();
-        }
+        this.pullOptions = pullOptions;
+        // Always precompile pipelines regardless of mode for consistency
+        PrecompileAllPipelines();
     }
 
     private readonly ConcurrentDictionary<(Type start, Type target), Delegate> pipelineCache = new();
+
+    // Internal non-generic step for orchestrators; merges tags, selects, executes, persists tags, returns output.
+    internal async Task GetWorkPullAsync(object input, string? branchId, IReadOnlyCollection<string>? extraTags, IOrchestratorSink sink)
+    {
+        if (currentMode != BoardMode.Pull)
+            throw new NotSupportedException("GetWork is only available in pull mode.");
+
+        var bid = branchId ?? string.Empty;
+        var baseTags = pullBranchTags.GetOrAdd(bid, _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        var merged = new HashSet<string>(baseTags, StringComparer.OrdinalIgnoreCase);
+        if (extraTags is not null)
+        {
+            foreach (var t in extraTags) merged.Add(t);
+        }
+
+        var scopePrev = Tag.BeginScope(Tag.NewScope(merged));
+        try
+        {
+            var selector = new DefaultSelectionStrategy();
+            var engine = new SelectionEngine(registeredBlocks, selector);
+            var fence = Tag.GetFenceForCurrentEpoch();
+            var chosen = engine.SelectNext(input, fence, lastIndex: -1, forwardOnly: false)
+                ?? throw new InvalidOperationException($"No next step available from type {input.GetType().Name}.");
+
+            Tag.IncrementEpoch();
+            // Invoke wrapped pull delegate which will finalize via Board.FinalizePullStep<T>
+            await chosen.InvokePull(this, sink, bid, input).ConfigureAwait(false);
+        }
+        finally
+        {
+            Tag.EndScope(scopePrev);
+        }
+    }
 
     private static IReadOnlyList<RegisteredBlock> BuildRegisteredBlocks(IReadOnlyList<MagikBlockDescriptor> registry)
     {
@@ -56,17 +92,41 @@ public class Board : IBoard
                 merged = System.Linq.Enumerable.Concat(caps, d.Capabilities);
             }
             var set = new HashSet<string>(merged, StringComparer.OrdinalIgnoreCase);
+            // Soft self-capability to enable forward-motion preferences via next:<BlockTypeName>
+            set.Add($"next:{name}");
 
             list.Add(new RegisteredBlock
             {
                 Descriptor = d,
                 RegistryIndex = idx,
                 Invoke = BlockInvokerFactory.Create(d),
+                InvokePull = static (_, __, ___, ____) => Task.CompletedTask,
                 InputType = d.InputType,
                 OutputType = d.OutputType,
                 BlockTypeName = name,
                 Capabilities = set
             });
+        }
+        // Compute forward-next preference tags per block and compile pull wrappers using them
+        for (int i = 0; i < list.Count; i++)
+        {
+            var cur = list[i];
+            var tags = new List<string>();
+            for (int j = i + 1; j < list.Count; j++)
+            {
+                var cand = list[j];
+                if (cand.InputType.IsAssignableFrom(cur.OutputType))
+                {
+                    tags.Add($"next:{cand.BlockTypeName}");
+                }
+            }
+            cur.ForwardNextTags = tags;
+        }
+
+        for (int i = 0; i < list.Count; i++)
+        {
+            var cur = list[i];
+            cur.InvokePull = BlockInvokerFactory.CreatePull(cur.Descriptor, cur.ForwardNextTags);
         }
         return list;
     }
@@ -78,18 +138,29 @@ public class Board : IBoard
         return true;
     }
 
-    public Task<TOutput> GetWork<T, TOutput>(T input, List<string>? tags = null)
+    public Task GetWork<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink)
     {
-        throw new NotImplementedException();
+        if (currentMode != BoardMode.Pull)
+            throw new NotSupportedException("GetWork<TIn>(request) is only available in pull mode.");
+        if (sink is null) throw new ArgumentNullException(nameof(sink));
+
+        // Execute exactly one step using Push selection semantics, no forward-only constraint.
+        return ExecutePullStepAsync(request, sink);
+    }
+
+    private async Task ExecutePullStepAsync<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink)
+    {
+        var branchId = request.BranchId ?? string.Empty;
+        await GetWorkPullAsync(request.Input!, branchId, request.Tags, sink).ConfigureAwait(false);
     }
 
     public async Task<TOutput> PostWork<T, TOutput>(T input, List<string>? tags = null)
     {
+        var startType = typeof(T);
+        var targetType = typeof(TOutput);
+
         if (currentMode == BoardMode.Push)
         {
-            var startType = typeof(T);
-            var targetType = typeof(TOutput);
-
             var pipeline = (Func<T, Task<TOutput>>)pipelineCache.GetOrAdd(
                 (startType, targetType),
                 _ => compiler.Compile<T, TOutput>(startType, targetType)
@@ -106,7 +177,9 @@ public class Board : IBoard
             }
         }
 
-        throw new NotSupportedException("Pull mode is not implemented.");
+        // Pull mode: delegate to the concrete orchestrator using GetWork<T> steps.
+        var orchestrator = new PullOrchestrator(this, pullOptions);
+        return await orchestrator.Run<T, TOutput>(input, tags);
     }
 
     internal void PrecompileAllPipelines()
@@ -131,5 +204,39 @@ public class Board : IBoard
                 pipelineCache.TryAdd((start, target), del);
             }
         }
+    }
+
+    // Called by compiled pull-mode delegates to finalize a step with strict generic type
+    internal void FinalizePullStep<TOut>(IOrchestratorSink sink, TOut output, string? branchId, string blockTypeName, IEnumerable<string> forwardNextTags)
+    {
+        Tag.Add($"by:{blockTypeName}");
+        if (forwardNextTags is not null)
+        {
+            foreach (var t in forwardNextTags) Tag.Add(t);
+        }
+        var bid = branchId ?? string.Empty;
+        // Persist tags for the next selection using only tags emitted during this step
+        // plus persistent preferences and fresh forward-next hints.
+        // - Keep persistent preferences: prefer:*
+        // - Keep only current-epoch tags, excluding observational or computed hints (by:*, next:*)
+        // - Re-add the newly computed forwardNextTags (next:*) for default forward bias
+        var persisted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var t in Tag.Current)
+        {
+            if (t.StartsWith("prefer:", StringComparison.OrdinalIgnoreCase)) persisted.Add(t);
+        }
+        var epoch = Tag.CurrentEpochTags();
+        foreach (var t in epoch)
+        {
+            if (t.StartsWith("by:", StringComparison.OrdinalIgnoreCase)) continue;
+            if (t.StartsWith("next:", StringComparison.OrdinalIgnoreCase)) continue;
+            persisted.Add(t);
+        }
+        if (forwardNextTags is not null)
+        {
+            foreach (var t in forwardNextTags) persisted.Add(t);
+        }
+        pullBranchTags[bid] = persisted;
+        sink.Complete<TOut>(output, branchId);
     }
 }

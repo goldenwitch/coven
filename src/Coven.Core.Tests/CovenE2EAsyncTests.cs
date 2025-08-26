@@ -14,17 +14,8 @@ public class CovenE2EAsyncTests
         var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncDelayThenLength(40));
         var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncDelayThenToDouble(40));
 
-        // Build a Board in push mode (no precompile needed for this test) and a Coven over it
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = System.Enum.Parse(boardModeType, "Push");
-        var board = (Board)ctor!.Invoke(new object?[] { pushEnum, new List<MagikBlockDescriptor> { b1, b2 } });
+        // Build a Board in push mode using test-only factory for clarity
+        var board = TestBoardFactory.NewPushBoard(b1, b2);
 
         var coven = new Coven(board); // InternalsVisibleTo allows using internal constructor
 
@@ -33,6 +24,7 @@ public class CovenE2EAsyncTests
         sw.Stop();
 
         Assert.Equal(4d, result);
+        // Two ~40ms delays with scheduling slack
         Assert.True(sw.ElapsedMilliseconds >= 75, $"Ritual finished too quickly: {sw.ElapsedMilliseconds}ms");
     }
 
@@ -58,4 +50,3 @@ public class CovenE2EAsyncTests
         }
     }
 }
-

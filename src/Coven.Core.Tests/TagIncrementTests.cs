@@ -8,20 +8,7 @@ namespace Coven.Core.Tests;
 
 public class TagIncrementTests
 {
-    private static Board NewPushBoard(params MagikBlockDescriptor[] descriptors)
-    {
-        var registry = new List<MagikBlockDescriptor>(descriptors);
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        return (Board)ctor!.Invoke(new object?[] { pushEnum, registry });
-    }
+    // Build boards via TestBoardFactory.NewPushBoard where needed.
 
     private sealed class Counter { public int Value { get; init; } }
 
@@ -59,7 +46,7 @@ public class TagIncrementTests
     public async Task Sequential_Default_NextByRegistrationOrder()
     {
         // Order: Inc -> IncAndSignalCopy2 -> Copy1 -> Copy2 -> ToDouble
-        var board = NewPushBoard(
+        var board = TestBoardFactory.NewPushBoard(
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new Inc()),                 // idx 0
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new IncAndSignalCopy2()),   // idx 1
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new Copy1()),               // idx 2
@@ -76,7 +63,7 @@ public class TagIncrementTests
     [Fact]
     public async Task Sequential_InitialTag_SkipsFirst_ToSpecificIndex()
     {
-        var board = NewPushBoard(
+        var board = TestBoardFactory.NewPushBoard(
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new Inc()),                 // idx 0
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new IncAndSignalCopy2()),   // idx 1
             new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new Copy1()),               // idx 2
