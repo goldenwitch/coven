@@ -1,3 +1,5 @@
+using Coven.Core;
+
 namespace Coven.Core.Builder;
 
 internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
@@ -12,6 +14,16 @@ internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
     public ICoven Done()
     {
         return magikBuilder.Done();
+    }
+
+    public ICoven Done(bool pull)
+    {
+        return magikBuilder.Done(pull);
+    }
+
+    public ICoven Done(bool pull, PullOptions? pullOptions)
+    {
+        return magikBuilder.Done(pull, pullOptions);
     }
 
     public IMagikBuilder<T, TOutput> MagikBlock(IMagikBlock<T, TOutput> block)

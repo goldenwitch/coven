@@ -12,7 +12,7 @@ public class BuilderIntegrationTests
     }
 
     [Fact]
-    public async Task Builder_Done_ReturnsCoven_ThatExecutesPrecompiledPipeline()
+    public async Task Builder_Done_ReturnsCoven_ThatExecutesPipeline()
     {
         var coven = new MagikBuilder<string, int>()
             .MagikBlock(new StringLengthBlock())
@@ -22,4 +22,3 @@ public class BuilderIntegrationTests
         Assert.Equal(5, result);
     }
 }
-

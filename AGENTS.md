@@ -1,5 +1,9 @@
 # Coven Agents: New Developer Guide
 
+## Contributor Checklist (Quick)
+- Read the repository `README.md` before starting any work.
+- If you hit workflow friction, propose concise doc updates to clarify the recommended approach.
+
 Welcome! This guide gives a fast, practical orientation to the Coven codebase so you can read the structure, run tests, and build features confidently. It focuses on what exists today.
 
 ## What Is Coven
@@ -50,6 +54,13 @@ Board
 - Executes work in push mode by default (the implemented mode).
 - Compiles and caches pipelines per `(startType, targetType)` for speed.
 - Uses tags to influence routing among valid next steps.
+  - Auto forward preference: each block advertises `next:<SelfType>` and after a step the Board emits `next:<DownstreamType>` for all reachable downstream blocks to bias forward motion by default.
+
+Pull Mode Internals
+- Orchestrated stepping: In pull mode, the orchestrator repeatedly calls `GetWork<TIn>(request)`; the Board advances exactly one step and completes to a sink.
+- Compiled wrapper: For each block, the Board compiles a pull wrapper `(Board, sink, branchId, input) => Task` that executes `DoMagik` and then calls an internal `FinalizePullStep<TOut>(...)`.
+- Finalize step: `FinalizePullStep<TOut>` adds `by:<BlockTypeName>`, persists `Tag.Current` to the branch, and calls `IOrchestratorSink.Complete<TOut>(output, branchId)` — no per-call reflection.
+- Finality: The orchestrator determines when to stop by checking if the step’s generic `TOut` is assignable to the requested final output type.
 
 Tags and Capabilities
 - Ambient tag scope (per request) via `Coven.Core.Tags.Tag`.
@@ -201,25 +212,9 @@ Troubleshooting
 4) Build and run tests locally.
 5) Keep changes minimal and consistent with existing patterns.
 
-## Tooling: Preferred Commands in This Repo
+## Getting Started Tips
 
-Use these commands/utilities when working on Coven. They’re fast, reliable, and play well with the CLI harness.
-
-- `apply_patch`: Make all code and docs changes via this tool. It creates atomic patches and avoids partial edits. Prefer this over manual file writes.
-- `rg` (ripgrep): The fastest way to search files and symbols.
-  - Examples: `rg -n "IMagikBlock"`, `rg --files src/Coven.Core`
-- `sed -n`: Read specific file ranges to keep output small.
-  - Example: `sed -n '1,200p' src/Coven.Core/Board.cs`
-- `nl -ba`: Show files with line numbers when reviewing or patching.
-  - Example: `nl -ba src/Coven.Core/Routing/DefaultSelectionStrategy.cs | sed -n '1,200p'`
-- `ls`, `find`: Inspect project layout quickly.
-  - Example: `find src -maxdepth 3 -type f -printf "%p\n"`
-
-Notes
-- Prefer ripgrep (`rg`) for searches; it’s much faster than `grep`.
-- Keep patches focused; avoid refactors outside your scope even if spotted (mention them in PR notes).
-
-You’re set. If you want a concrete starting point, copy one of the test examples into a small console app, build a `MagikBuilder`, and iterate from there.
+Keep changes focused and incremental. When in doubt, follow existing patterns in the codebase, add or extend targeted tests, and update docs alongside behavior changes.
 
 ## Board Internals (Contributors)
 

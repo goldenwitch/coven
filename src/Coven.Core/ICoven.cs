@@ -2,5 +2,9 @@ namespace Coven.Core;
 
 public interface ICoven
 {
-    public Task<TOutput> Ritual<T, TOutput>(T Input);
+    // Runs a ritual from T to TOutput with no initial tags
+    public Task<TOutput> Ritual<T, TOutput>(T input);
+
+    // Runs a ritual from T to TOutput seeding initial tags that influence routing
+    public Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags);
 }

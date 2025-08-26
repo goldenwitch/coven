@@ -1,3 +1,5 @@
+using Coven.Core;
+
 namespace Coven.Core.Builder;
 
 public interface IMagikBuilder<T, TOutput>
@@ -22,4 +24,6 @@ public interface IMagikBuilder<T, TOutput>
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string> capabilities);
 
     public ICoven Done();
+    public ICoven Done(bool pull);
+    public ICoven Done(bool pull, PullOptions? pullOptions = null);
 }
