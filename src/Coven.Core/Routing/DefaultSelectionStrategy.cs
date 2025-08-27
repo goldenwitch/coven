@@ -1,4 +1,5 @@
 using Coven.Core.Tags;
+using Coven.Core.Tricks;
 
 namespace Coven.Core.Routing;
 
@@ -33,7 +34,7 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
             for (int i = 0; i < forward.Count; i++)
             {
                 var c = forward[i];
-                if (c.Descriptor.BlockInstance is Tricks.IMagikTrick) return c;
+                if (c.Descriptor.BlockInstance is IMagikTrick) return c;
             }
         }
 
