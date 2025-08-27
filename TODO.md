@@ -1,9 +1,5 @@
 # Unimplemented Features (from README)
 
-- MagikBuilder enhancements:
-  - Support all three add patterns: factory `(builder => return m)`, block instance, and inline lambda `(T => T2)`.
-  - Support DI registration and injection into user defined magikblocks.
-
 - Board features:
   - Honor timeouts and retries for work dispatch in both modes.
 
