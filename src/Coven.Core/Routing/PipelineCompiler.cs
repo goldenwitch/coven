@@ -53,7 +53,7 @@ internal sealed class PipelineCompiler
 
                 // Bump epoch so tags added by this block apply to the next selection.
                 Tag.IncrementEpoch();
-                var instance = chosen.Activator.GetInstance(sp, cache, chosen.RegistryIndex);
+                var instance = chosen.Activator.GetInstance(sp, cache, chosen);
                 current = await chosen.Invoke(instance, current).ConfigureAwait(false);
                 Tag.Add($"by:{chosen.BlockTypeName}");
                 // Emit forward-preference tags for downstream candidates of this block to bias next selection
