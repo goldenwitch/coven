@@ -136,15 +136,17 @@ public class Board : IBoard
         for (int i = 0; i < list.Count; i++)
         {
             var cur = list[i];
-            var ifaceType = typeof(IMagikBlock<,>).MakeGenericType(cur.InputType, cur.OutputType);
-            if (ifaceType.IsAssignableFrom(cur.Descriptor.BlockInstance.GetType()))
+            // Compile a pull wrapper that resolves the instance via activator, invokes, then finalizes with generic TOut.
+            var finalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var finalizeClosed = finalize.MakeGenericMethod(cur.OutputType);
+            cur.InvokePull = async (board, sink, branchId, input) =>
             {
-                cur.InvokePull = BlockInvokerFactory.CreatePull(cur.Descriptor, cur.ForwardNextTags);
-            }
-            else
-            {
-                cur.InvokePull = static (_, __, ___, ____) => throw new NotSupportedException("Pull mode is not supported for DI-activated or non-instance block entries.");
-            }
+                var cache = new Dictionary<int, object>();
+                var sp = Di.CovenExecutionScope.CurrentProvider;
+                var instance = cur.Activator.GetInstance(sp, cache, cur);
+                var result = await cur.Invoke(instance, input).ConfigureAwait(false);
+                finalizeClosed.Invoke(board, new object?[] { sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags });
+            };
         }
         return list;
     }

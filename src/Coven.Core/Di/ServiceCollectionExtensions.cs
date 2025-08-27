@@ -110,6 +110,18 @@ public sealed class CovenServiceBuilder
         return services;
     }
 
+    public IServiceCollection Done(bool pull, PullOptions? pullOptions = null)
+    {
+        if (finalized) return services; // idempotent
+        finalized = true;
+
+        var mode = pull ? Board.BoardMode.Pull : Board.BoardMode.Push;
+        var board = pull ? new Board(mode, registry, pullOptions) : new Board(mode, registry);
+        services.AddSingleton<IBoard>(_ => board);
+        services.AddSingleton<ICoven>(sp => new Coven(board, sp));
+        return services;
+    }
+
     private void EnsureNotFinalized()
     {
         if (finalized) throw new InvalidOperationException("Cannot modify CovenServiceBuilder after Done().");
