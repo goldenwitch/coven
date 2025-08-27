@@ -54,7 +54,7 @@ Board
 - Executes work in push mode by default (the implemented mode).
 - Compiles and caches pipelines per `(startType, targetType)` for speed.
 - Uses tags to influence routing among valid next steps.
-  - Auto forward preference: each block advertises `next:<SelfType>` and after a step the Board emits `next:<DownstreamType>` for all reachable downstream blocks to bias forward motion by default.
+  - Autotagging: Capability tags that point to the next block are automatically added during Builder finalization. This means that by default, every ritual progresses forward in the order it is registered in.
 
 Pull Mode Internals
 - Orchestrated stepping: In pull mode, the orchestrator repeatedly calls `GetWork<TIn>(request)`; the Board advances exactly one step and completes to a sink.
@@ -74,7 +74,6 @@ Routing Rules (per step)
 3. Tie-break by registration order.
 - Forward-only: once a block at registry index N runs, only candidates with index > N are considered.
 - After each step the Board emits `by:<BlockTypeName>` for observability.
-- If the current value is assignable to the requested `TOut`, the pipeline returns immediately.
 
 ## Minimal Examples
 

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Coven.Core;
 
 // A request to advance one unit of work in Pull mode.
@@ -9,4 +7,3 @@ public sealed record GetWorkRequest<TIn>
     IReadOnlyCollection<string>? Tags = null,
     string? BranchId = null
 );
-

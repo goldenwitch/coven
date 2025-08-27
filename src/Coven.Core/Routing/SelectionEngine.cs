@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Coven.Core.Routing;
 
 // Small helper to centralize candidate filtering + strategy selection for a single step.
@@ -30,4 +28,3 @@ internal sealed class SelectionEngine
         return strategy.SelectNext(forward);
     }
 }
-

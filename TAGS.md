@@ -5,8 +5,8 @@ This document explains the initial tagging model and how it integrates with the 
 ## Goals
 - Preserve compiled pipeline delegates for performance and predictability.
 - Allow tags to influence routing decisions at runtime between multiple valid next steps.
-- Keep the block interface unchanged; avoid DI or explicit tag parameters.
-- Maintain deterministic behavior and shortest-path guarantees; avoid loops.
+- Keep the block interface unchanged.
+- Maintain deterministic behavior.
 
 ## Terminology
 - Tag: a case-insensitive string (e.g., `route:discord`, `role:planner`, `by:StringLengthBlock`).
@@ -28,26 +28,25 @@ After each `MagikBlock` finishes, the Board selects the next block to run:
 3) Default order: if capability scores tie (or no capabilities are advertised), pick the next registered block that accepts the current value type.
 
 Notes:
-- Forward-only: selection is restricted to blocks with a greater registry index than the last executed block. This ensures progress and prevents cycles.
+- Forward-only: For push-mode selection is restricted to blocks with a greater registry index than the last executed block. This ensures progress and prevents cycles.
 - If no suitable next block exists and the current value is not assignable to the requested `TOutput`, the Board throws an error.
-- No tags present means behavior defaults to “next registered that accepts the current type.”
+- No tags added means that the dominant scheme will be auto-tagging indicating the next block.
 
 ## Compiled Router Pipelines
 For each `(startType, targetType)`, the Board compiles a router delegate `Func<T, Task<TOutput>>` over an array of prebuilt candidates (registry order), where each candidate has a compiled invoker `Func<object, Task<object>>` and a pre-materialized, case-insensitive set of capability tags. The router:
 - Initializes the TagSet for the work item.
 - Starts from `lastIndex = -1` and current = input.
 - Repeats:
-  - If current is assignable to `TOutput`, return it.
-  - Otherwise, pick the next block using explicit `to:*` (if present), or capability scoring (max overlap), with a tie broken by registration order; then await it.
+  - Pick the next block using explicit `to:*` (if present), or capability scoring (max overlap), with a tie broken by registration order; then await it.
   - Append `by:<BlockTypeName>`.
-- A step cap (<= registry length) provides a hard stop if a target cannot be produced.
+- When no next step exists, if the final value is assignable to `TOutput` return it; otherwise throw.
 
-This preserves compiled performance while enabling dynamic per-step routing and supports multiple consecutive steps with the same input/output types.
+This preserves compiled performance while enabling dynamic routing.
 
 ## Determinism and Safety
 - Forward-only selection yields monotonic progress through the registry and prevents most cycles. It is possible to cycle by repeatedly using the same block without an escape.
 - Selection is deterministic given the TagSet and registry order.
-- If no next block is available before reaching the target type, the Board throws a clear error.
+- If no next block is available before reaching the target type, the Board throws a clear error. This should be impossible given our type-safe builder, but I know that some of y'all can do the impossible.
 
 ## Out of Scope (for this phase)
 - Tag override emitters per-block.
@@ -83,18 +82,15 @@ These tags have special, built-in behavior in the router. Use sparingly.
 
 - `to:#<index>`: Explicitly select the next block by registry index. Overrides all other selection.
 - `to:<BlockTypeName>`: Explicitly select the next block by type name. Overrides all other selection.
-- `by:<BlockTypeName>`: Emitted by the Board after each step for observability and tracing only.
-- `prefer:<name>`: Persistent preference tag. Considered alongside current-step tags during capability scoring to bias tie-breaks across steps.
 
 Notes:
 
 - Non-magical tags (e.g., `want:*`, `role:*`, `route:*`) remain user-defined context/capability markers. The selector primarily considers tags emitted in the immediately preceding step, plus any `prefer:*` tags.
-- We do not plan to add more magical tags. Over time we intend to reduce and remove magic tags where practical (e.g., `only:*`), in favor of explicit APIs (like internal selection fences) and capability-based routing.
+- We do not plan to add more magical tags. Over time we intend to reduce and remove magic tags where practical in favor of explicit APIs (like internal selection fences) and capability-based routing.
 
 ## Step-Scoped Tag Semantics (Implementation Detail)
 
 Internally, the Board journals tags by step (epoch) to enable “next-hop” decisions without destructive mutation:
 
 - Tags added by a block are stamped with the next epoch so they apply to the following selection.
-- Selection prefers tags from the current epoch (the immediate previous block), with `prefer:*` acting as persistent preferences.
 - This preserves deterministic routing while keeping observability tags (like `by:*`) available in the full tag set.

@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 namespace Coven.Core.Tags;
 
 public interface ITagScope
@@ -9,4 +7,3 @@ public interface ITagScope
     bool Contains(string tag);
     IEnumerable<string> Enumerate();
 }
-

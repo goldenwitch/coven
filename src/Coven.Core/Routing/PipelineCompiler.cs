@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Coven.Core.Tags;
 
 namespace Coven.Core.Routing;
@@ -62,13 +58,9 @@ internal sealed class PipelineCompiler
                     foreach (var t in chosen.ForwardNextTags) Tag.Add(t);
                 }
                 lastIndex = chosen.RegistryIndex;
-
-                if (targetType.IsInstanceOfType(current))
-                {
-                    return (TOut)current;
-                }
             }
 
+            // After exhausting forward-compatible steps (or step cap), validate final assignability.
             if (targetType.IsInstanceOfType(current)) return (TOut)current;
             throw new InvalidOperationException($"Reached step limit without producing {targetType.Name}.");
         };
