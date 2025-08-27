@@ -7,14 +7,24 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
     // Heterogeneous registration (with optional capabilities)
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block, IEnumerable<string>? capabilities = null)
     {
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), block, capabilities?.ToList()));
+        registry.Add(new MagikBlockDescriptor(
+            typeof(TIn),
+            typeof(TOut),
+            block,
+            capabilities?.ToList(),
+            block.GetType().Name));
         return this;
     }
 
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         var mb = new MagikBlock<TIn, TOut>(func);
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), mb, capabilities?.ToList()));
+        registry.Add(new MagikBlockDescriptor(
+            typeof(TIn),
+            typeof(TOut),
+            mb,
+            capabilities?.ToList(),
+            typeof(MagikBlock<TIn, TOut>).Name));
         return this;
     }
 

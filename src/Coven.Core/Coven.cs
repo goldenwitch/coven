@@ -1,12 +1,21 @@
+using Coven.Core.Di;
+
 namespace Coven.Core;
 
 internal class Coven : ICoven
 {
     private readonly IBoard board;
+    private readonly IServiceProvider? rootProvider;
 
     internal Coven(IBoard board)
     {
         this.board = board;
+    }
+
+    internal Coven(IBoard board, IServiceProvider rootProvider)
+    {
+        this.board = board;
+        this.rootProvider = rootProvider;
     }
 
     public async Task<TOutput> Ritual<T, TOutput>(T input)
@@ -17,8 +26,16 @@ internal class Coven : ICoven
             throw new InvalidOperationException("Board does not support this work.");
         }
 
-        // Next we post the input to the board.
-        return await board.PostWork<T, TOutput>(input);
+        // Open DI scope (if available) for the duration of the ritual
+        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        try
+        {
+            return await board.PostWork<T, TOutput>(input).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+        }
     }
 
     public async Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags)
@@ -29,7 +46,14 @@ internal class Coven : ICoven
             throw new InvalidOperationException("Board does not support this work.");
         }
 
-        // Post input with initial tags
-        return await board.PostWork<T, TOutput>(input, tags);
+        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        try
+        {
+            return await board.PostWork<T, TOutput>(input, tags).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+        }
     }
 }
