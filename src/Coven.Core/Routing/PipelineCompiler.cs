@@ -58,15 +58,9 @@ internal sealed class PipelineCompiler
                     foreach (var t in chosen.ForwardNextTags) Tag.Add(t);
                 }
                 lastIndex = chosen.RegistryIndex;
-
-                // NOTE: Current implementation returns early when the produced value is assignable to the requested target type.
-                // Desired push-mode behavior (see docs): do NOT short-circuit based on type assignability; continue executing
-                // forward-compatible steps until none remain, then validate final assignability. This comment documents the
-                // discrepancy and serves as a reminder to adjust the router accordingly.
-                if (targetType.IsInstanceOfType(current)) { return (TOut)current; }
             }
 
-            // See note above re: desired non-short-circuit behavior in push mode.
+            // After exhausting forward-compatible steps (or step cap), validate final assignability.
             if (targetType.IsInstanceOfType(current)) return (TOut)current;
             throw new InvalidOperationException($"Reached step limit without producing {targetType.Name}.");
         };

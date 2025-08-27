@@ -6,7 +6,6 @@
 
 - Board features:
   - Honor timeouts and retries for work dispatch in both modes.
-  - Push mode: remove short-circuit-on-assignable; continue executing forward-compatible steps until none remain, then validate final type.
 
 - Type system breadth:
   - Support multi-input MagikBlocks with generic inputs `T, T2, ... T20` and dynamic generation of arity based on usage.
