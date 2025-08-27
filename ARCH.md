@@ -174,6 +174,8 @@ Currently configurable:
 ## Modes
 Boards can operate in Pull Mode or Push Mode based on your configuration. I very strongly recommend Push. Unless you are using this framework to write something crazy, Push will do everything you need and faster. Both board options automatically support timeout and retry control. Don't write your own in blocks, I promise life will be better.
 
+Neither board mode short-circuits based on type. If you added six compatible steps and routed between them, we respect that.
+
 ### Push
 In Push mode the board dispatches work to blocks as it gets it.
 It keeps a promise that represents the works completion and seamlessly starts the next task in the engine.
