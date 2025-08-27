@@ -16,3 +16,4 @@ Key topics:
 - [Connectivity](./Arch/Connectivity.md)
 - [Contributing](./Arch/Contributing.md)
 - [Licensing](./Arch/Licensing.md)
+- [Dependency Injection](./Arch/DependencyInjection.md)

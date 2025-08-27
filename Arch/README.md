@@ -13,4 +13,4 @@ This guide breaks the architecture into focused topics. Start with Overview, the
 - [Connectivity](./Connectivity.md)
 - [Contributing](./Contributing.md)
 - [Licensing](./Licensing.md)
-
+- [Dependency Injection](./DependencyInjection.md)
