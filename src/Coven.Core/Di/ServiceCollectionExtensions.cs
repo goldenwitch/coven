@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using Coven.Core.Tags;
 
 namespace Coven.Core.Di;
 
@@ -47,10 +48,35 @@ public sealed class CovenServiceBuilder
         {
             services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
         }
+        // Merge capabilities from caller, attribute, and optional parameterless-ctor ITagCapabilities instance
+        var mergedCaps = new List<string>();
+        if (capabilities is not null) mergedCaps.AddRange(capabilities);
+        var t = typeof(TBlock);
+        var attr = (Tags.TagCapabilitiesAttribute?)Attribute.GetCustomAttribute(t, typeof(Tags.TagCapabilitiesAttribute));
+        if (attr is not null && attr.Tags is not null)
+        {
+            mergedCaps.AddRange(attr.Tags);
+        }
+        if (typeof(ITagCapabilities).IsAssignableFrom(t))
+        {
+            var ctor = t.GetConstructor(Type.EmptyTypes);
+            if (ctor is not null)
+            {
+                try
+                {
+                    var tmp = (ITagCapabilities?)Activator.CreateInstance(t);
+                    if (tmp?.SupportedTags is not null) mergedCaps.AddRange(tmp.SupportedTags);
+                }
+                catch
+                {
+                    // Ignore failures; rely on attr or builder-provided caps
+                }
+            }
+        }
         // Register with a DI activator; no proxy instance.
         var activator = new DiTypeActivator(typeof(TBlock));
         var placeholder = new object();
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, capabilities?.ToList(), typeof(TBlock).Name, activator));
+        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, mergedCaps, typeof(TBlock).Name, activator));
         return this;
     }
 
