@@ -1,5 +1,3 @@
-using System;
-
 namespace Coven.Core;
 
 // Options to tune Pull mode behavior.
