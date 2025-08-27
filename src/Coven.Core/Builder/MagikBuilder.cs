@@ -18,12 +18,7 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
         return this;
     }
 
-    
-
-    public ICoven Done() => Done(pull: false);
-
-    public ICoven Done(bool pull)
-        => Done(pull, pullOptions: null);
+    public ICoven Done() => Done(pull: false, pullOptions: null);
 
     public ICoven Done(bool pull, PullOptions? pullOptions = null)
     {

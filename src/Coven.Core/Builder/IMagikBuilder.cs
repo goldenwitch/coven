@@ -10,6 +10,5 @@ public interface IMagikBuilder<T, TOutput>
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null);
 
     public ICoven Done();
-    public ICoven Done(bool pull);
     public ICoven Done(bool pull, PullOptions? pullOptions = null);
 }

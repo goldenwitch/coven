@@ -14,11 +14,6 @@ internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
         return magikBuilder.Done();
     }
 
-    public ICoven Done(bool pull)
-    {
-        return magikBuilder.Done(pull);
-    }
-
     public ICoven Done(bool pull, PullOptions? pullOptions)
     {
         return magikBuilder.Done(pull, pullOptions);

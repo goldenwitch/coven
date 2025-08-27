@@ -57,7 +57,6 @@ public static class MagikTrickBuilderExtensions
         }
 
         public ICoven Done() => inner.Done();
-        public ICoven Done(bool pull) => inner.Done(pull);
         public ICoven Done(bool pull, PullOptions? pullOptions = null) => inner.Done(pull, pullOptions);
     }
 }
