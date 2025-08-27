@@ -83,7 +83,7 @@ public class Board : IBoard
         {
             var d = registry[idx];
             var block = d.BlockInstance;
-            var name = block.GetType().Name;
+            var name = d.DisplayBlockTypeName ?? block.GetType().Name;
 
             var caps = (block as ITagCapabilities)?.SupportedTags ?? Array.Empty<string>();
             IEnumerable<string> merged = caps;
@@ -95,6 +95,15 @@ public class Board : IBoard
             // Soft self-capability to enable forward-motion preferences via next:<BlockTypeName>
             set.Add($"next:{name}");
 
+            var activator = d.Activator;
+            if (activator is null)
+            {
+                var implementsMagik = block.GetType().GetInterfaces()
+                    .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMagikBlock<,>));
+                if (implementsMagik) activator = new ConstantInstanceActivator(block);
+                else throw new InvalidOperationException($"Coven configuration error: Missing activator for block entry at index {idx} ({name}). Either provide an IMagikBlock instance or an IBlockActivator.");
+            }
+
             list.Add(new RegisteredBlock
             {
                 Descriptor = d,
@@ -104,7 +113,8 @@ public class Board : IBoard
                 InputType = d.InputType,
                 OutputType = d.OutputType,
                 BlockTypeName = name,
-                Capabilities = set
+                Capabilities = set,
+                Activator = activator
             });
         }
         // Compute forward-next preference tags per block and compile pull wrappers using them
@@ -126,7 +136,17 @@ public class Board : IBoard
         for (int i = 0; i < list.Count; i++)
         {
             var cur = list[i];
-            cur.InvokePull = BlockInvokerFactory.CreatePull(cur.Descriptor, cur.ForwardNextTags);
+            // Compile a pull wrapper that resolves the instance via activator, invokes, then finalizes with generic TOut.
+            var finalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            var finalizeClosed = finalize.MakeGenericMethod(cur.OutputType);
+            cur.InvokePull = async (board, sink, branchId, input) =>
+            {
+                var cache = new Dictionary<int, object>();
+                var sp = Di.CovenExecutionScope.CurrentProvider;
+                var instance = cur.Activator.GetInstance(sp, cache, cur);
+                var result = await cur.Invoke(instance, input).ConfigureAwait(false);
+                finalizeClosed.Invoke(board, new object?[] { sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags });
+            };
         }
         return list;
     }

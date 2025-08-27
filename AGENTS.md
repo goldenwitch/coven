@@ -156,7 +156,7 @@ var coven = new MagikBuilder<TStart, TEnd>()
     .Done();
 ```
 
-`.Done()` returns an `ICoven` backed by a push-mode `Board` with precompiled pipelines.
+`.Done()` returns an `ICoven` backed by a push-mode `Board` with pipelines precompiled at builder finalization time.
 
 ## Working Style
 
@@ -194,7 +194,7 @@ Troubleshooting
 - Mode: push mode is implemented; the Board dispatches work immediately and awaits completion step-by-step.
 - Forward-only routing prevents most cycles and ensures progress by registry order.
 - After each step the Board adds `by:<BlockTypeName>` to the tag set for observability; it doesn’t affect selection.
-- Pipelines are compiled and cached per `(startType, targetType)` and can be precompiled across discovered types for faster first-run.
+- Pipelines are compiled and cached per `(startType, targetType)` at builder finalization time across discovered types to eliminate first-run latency.
 
 ## Where to Add Things
 
@@ -222,6 +222,6 @@ The Board has been refactored to keep the public API and behavior unchanged whil
 - `Routing/BlockInvokerFactory`: Builds `Func<object, Task<object>>` invokers for blocks using expression trees.
 - `Routing/DefaultSelectionStrategy`: Encapsulates selection order: `to:#<index>` → `to:<TypeName>` → capability overlap → registration order.
 - `Routing/PipelineCompiler`: Owns the routing loop, tag emission (`by:<BlockTypeName>`), and path checks; compiles pipelines per `(startType, targetType)`.
-- `Board`: Focuses on tag scoping, pipeline cache lookup, and optional precompilation. Public shape unchanged.
+- `Board`: Focuses on tag scoping, pipeline cache.
 
 This separation keeps `Board` minimal and creates clean seams for future extensions (e.g., alternate selection strategies) without affecting public API or README content.

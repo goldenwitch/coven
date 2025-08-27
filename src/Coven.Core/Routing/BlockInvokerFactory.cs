@@ -7,19 +7,18 @@ namespace Coven.Core.Routing;
 
 internal static class BlockInvokerFactory
 {
-    // Builds an invoker: (object in) => Task<object> by calling block.DoMagik and converting the Task<T> to Task<object>
-    public static Func<object, Task<object>> Create(MagikBlockDescriptor d)
+    // Builds an invoker: (object instance, object input) => Task<object>
+    public static Func<object, object, Task<object>> Create(MagikBlockDescriptor d)
     {
-        var block = d.BlockInstance;
-        var blockType = block.GetType();
-        var doMagik = blockType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (doMagik is null)
-            throw new InvalidOperationException($"Block {blockType.Name} does not implement DoMagik.");
+        var ifaceType = typeof(IMagikBlock<,>).MakeGenericType(d.InputType, d.OutputType);
+        var doMagik = ifaceType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("IMagikBlock.DoMagik not found.");
 
-        var objParam = Expression.Parameter(typeof(object), "obj");
-        var castArg = Expression.Convert(objParam, d.InputType);
-        var blockConst = Expression.Constant(block);
-        var call = Expression.Call(blockConst, doMagik, castArg); // Task<Out>
+        var instParam = Expression.Parameter(typeof(object), "instance");
+        var inParam = Expression.Parameter(typeof(object), "input");
+        var castInst = Expression.Convert(instParam, ifaceType);
+        var castArg = Expression.Convert(inParam, d.InputType);
+        var call = Expression.Call(castInst, doMagik, castArg); // Task<Out>
 
         var taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
         var tParam = Expression.Parameter(taskOutType, "t");
@@ -37,7 +36,7 @@ internal static class BlockInvokerFactory
 
         var contCall = Expression.Call(call, continueWith.MakeGenericMethod(typeof(object)), mapLambda); // Task<object>
 
-        var lambda = Expression.Lambda<Func<object, Task<object>>>(contCall, objParam);
+        var lambda = Expression.Lambda<Func<object, object, Task<object>>>(contCall, instParam, inParam);
         return lambda.Compile();
     }
 

@@ -5,5 +5,7 @@ internal record MagikBlockDescriptor(
     Type InputType,
     Type OutputType,
     object BlockInstance,
-    IReadOnlyCollection<string>? Capabilities = null
+    IReadOnlyCollection<string>? Capabilities = null,
+    string? DisplayBlockTypeName = null,
+    IBlockActivator? Activator = null
 );

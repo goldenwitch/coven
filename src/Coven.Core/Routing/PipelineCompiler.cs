@@ -1,4 +1,5 @@
 using Coven.Core.Tags;
+using Coven.Core.Di;
 
 namespace Coven.Core.Routing;
 
@@ -32,6 +33,8 @@ internal sealed class PipelineCompiler
             int lastIndex = -1;
             int maxSteps = candidates.Length;
 
+            var cache = new Dictionary<int, object>();
+            var sp = CovenExecutionScope.CurrentProvider;
             for (int step = 0; step < maxSteps; step++)
             {
                 var fence = Tag.GetFenceForCurrentEpoch();
@@ -50,7 +53,8 @@ internal sealed class PipelineCompiler
 
                 // Bump epoch so tags added by this block apply to the next selection.
                 Tag.IncrementEpoch();
-                current = await chosen.Invoke(current).ConfigureAwait(false);
+                var instance = chosen.Activator.GetInstance(sp, cache, chosen);
+                current = await chosen.Invoke(instance, current).ConfigureAwait(false);
                 Tag.Add($"by:{chosen.BlockTypeName}");
                 // Emit forward-preference tags for downstream candidates of this block to bias next selection
                 if (chosen.ForwardNextTags is { Count: > 0 })
