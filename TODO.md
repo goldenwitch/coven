@@ -24,6 +24,6 @@
 
 - Samples:
   - Provide minimal sample apps demonstrating multi-agent orchestration and use of Spellcasting constructs.
-  - 
+
 - Nice-to-have/future (called out in README text):
   - Distributed/multi-box execution (explicitly out-of-scope for now; track as future work).
