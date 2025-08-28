@@ -56,7 +56,7 @@ internal sealed class PipelineCompiler
                 var instance = chosen.Activator.GetInstance(sp, cache, chosen);
                 current = await chosen.Invoke(instance, current).ConfigureAwait(false);
                 Tag.Add($"by:{chosen.BlockTypeName}");
-                // Emit forward-preference tags for downstream candidates of this block to bias next selection
+                // Emit forward-hint tags for downstream candidates of this block to bias next selection
                 if (chosen.ForwardNextTags is { Count: > 0 })
                 {
                     foreach (var t in chosen.ForwardNextTags) Tag.Add(t);

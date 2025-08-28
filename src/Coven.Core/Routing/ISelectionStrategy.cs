@@ -1,7 +1,11 @@
 namespace Coven.Core.Routing;
 
-internal interface ISelectionStrategy
+// Public strategy interface to allow callers to override routing behavior
+// without exposing internal block types. Implementations should be deterministic
+// to ensure predictable pipelines.
+public interface ISelectionStrategy
 {
-    // Returns the chosen candidate from the forward list; throws if none available
-    RegisteredBlock SelectNext(IReadOnlyList<RegisteredBlock> forward);
+    // Given forward-compatible candidates, return the chosen one.
+    // Throw if none are available.
+    SelectionCandidate SelectNext(IReadOnlyList<SelectionCandidate> forward);
 }

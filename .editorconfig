@@ -1,0 +1,6 @@
+# Root editorconfig for Coven
+root = true
+
+[*.cs]
+dotnet_diagnostic.COV002.severity = warning
+

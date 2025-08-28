@@ -1,3 +1,5 @@
+using Coven.Core.Tricks;
+
 namespace Coven.Core.Routing;
 
 // Small helper to centralize candidate filtering + strategy selection for a single step.
@@ -25,6 +27,28 @@ internal sealed class SelectionEngine
         }
 
         if (forward.Count == 0) return null;
-        return strategy.SelectNext(forward);
+
+        // Project to public-facing candidates for the strategy
+        var projected = new List<SelectionCandidate>(forward.Count);
+        for (int i = 0; i < forward.Count; i++)
+        {
+            var rb = forward[i];
+            bool isTrick = rb.Descriptor.BlockInstance is IMagikTrick;
+            projected.Add(new SelectionCandidate(
+                rb.RegistryIndex,
+                rb.InputType,
+                rb.OutputType,
+                rb.BlockTypeName,
+                rb.Capabilities is IReadOnlyCollection<string> rc ? rc : new List<string>(rb.Capabilities),
+                isTrick
+            ));
+        }
+        var chosen = strategy.SelectNext(projected);
+        // Map back by registry index
+        for (int i = 0; i < forward.Count; i++)
+        {
+            if (forward[i].RegistryIndex == chosen.RegistryIndex) return forward[i];
+        }
+        throw new InvalidOperationException("SelectionStrategy returned an unknown candidate (registry index not in forward set).");
     }
 }

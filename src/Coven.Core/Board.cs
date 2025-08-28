@@ -19,23 +19,15 @@ public class Board : IBoard
     private readonly PipelineCompiler compiler;
     private readonly ConcurrentDictionary<string, HashSet<string>> pullBranchTags = new(StringComparer.Ordinal);
     private readonly PullOptions? pullOptions;
+    private readonly ISelectionStrategy? selectionStrategy;
 
-    internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry)
+    internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry, PullOptions? pullOptions = null, ISelectionStrategy? selectionStrategy = null)
     {
         currentMode = mode;
         Registry = registry;
         registeredBlocks = BuildRegisteredBlocks(registry);
-        compiler = new PipelineCompiler(registeredBlocks);
-        // Always precompile pipelines to eliminate first-run latency
-        PrecompileAllPipelines();
-    }
-
-    internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry, PullOptions? pullOptions)
-    {
-        currentMode = mode;
-        Registry = registry;
-        registeredBlocks = BuildRegisteredBlocks(registry);
-        compiler = new PipelineCompiler(registeredBlocks);
+        this.selectionStrategy = selectionStrategy;
+        compiler = new PipelineCompiler(registeredBlocks, selectionStrategy);
         this.pullOptions = pullOptions;
         // Always precompile pipelines regardless of mode for consistency
         PrecompileAllPipelines();
@@ -60,7 +52,7 @@ public class Board : IBoard
         var scopePrev = Tag.BeginScope(Tag.NewScope(merged));
         try
         {
-            var selector = new DefaultSelectionStrategy();
+            var selector = selectionStrategy ?? new DefaultSelectionStrategy();
             var engine = new SelectionEngine(registeredBlocks, selector);
             var fence = Tag.GetFenceForCurrentEpoch();
             var chosen = engine.SelectNext(input, fence, lastIndex: -1, forwardOnly: false)
@@ -92,7 +84,7 @@ public class Board : IBoard
                 merged = System.Linq.Enumerable.Concat(caps, d.Capabilities);
             }
             var set = new HashSet<string>(merged, StringComparer.OrdinalIgnoreCase);
-            // Soft self-capability to enable forward-motion preferences via next:<BlockTypeName>
+            // Soft self-capability to enable forward-motion hints via next:<BlockTypeName>
             set.Add($"next:{name}");
 
             var activator = d.Activator;
@@ -117,7 +109,7 @@ public class Board : IBoard
                 Activator = activator
             });
         }
-        // Compute forward-next preference tags per block and compile pull wrappers using them
+        // Compute forward-next hint tags per block and compile pull wrappers using them
         for (int i = 0; i < list.Count; i++)
         {
             var cur = list[i];
@@ -236,15 +228,10 @@ public class Board : IBoard
         }
         var bid = branchId ?? string.Empty;
         // Persist tags for the next selection using only tags emitted during this step
-        // plus persistent preferences and fresh forward-next hints.
-        // - Keep persistent preferences: prefer:*
+        // plus fresh forward-next hints.
         // - Keep only current-epoch tags, excluding observational or computed hints (by:*, next:*)
         // - Re-add the newly computed forwardNextTags (next:*) for default forward bias
         var persisted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var t in Tag.Current)
-        {
-            if (t.StartsWith("prefer:", StringComparison.OrdinalIgnoreCase)) persisted.Add(t);
-        }
         var epoch = Tag.CurrentEpochTags();
         foreach (var t in epoch)
         {

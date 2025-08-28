@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Coven.Core.Builder;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -15,14 +16,13 @@ public class BoardChainTests
     public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
     {
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
-        var generic = new MagikBlockDescriptor(typeof(object), typeof(int), new ObjectToIntBlock(999));
-        var specific = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
-        // Second step to complete chain to target double
-        var step2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleBlock());
+        var coven = new MagikBuilder<string, double>()
+            .MagikBlock<object, int>(new ObjectToIntBlock(999))
+            .MagikBlock<string, int>(new StringLengthBlock())
+            .MagikBlock<int, double>(new IntToDoubleBlock())
+            .Done();
 
-        var board = TestBoardFactory.NewPushBoard(generic, specific, step2);
-
-        var result = await board.PostWork<string, double>("abcd");
+        var result = await coven.Ritual<string, double>("abcd");
         // Expect generic first (999) -> 999d, proving order preference.
         Assert.Equal(999d, result);
     }
@@ -30,24 +30,27 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_DirectAssignable_ReturnsInput()
     {
-        var board = TestBoardFactory.NewPushBoard();
-        var result = await board.PostWork<string, object>("hello");
+        var coven = new MagikBuilder<string, object>()
+            .Done();
+        var result = await coven.Ritual<string, object>("hello");
         Assert.Equal("hello", result);
     }
 
     [Fact]
     public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
     {
-        var board = TestBoardFactory.NewPushBoard();
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, int>("hello"));
+        var coven = new MagikBuilder<string, int>()
+            .Done();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, int>("hello"));
     }
 
     [Fact]
     public async Task PostWork_NoChain_Throws()
     {
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
-        var board = TestBoardFactory.NewPushBoard(b1);
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, double>("abcd"));
+        var coven = new MagikBuilder<string, double>()
+            .MagikBlock<string, int>(new StringLengthBlock())
+            .Done();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, double>("abcd"));
     }
 
     
@@ -72,32 +75,35 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_Composes_AsyncBlocks_PropagatesAwait()
     {
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncStringLengthBlock());
-        var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncIntToDoubleAddOne());
-        var board = TestBoardFactory.NewPushBoard(b1, b2);
-        var result = await board.PostWork<string, double>("abcd");
+        var coven = new MagikBuilder<string, double>()
+            .MagikBlock<string, int>(new AsyncStringLengthBlock())
+            .MagikBlock<int, double>(new AsyncIntToDoubleAddOne())
+            .Done();
+        var result = await coven.Ritual<string, double>("abcd");
         Assert.Equal(5d, result);
     }
 
     [Fact]
     public async Task PostWork_FinalSubtype_IsMappedToRequestedBase()
     {
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new StringLengthBlock());
-        var b2 = new MagikBlockDescriptor(typeof(int), typeof(BaseAnimal), new IntToDogBlock());
-        var board = TestBoardFactory.NewPushBoard(b1, b2);
-        BaseAnimal result = await board.PostWork<string, BaseAnimal>("abc");
+        var coven = new MagikBuilder<string, BaseAnimal>()
+            .MagikBlock<string, int>(new StringLengthBlock())
+            .MagikBlock<int, BaseAnimal>(new IntToDogBlock())
+            .Done();
+        BaseAnimal result = await coven.Ritual<string, BaseAnimal>("abc");
         Assert.IsType<Dog>(result);
     }
 
     [Fact]
     public async Task PostWork_Awaits_AsyncDelays_BeforeCompletion()
     {
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncDelayThenLength(50));
-        var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncDelayThenToDouble(50));
-        var board = TestBoardFactory.NewPushBoard(b1, b2);
-
         var sw = Stopwatch.StartNew();
-        var result = await board.PostWork<string, double>("abcd");
+        var covenDelay = new MagikBuilder<string, double>()
+            .MagikBlock<string, int>(new AsyncDelayThenLength(50))
+            .MagikBlock<int, double>(new AsyncDelayThenToDouble(50))
+            .Done();
+
+        var result = await covenDelay.Ritual<string, double>("abcd");
         sw.Stop();
 
         Assert.Equal(4d, result); // length 4 then cast to double
@@ -107,20 +113,22 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_TieBreaksByRegistrationOrder_WhenSpecificityEqual()
     {
-        var first = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(1));
-        var second = new MagikBlockDescriptor(typeof(string), typeof(int), new ReturnConstInt(2));
-        var step2 = new MagikBlockDescriptor(typeof(int), typeof(double), new IntToDoubleBlock());
-        var board = TestBoardFactory.NewPushBoard(first, second, step2);
-        var result = await board.PostWork<string, double>("ignored");
+        var coven = new MagikBuilder<string, double>()
+            .MagikBlock<string, int>(new ReturnConstInt(1))
+            .MagikBlock<string, int>(new ReturnConstInt(2))
+            .MagikBlock<int, double>(new IntToDoubleBlock())
+            .Done();
+        var result = await coven.Ritual<string, double>("ignored");
         Assert.Equal(1d, result);
     }
 
     [Fact]
     public async Task PostWork_PropagatesBlockException()
     {
-        var failing = new MagikBlockDescriptor(typeof(string), typeof(int), new ThrowingBlock());
-        var board = TestBoardFactory.NewPushBoard(failing);
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await board.PostWork<string, int>("x"));
+        var covenFail = new MagikBuilder<string, int>()
+            .MagikBlock<string, int>(new ThrowingBlock())
+            .Done();
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await covenFail.Ritual<string, int>("x"));
     }
 
     // Async test blocks

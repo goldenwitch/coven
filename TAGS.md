@@ -50,7 +50,6 @@ This preserves compiled performance while enabling dynamic routing.
 
 ## Out of Scope (for this phase)
 - Tag override emitters per-block.
-- `MagikTrick(...)` multi-branch blocks.
 - Pull-mode tag-aware scheduling.
 
 These can be layered on later without changing the fundamentals above.
@@ -76,6 +75,20 @@ var coven = new MagikBuilder<string, double>()
 - Board emits `by:<BlockTypeName>` after each step.
 - Scoping: Tags are scoped to a single `PostWork` call; nested or concurrent executions maintain isolation via `AsyncLocal` scoping.
 
+## Custom Selection Strategy
+
+Advanced users can override the routing algorithm by supplying a custom `ISelectionStrategy` through the builder:
+
+```
+var coven = new MagikBuilder<string, string>()
+    .UseSelectionStrategy(new MySelectionStrategy())
+    .MagikBlock(new StepA())
+    .MagikBlock(new StepB())
+    .Done();
+```
+
+If not provided, the `DefaultSelectionStrategy` applies the rules described above.
+
 ## Canonical Magical Tags
 
 These tags have special, built-in behavior in the router. Use sparingly.
@@ -85,7 +98,7 @@ These tags have special, built-in behavior in the router. Use sparingly.
 
 Notes:
 
-- Non-magical tags (e.g., `want:*`, `role:*`, `route:*`) remain user-defined context/capability markers. The selector primarily considers tags emitted in the immediately preceding step, plus any `prefer:*` tags.
+- Non-magical tags (e.g., `want:*`, `role:*`, `route:*`) remain user-defined context/capability markers. The selector primarily considers tags emitted in the immediately preceding step.
 - We do not plan to add more magical tags. Over time we intend to reduce and remove magic tags where practical in favor of explicit APIs (like internal selection fences) and capability-based routing.
 
 ## Step-Scoped Tag Semantics (Implementation Detail)

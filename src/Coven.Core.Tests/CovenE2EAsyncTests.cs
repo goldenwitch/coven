@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Coven.Core.Builder;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -10,14 +11,10 @@ public class CovenE2EAsyncTests
     [Fact]
     public async Task Ritual_Awaits_MultipleAsyncBlocks_EndToEnd()
     {
-        // Compose: string -> int (delay) -> double (delay)
-        var b1 = new MagikBlockDescriptor(typeof(string), typeof(int), new AsyncDelayThenLength(40));
-        var b2 = new MagikBlockDescriptor(typeof(int), typeof(double), new AsyncDelayThenToDouble(40));
-
-        // Build a Board in push mode using test-only factory for clarity
-        var board = TestBoardFactory.NewPushBoard(b1, b2);
-
-        var coven = new Coven(board); // InternalsVisibleTo allows using internal constructor
+        var coven = new MagikBuilder<string, double>()
+            .MagikBlock<string, int>(new AsyncDelayThenLength(40))
+            .MagikBlock<int, double>(new AsyncDelayThenToDouble(40))
+            .Done();
 
         var sw = Stopwatch.StartNew();
         var result = await coven.Ritual<string, double>("abcd");
