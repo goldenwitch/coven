@@ -5,7 +5,6 @@
 
 - Type system breadth:
   - Support multi-input MagikBlocks with generic inputs `T, T2, ... T20` and dynamic generation of arity based on usage.
-  - Add a Roslyn analyzer to enforce MagikBlock inputs are immutable records.
 
 - Spellcasting library (Coven.Spellcasting):
   - Add `MagikUser` template with configuration, Codex CLI wrapper, tool calls, agent definitions, and validation integration.
