@@ -32,24 +32,22 @@ public class NestedMagikTrickTests
     {
         var coven = new MagikBuilder<int, double>()
             .MagikBlock<int, int>(new MarkOuter())
-            // Outer Trick constrains next hop to its candidates and prefers inner trick
+            // Outer Trick constrains next hop to its candidates. Strategy prefers Tricks after first hop.
             .MagikTrick<int, double, int>(
-                chooseTags: (tags, x) => new[] { "prefer:inner" },
                 configureCandidates: outer =>
                 {
                     // Inner Trick is registered as an outer candidate
                     outer.MagikTrick<int, double, int>(
-                        chooseTags: (tags, x) => new[] { "prefer:inc" },
                         configureCandidates: inner =>
                         {
-                            inner.MagikBlock<int, int>(new InnerInc(), new[] { "prefer:inc" });
+                            inner.MagikBlock<int, int>(new InnerInc());
                             inner.MagikBlock<int, double>(new ToDouble());
                         });
                 })
             .Done();
 
         var result = await coven.Ritual<int, double>(10);
-        // Outer Trick -> Inner Trick (due to prefer:inner) -> InnerInc (11) -> ToDouble => 11d
+        // Outer Trick -> Inner Trick -> InnerInc (11) -> ToDouble => 11d
         Assert.Equal(11d, result);
     }
 
@@ -57,17 +55,15 @@ public class NestedMagikTrickTests
     public async Task Nested_Tricks_Exclude_Outer_NonCandidates_OnFirstHop()
     {
         var coven = new MagikBuilder<int, double>()
-            // Outer Trick prefers inner and constrains first hop to its candidates only
+            // Outer Trick constrains first hop to its candidates only
             .MagikTrick<int, double, int>(
-                chooseTags: (tags, x) => new[] { "prefer:inner", "want:double" },
                 configureCandidates: outer =>
                 {
                     // Outer candidate: Inner Trick
                     outer.MagikTrick<int, double, int>(
-                        chooseTags: (tags, x) => new[] { "prefer:inc" },
                         configureCandidates: inner =>
                         {
-                            inner.MagikBlock<int, int>(new InnerInc(), new[] { "prefer:inc" });
+                            inner.MagikBlock<int, int>(new InnerInc());
                             inner.MagikBlock<int, double>(new ToDouble());
                         });
                 })
@@ -82,4 +78,3 @@ public class NestedMagikTrickTests
         Assert.Equal(2d, result);
     }
 }
-

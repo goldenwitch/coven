@@ -5,7 +5,7 @@ namespace Coven.Core.Routing;
 
 internal sealed class DefaultSelectionStrategy : ISelectionStrategy
 {
-    public RegisteredBlock SelectNext(IReadOnlyList<RegisteredBlock> forward)
+    public SelectionCandidate SelectNext(IReadOnlyList<SelectionCandidate> forward)
     {
         if (forward.Count == 0)
             throw new InvalidOperationException("No forward candidates to select from.");
@@ -34,23 +34,19 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
             for (int i = 0; i < forward.Count; i++)
             {
                 var c = forward[i];
-                if (c.Descriptor.BlockInstance is IMagikTrick) return c;
+                if (c.IsTrick) return c;
             }
         }
 
-        // 4) Capability overlap using current-epoch tags plus persistent preferences (prefer:*);
+        // 4) Capability overlap using current-epoch tags plus any persistent routing hints;
         // tie-break by registration order (smallest index wins)
         // Best fit rules: type already filtered; choose by total capability matches across all tags,
-        // including forward-preference tags (next:*), then break ties by registration order.
+        // including forward-hint tags (next:*), then break ties by registration order.
         int bestTotalScore = int.MinValue;
         int bestIdx = int.MaxValue;
-        RegisteredBlock? chosen = null;
-        // Union: epoch tags + persistent prefer:* from all-time tags
+        SelectionCandidate? chosen = null;
+        // Union: epoch tags
         var effectiveTags = new HashSet<string>(epochTags, StringComparer.OrdinalIgnoreCase);
-        foreach (var t in Tag.Current)
-        {
-            if (t.StartsWith("prefer:", StringComparison.OrdinalIgnoreCase)) effectiveTags.Add(t);
-        }
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
@@ -59,7 +55,7 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
             {
                 foreach (var t in effectiveTags)
                 {
-                    if (c.Capabilities.Contains(t)) total++;
+                    if (System.Linq.Enumerable.Contains(c.Capabilities, t)) total++;
                 }
             }
             if (total > bestTotalScore || (total == bestTotalScore && c.RegistryIndex < bestIdx))

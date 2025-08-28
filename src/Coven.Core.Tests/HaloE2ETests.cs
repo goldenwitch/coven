@@ -72,29 +72,16 @@ public class HaloE2ETests
     [Fact]
     public async Task Halo_EndToEnd_ExplicitOverride_ToLowercase()
     {
-        // Build board directly to pass tags to PostWork (ICoven doesn't carry tags)
-        var registry = new List<MagikBlockDescriptor>
-        {
-            new(typeof(string), typeof(Doc), new ParseAndTag()),                     // idx 0
-            new(typeof(Doc), typeof(Doc), new AddSalutation()),                      // idx 1
-            new(typeof(Doc), typeof(Doc), new UppercaseText(), new[] { "style:loud" }), // idx 2
-            new(typeof(Doc), typeof(Doc), new LowercaseText()),                      // idx 3
-            new(typeof(Doc), typeof(string), new ToOut()),                            // idx 4 (after lowercase to allow override path)
-        };
-
-        var boardType = typeof(Board);
-        var ctor = boardType.GetConstructor(
-            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-            binder: null,
-            new[] { boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!, typeof(IReadOnlyList<MagikBlockDescriptor>) },
-            modifiers: null
-        );
-        var boardModeType = boardType.GetNestedType("BoardMode", System.Reflection.BindingFlags.NonPublic)!;
-        var pushEnum = Enum.Parse(boardModeType, "Push");
-        var board = (Board)ctor!.Invoke(new object?[] { pushEnum, registry });
+        var coven = new MagikBuilder<string, string>()
+            .MagikBlock(new ParseAndTag())                      // idx 0
+            .MagikBlock<Doc, Doc>(new AddSalutation())          // idx 1
+            .MagikBlock<Doc, Doc>(new UppercaseText(), new[] { "style:loud" }) // idx 2
+            .MagikBlock<Doc, Doc>(new LowercaseText())          // idx 3
+            .MagikBlock<Doc, string>(new ToOut())               // idx 4 (after lowercase to allow override path)
+            .Done();
 
         var input = "Hello Coven!!!";
-        var output = await board.PostWork<string, string>(input, new List<string> { "to:AddSalutation", "to:LowercaseText" });
+        var output = await coven.Ritual<string, string>(input, new List<string> { "to:AddSalutation", "to:LowercaseText" });
 
         var lower = output.ToLowerInvariant();
         Assert.Equal(output, lower); // ensure fully lowercase

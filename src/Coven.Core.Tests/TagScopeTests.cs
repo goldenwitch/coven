@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using Coven.Core.Builder;
 using Coven.Core.Tags;
 
 namespace Coven.Core.Tests;
@@ -30,8 +31,10 @@ public class TagScopeTests
     [Fact]
     public async Task Tag_Methods_Available_WithinBoardScope()
     {
-        var board = TestBoardFactory.NewPushBoard(new MagikBlockDescriptor(typeof(string), typeof(string), new ProbeBlock()));
-        var result = await board.PostWork<string, string>("ignored");
+        var coven = new MagikBuilder<string, string>()
+            .MagikBlock(new ProbeBlock())
+            .Done();
+        var result = await coven.Ritual<string, string>("ignored");
         Assert.Equal("ok", result);
     }
 }

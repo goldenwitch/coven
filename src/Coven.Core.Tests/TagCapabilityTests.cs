@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Coven.Core.Builder;
 using Coven.Core.Tags;
 using Xunit;
 
@@ -41,15 +42,15 @@ public class TagCapabilityTests
     {
         // Emit tags: a, b; expect B due to overlap=2.
         // Candidates: A supports {a}; B supports {a,b}; C supports {b}
-        var board = TestBoardFactory.NewPushBoard(
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new TagEmit("a", "b")), // idx 0
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("A", "a")), // idx 1
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("B", "a", "b")), // idx 2
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("C", "b")), // idx 3
-            new MagikBlockDescriptor(typeof(Counter), typeof(double), new ToDouble()) // idx 4
-        );
+        var coven = new MagikBuilder<Counter, double>()
+            .MagikBlock(new TagEmit("a", "b")) // idx 0
+            .MagikBlock<Counter, Counter>(new CapBlock("A", "a")) // idx 1
+            .MagikBlock<Counter, Counter>(new CapBlock("B", "a", "b")) // idx 2
+            .MagikBlock<Counter, Counter>(new CapBlock("C", "b")) // idx 3
+            .MagikBlock<Counter, double>(new ToDouble()) // idx 4
+            .Done();
 
-        var result = await board.PostWork<Counter, double>(new Counter { Value = 7 });
+        var result = await coven.Ritual<Counter, double>(new Counter { Value = 7 });
         // Router should choose B (max overlap=2) as the next step after TagEmit
         Assert.Equal(7d, result);
     }
@@ -58,15 +59,15 @@ public class TagCapabilityTests
     public async Task Explicit_To_Overrides_Capability_Scoring()
     {
         // Even though B would be chosen by capability, we direct to C by index
-        var board = TestBoardFactory.NewPushBoard(
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new TagEmit("x", "y")), // idx 0
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("A", "x")), // idx 1
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("B", "x", "y")), // idx 2
-            new MagikBlockDescriptor(typeof(Counter), typeof(Counter), new CapBlock("C", "y")), // idx 3
-            new MagikBlockDescriptor(typeof(Counter), typeof(double), new ToDouble()) // idx 4
-        );
+        var coven = new MagikBuilder<Counter, double>()
+            .MagikBlock(new TagEmit("x", "y")) // idx 0
+            .MagikBlock<Counter, Counter>(new CapBlock("A", "x")) // idx 1
+            .MagikBlock<Counter, Counter>(new CapBlock("B", "x", "y")) // idx 2
+            .MagikBlock<Counter, Counter>(new CapBlock("C", "y")) // idx 3
+            .MagikBlock<Counter, double>(new ToDouble()) // idx 4
+            .Done();
 
-        var result = await board.PostWork<Counter, double>(new Counter { Value = 5 }, new List<string> { "to:#3" });
+        var result = await coven.Ritual<Counter, double>(new Counter { Value = 5 }, new List<string> { "to:#3" });
         Assert.Equal(5d, result);
     }
 }

@@ -1,3 +1,4 @@
+using Coven.Core.Routing;
 using Coven.Core.Tricks;
 
 namespace Coven.Core.Builder;
@@ -5,15 +6,14 @@ namespace Coven.Core.Builder;
 public static class MagikTrickBuilderExtensions
 {
     // Registers a Trick (T->T identity fork) followed by its downstream candidates.
-    // The trick emits arbitrary tags chosen by the lambda, and routing is restricted
-    // to the trick's candidates using a unique capability token.
+    // The trick fences the next selection to only those candidates. The active
+    // ISelectionStrategy determines which candidate runs.
     public static IMagikBuilder<TStart, TEnd> MagikTrick<TStart, TEnd, T>(
         this IMagikBuilder<TStart, TEnd> builder,
-        Func<ISet<string>, T, IEnumerable<string>?> chooseTags,
         Action<IMagikBuilder<TStart, TEnd>> configureCandidates,
         IEnumerable<string>? trickCapabilities = null)
     {
-        var trick = new MagikTrick<T>(chooseTags, trickCapabilities);
+        var trick = new MagikTrick<T>(trickCapabilities);
         if (trickCapabilities is null) builder.MagikBlock<T, T>(trick);
         else builder.MagikBlock<T, T>(trick, trickCapabilities);
 
@@ -35,6 +35,12 @@ public static class MagikTrickBuilderExtensions
         {
             this.inner = inner;
             this.collected = collected;
+        }
+
+        public IMagikBuilder<TStart, TEnd> UseSelectionStrategy(ISelectionStrategy strategy)
+        {
+            inner.UseSelectionStrategy(strategy);
+            return this;
         }
 
         public IMagikBuilder<TStart, TEnd> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block, IEnumerable<string>? capabilities = null)

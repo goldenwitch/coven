@@ -1,3 +1,5 @@
+using Coven.Core.Routing;
+
 namespace Coven.Core.Builder;
 
 internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
@@ -7,6 +9,12 @@ internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
     internal MagikBlockRegistration(IMagikBuilder<T, TOutput> magikBuilder)
     {
         this.magikBuilder = magikBuilder;
+    }
+
+    public IMagikBuilder<T, TOutput> UseSelectionStrategy(ISelectionStrategy strategy)
+    {
+        magikBuilder.UseSelectionStrategy(strategy);
+        return this;
     }
 
     public ICoven Done()

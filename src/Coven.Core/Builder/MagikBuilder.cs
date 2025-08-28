@@ -1,8 +1,17 @@
+using Coven.Core.Routing;
+
 namespace Coven.Core.Builder;
 
 public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 {
     private readonly List<MagikBlockDescriptor> registry = new();
+    private ISelectionStrategy? selectionStrategy;
+
+    public IMagikBuilder<T, TOutput> UseSelectionStrategy(ISelectionStrategy strategy)
+    {
+        selectionStrategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        return this;
+    }
 
     // Heterogeneous registration (with optional capabilities)
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block, IEnumerable<string>? capabilities = null)
@@ -34,7 +43,7 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
     {
         var mode = pull ? Board.BoardMode.Pull : Board.BoardMode.Push;
         // Always precompile pipelines at Done() time for consistent performance
-        var board = new Board(mode, registry.AsReadOnly(), pullOptions: pullOptions);
+        var board = new Board(mode, registry.AsReadOnly(), pullOptions: pullOptions, selectionStrategy: selectionStrategy);
         return new Coven(board);
     }
 }
