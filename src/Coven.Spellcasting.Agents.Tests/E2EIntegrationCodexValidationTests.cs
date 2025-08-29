@@ -5,14 +5,23 @@ using System.Threading.Tasks;
 using Coven.Core.Builder;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
+using Coven.Spellcasting.Agents.Codex;
 using Coven.Spellcasting.Agents.Validation;
 using Xunit;
 
 namespace Coven.Spellcasting.Agents.Tests;
 
-public class E2EValidationPipelineTests : IDisposable
+public class E2EIntegrationCodexValidationTests : IDisposable
 {
     private readonly System.Collections.Generic.List<string> _dirs = new();
+
+    private string NewTempDir()
+    {
+        var d = Path.Combine(Path.GetTempPath(), "coven-tests", Guid.NewGuid().ToString("n"));
+        Directory.CreateDirectory(d);
+        _dirs.Add(d);
+        return d;
+    }
     public sealed record ChangeRequest(string RepoRoot, string Goal);
     public sealed record FixSpell(string GuideMarkdown, string SpellVersion, string TestSuite, string Goal);
 
@@ -29,28 +38,13 @@ public class E2EValidationPipelineTests : IDisposable
         }
     }
 
-    private sealed class TestValidator : IdempotentAgentValidation
-    {
-        private readonly string _spec;
-        private readonly string _dir;
-        public int ProvisionCalls { get; private set; }
-
-        public TestValidator(string agentId, string spec, string dir) : base(agentId)
-        { _spec = spec; _dir = dir; }
-
-        protected override string ComputeSpec(SpellContext? context) => _spec;
-        protected override Task ProvisionAsync(SpellContext? context, CancellationToken ct)
-        { ProvisionCalls++; return Task.CompletedTask; }
-        protected override string GetStampDirectory() => _dir;
-    }
-
     private sealed class FakeAgent : ICovenAgent<FixSpell, string>
     {
         public string Id => "fake";
         public Task<string> CastSpellAsync(FixSpell input, SpellContext? context = null, CancellationToken ct = default)
         {
-            var cwd = context?.ContextUri?.IsAbsoluteUri == true ? context.ContextUri.LocalPath : string.Empty;
-            return Task.FromResult($"{input.Goal}|{input.SpellVersion}|{input.TestSuite}|{cwd}");
+            var mode = context?.Permissions?.Allows<WriteFile>() == true ? "edit" : "suggest";
+            return Task.FromResult($"{input.Goal}|{input.SpellVersion}|{input.TestSuite}|{mode}");
         }
     }
 
@@ -77,37 +71,37 @@ public class E2EValidationPipelineTests : IDisposable
         }
     }
 
-    private string NewTempDir()
-    {
-        var d = Path.Combine(Path.GetTempPath(), "coven-tests", Guid.NewGuid().ToString("n"));
-        Directory.CreateDirectory(d);
-        _dirs.Add(d);
-        return d;
-    }
-
     [Fact]
-    public async Task EndToEnd_With_Validation_Block()
+    public async Task Pipeline_Validates_Codex_Before_Running()
     {
         var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("n"));
         Directory.CreateDirectory(temp);
 
-        var dir = NewTempDir();
-        var validator = new TestValidator("test-agent", "v1", dir);
+        var called = 0;
+        var validation = new CodexCliValidation(new CodexCliValidation.Options
+        {
+            ProbeAsync = (ctx, ct) => Task.FromResult(false),
+            InstallerAsync = (ctx, ct) => { called++; return Task.CompletedTask; },
+            StampDirectory = NewTempDir()
+        });
+
         var agent = new FakeAgent();
 
         var coven = new MagikBuilder<ChangeRequest, string>()
             .MagikBlock(new MakeContextBlock())
-            .MagikBlock(new ValidateAgentBlock(validator))
+            .MagikBlock(new ValidateAgentBlock(validation))
             .MagikBlock<SpellContext, string>(new SpellUserFromContext(agent, "goal"))
             .Done();
 
-        var result = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(temp, "goal"));
+        var result1 = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(temp, "goal"));
+        var result2 = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(temp, "goal"));
 
-        Assert.Contains("goal", result);
-        Assert.Contains("0.1", result); // default spell version
-        Assert.Contains("smoke", result); // default test suite
-        Assert.Contains(Path.GetFullPath(temp).TrimEnd(Path.DirectorySeparatorChar), result);
-        Assert.Equal(1, validator.ProvisionCalls);
+        Assert.Contains("goal", result1);
+        Assert.Contains("0.1", result1);
+        Assert.Contains("smoke", result1);
+        Assert.Contains("edit", result1);
+        Assert.Equal(1, called); // installer ran once, stamp made it idempotent
+        Assert.Equal(result1, result2);
     }
 
     public void Dispose()
@@ -116,5 +110,13 @@ public class E2EValidationPipelineTests : IDisposable
         {
             try { if (Directory.Exists(d)) Directory.Delete(d, true); } catch { }
         }
+        // Clean up Codex default stamp directory (best-effort)
+        try
+        {
+            var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var dir = Path.Combine(root, "Coven", "agents", "codex");
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+        catch { /* ignore */ }
     }
 }

@@ -52,14 +52,31 @@ public sealed class CodexCliAgent<TIn, TOut> : Coven.Spellcasting.Agents.ICovenA
             psi.WorkingDirectory = Path.GetFullPath(uri.LocalPath);
         }
 
-        using var proc = new Process { StartInfo = psi };
-        proc.Start();
-        var stdout = await proc.StandardOutput.ReadToEndAsync(ct).ConfigureAwait(false);
-        var stderr = await proc.StandardError.ReadToEndAsync(ct).ConfigureAwait(false);
-        await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+        // Map type-safe permissions to a simple autonomy environment variable for the subprocess.
+        var perms = context?.Permissions;
+        var autonomy = perms?.Allows<Coven.Spellcasting.Agents.RunCommand>() == true ? "full-auto"
+                    : perms?.Allows<Coven.Spellcasting.Agents.WriteFile>()  == true ? "auto-edit"
+                    : "suggest";
+        // Environment requires UseShellExecute=false
+        psi.Environment["CODEX_AUTONOMY"] = autonomy;
 
-        var text = stdout.Length > 0 ? stdout : stderr;
-        return _parse(text);
+        using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
+        try
+        {
+            proc.Start();
+            var stdOutTask = proc.StandardOutput.ReadToEndAsync(ct);
+            var stdErrTask = proc.StandardError.ReadToEndAsync(ct);
+            await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+
+            var stdout = await stdOutTask.ConfigureAwait(false);
+            var stderr = await stdErrTask.ConfigureAwait(false);
+            var text = stdout.Length > 0 ? stdout : stderr;
+            return _parse(text);
+        }
+        catch (OperationCanceledException)
+        {
+            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
+            throw;
+        }
     }
 }
-

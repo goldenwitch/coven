@@ -10,8 +10,9 @@ using Xunit;
 
 namespace Coven.Spellcasting.Agents.Tests;
 
-public class ValidationIntegrationTests
+public class ValidationIntegrationTests : IDisposable
 {
+    private readonly System.Collections.Generic.List<string> _dirs = new();
     private sealed class TestValidator : IdempotentAgentValidation
     {
         private readonly string _spec;
@@ -62,10 +63,11 @@ public class ValidationIntegrationTests
         }
     }
 
-    private static string NewTempDir()
+    private string NewTempDir()
     {
         var d = Path.Combine(Path.GetTempPath(), "coven-tests", Guid.NewGuid().ToString("n"));
         Directory.CreateDirectory(d);
+        _dirs.Add(d);
         return d;
     }
 
@@ -95,5 +97,12 @@ public class ValidationIntegrationTests
         Assert.Equal(1, validator.ProvisionCalls); // idempotent: second run is noop
         Assert.Equal(out1, out2); // deterministic in this fake setup
     }
-}
 
+    public void Dispose()
+    {
+        foreach (var d in _dirs)
+        {
+            try { if (Directory.Exists(d)) Directory.Delete(d, true); } catch { }
+        }
+    }
+}
