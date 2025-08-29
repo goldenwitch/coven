@@ -62,7 +62,8 @@ public class App
 # Appendix 
 
 
-**Detailed Architecture.** [Click here](/Arch/README.md)
+- **Detailed Architecture.** [Click here](/Arch/README.md)
+- **Coven.Spellcasting** [Click here](/arch/Spellcasting/Spellcasting.md)
 
 **License.** Dual‑license: MIT for individuals, nonprofits, and orgs under USD \$100M revenue; commercial license required at ≥ \$100M. Contact: Autumn Wyborny.
 
