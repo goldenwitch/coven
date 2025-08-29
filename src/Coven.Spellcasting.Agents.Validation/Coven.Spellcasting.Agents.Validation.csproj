@@ -7,8 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../Coven.Core/Coven.Core.csproj" />
     <ProjectReference Include="../Coven.Spellcasting.Agents/Coven.Spellcasting.Agents.csproj" />
   </ItemGroup>
 
 </Project>
-
