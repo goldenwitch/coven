@@ -28,29 +28,15 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-// 1) Core engine contract
-public interface IMagikBlock<TIn, TOut>
-{
-    Task<TOut> RunAsync(TIn input, CancellationToken ct);
-}
 
-// 2) Canonical, generic book shapes (no JSON requirement)
-public sealed record Guidebook<TGuide>(
-    TGuide Payload,
-    IReadOnlyDictionary<string, object?>? Meta = null
-);
+// 1) Canonical, generic book shapes (no JSON requirement)
+public sealed record Guidebook<TGuide>(TGuide Payload);
 
-public sealed record Spellbook<TSpell>(
-    TSpell Payload,
-    IReadOnlyDictionary<string, object?>? Meta = null
-);
+public sealed record Spellbook<TSpell>(TSpell Payload);
 
-public sealed record Testbook<TTest>(
-    TTest Payload,
-    IReadOnlyDictionary<string, object?>? Meta = null
-);
+public sealed record Testbook<TTest>(TTest Payload);
 
-// 3) Factories – advanced usage (typical users rely on defaults)
+// 2) Factories – advanced usage (typical users rely on defaults)
 public interface IGuidebookFactory<TIn, TGuide>
 {
     Task<Guidebook<TGuide>> CreateAsync(TIn input, CancellationToken ct);
@@ -66,7 +52,7 @@ public interface ITestbookFactory<TIn, TTest>
     Task<Testbook<TTest>> CreateAsync(TIn input, CancellationToken ct);
 }
 
-// 4) Base block – developers only implement InvokeAsync
+// 3) Base block – developers only implement InvokeAsync
 public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<TIn, TOut>
 {
     private readonly IGuidebookFactory<TIn, TGuide> _guideFactory;
