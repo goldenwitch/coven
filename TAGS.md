@@ -19,26 +19,27 @@ This document explains the initial tagging model and how it integrates with the 
 
 ## Default Emission
 - After each block runs, the Board appends a default observability tag: `by:<BlockTypeName>`.
-- Default emission is for tracing only; it does not change selection logic.
+- The Board also injects forward-bias hint tags for all forward‑compatible downstream candidates: `next:<BlockTypeName>`.
+- `by:*` is for tracing only and does not affect selection; `next:*` participates in selection (capability overlap) to bias progress.
 
 ## Routing Semantics
-After each `MagikBlock` finishes, the Board selects the next block to run:
-1) Explicit direction (optional feature): if the TagSet contains a matching `to:<BlockTypeName>` or `to:#<registryIndex>`, and the candidate accepts the current value type and appears after the last executed block, choose it.
-2) Capability market: otherwise, choose the candidate with the highest overlap count between the current TagSet and the candidate’s advertised `SupportedTags`.
+After each `MagikBlock` finishes, the Board selects the next block to run based on the current epoch’s tags (tags added during the immediately preceding step, including forward hints):
+1) Explicit direction: if the current‑epoch tag set contains a matching `to:<BlockTypeName>` or `to:#<registryIndex>`, and the candidate accepts the current value type and appears after the last executed block, choose it.
+2) Capability overlap: otherwise, choose the candidate with the highest overlap count between the current‑epoch tags and the candidate’s advertised `SupportedTags` (builder‑assigned and block‑advertised). Forward hints `next:*` contribute to this overlap to bias default progress.
 3) Default order: if capability scores tie (or no capabilities are advertised), pick the next registered block that accepts the current value type.
 
 Notes:
 - Forward-only: For push-mode selection is restricted to blocks with a greater registry index than the last executed block. This ensures progress and prevents cycles.
 - If no suitable next block exists and the current value is not assignable to the requested `TOutput`, the Board throws an error.
-- No tags added means that the dominant scheme will be auto-tagging indicating the next block.
+- When blocks do not emit tags, forward‑hint auto‑tagging (`next:*`) biases the router toward the next compatible step.
 
 ## Compiled Router Pipelines
 For each `(startType, targetType)`, the Board compiles a router delegate `Func<T, Task<TOutput>>` over an array of prebuilt candidates (registry order), where each candidate has a compiled invoker `Func<object, Task<object>>` and a pre-materialized, case-insensitive set of capability tags. The router:
 - Initializes the TagSet for the work item.
 - Starts from `lastIndex = -1` and current = input.
 - Repeats:
-  - Pick the next block using explicit `to:*` (if present), or capability scoring (max overlap), with a tie broken by registration order; then await it.
-  - Append `by:<BlockTypeName>`.
+  - Pick the next block using explicit `to:*` (if present), or capability scoring (max overlap using current‑epoch tags), with a tie broken by registration order; then await it.
+  - Append `by:<BlockTypeName>` and inject forward‑hint `next:*` tags for downstream compatibility.
 - When no next step exists, if the final value is assignable to `TOutput` return it; otherwise throw.
 
 This preserves compiled performance while enabling dynamic routing.
@@ -48,11 +49,14 @@ This preserves compiled performance while enabling dynamic routing.
 - Selection is deterministic given the TagSet and registry order.
 - If no next block is available before reaching the target type, the Board throws a clear error. This should be impossible given our type-safe builder, but I know that some of y'all can do the impossible.
 
-## Out of Scope (for this phase)
-- Tag override emitters per-block.
-- Pull-mode tag-aware scheduling.
+## Pull Mode Status
+Pull mode is implemented. The orchestrator advances one step at a time by calling `GetWork<TIn>(request)`; each step:
+- Emits `by:<BlockTypeName>` and forward‑hint `next:*` tags.
+- Persists the step’s tags to the branch, excluding observability (`by:*`) and computed hints (`next:*`), and re‑adds the computed `next:*` hints to bias the subsequent selection.
+- On the next step, the persisted branch tags become the current epoch’s tags, so explicit `to:*` and capability matching apply as in push mode.
 
-These can be layered on later without changing the fundamentals above.
+## Out of Scope (for this phase)
+- Timeout/retry policies for step execution.
 
 ## Builder Capability Assignment
 - At registration, you can assign capability tags to a block via builder overloads. These are merged with any capabilities a block advertises via `ITagCapabilities`.
@@ -105,5 +109,5 @@ Notes:
 
 Internally, the Board journals tags by step (epoch) to enable “next-hop” decisions without destructive mutation:
 
-- Tags added by a block are stamped with the next epoch so they apply to the following selection.
-- This preserves deterministic routing while keeping observability tags (like `by:*`) available in the full tag set.
+- Tags added by a block apply to the following selection (current‑epoch for the next hop). In push mode, the epoch is advanced before executing the block; in pull mode, persisted branch tags are reintroduced as the current epoch for the next call.
+- `by:*` is recorded for observability but filtered from persisted tags in pull mode. Forward hints `next:*` are computed/added after each step, and re‑added during pull persistence to preserve forward bias.
