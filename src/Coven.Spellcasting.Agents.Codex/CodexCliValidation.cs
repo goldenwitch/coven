@@ -34,8 +34,39 @@ public sealed class CodexCliValidation : IdempotentAgentValidation
     protected override string ComputeSpec(SpellContext? context)
         => $"{AgentId}|exe={_opts.ExecutablePath}|min={_opts.MinVersion ?? ""}";
 
-    protected override string GetStampDirectory()
-        => _opts.StampDirectory ?? base.GetStampDirectory();
+    protected override string GetStampDirectory(SpellContext? context)
+    {
+        if (!string.IsNullOrEmpty(_opts.StampDirectory))
+            return _opts.StampDirectory!;
+
+        // Prefer sidecar .codex dir under working directory if context provides one.
+        if (context?.ContextUri is { IsAbsoluteUri: true, Scheme: "file" } uri)
+        {
+            var baseDir = Path.GetFullPath(uri.LocalPath);
+            var codex = Path.Combine(baseDir, ".codex");
+            return IsTestEnvironment() ? Path.Combine(codex, "tests") : codex;
+        }
+
+        // Fallback to ~/.codex (or Windows profile equivalent)
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var codexHome = Path.Combine(home, ".codex");
+        return IsTestEnvironment() ? Path.Combine(codexHome, "tests") : codexHome;
+    }
+
+    private static bool IsTestEnvironment()
+    {
+        var v = Environment.GetEnvironmentVariable("COVEN_ENV");
+        if (!string.IsNullOrEmpty(v) && string.Equals(v, "test", StringComparison.OrdinalIgnoreCase))
+            return true;
+        try
+        {
+            var name = Process.GetCurrentProcess().ProcessName.ToLowerInvariant();
+            if (name.Contains("testhost") || name.Contains("vstest") || name.Contains("xunit"))
+                return true;
+        }
+        catch { }
+        return false;
+    }
 
     protected override async Task<bool> IsAlreadyReadyAsync(SpellContext? context, CancellationToken ct)
     {

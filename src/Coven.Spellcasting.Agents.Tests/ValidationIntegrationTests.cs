@@ -27,7 +27,7 @@ public class ValidationIntegrationTests : IDisposable
         protected override Task ProvisionAsync(SpellContext? context, CancellationToken ct)
         { ProvisionCalls++; return Task.CompletedTask; }
 
-        protected override string GetStampDirectory() => _dir;
+        protected override string GetStampDirectory(SpellContext? _) => _dir;
     }
 
     private sealed class FakeAgent : ICovenAgent<FixSpell, string>

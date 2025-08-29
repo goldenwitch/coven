@@ -35,7 +35,7 @@ public abstract class IdempotentAgentValidation : IAgentValidation
         var specHash = ComputeSpecHash(context);
 
         // If stamp matches, no work needed.
-        if (await StampMatchesAsync(specHash, ct).ConfigureAwait(false))
+        if (await StampMatchesAsync(context, specHash, ct).ConfigureAwait(false))
         {
             return AgentValidationResult.Noop("Already ready (stamp)");
         }
@@ -51,7 +51,7 @@ public abstract class IdempotentAgentValidation : IAgentValidation
         await ProvisionAsync(context, ct).ConfigureAwait(false);
 
         // Persist the new stamp.
-        await WriteStampAsync(specHash, ct).ConfigureAwait(false);
+        await WriteStampAsync(context, specHash, ct).ConfigureAwait(false);
         return AgentValidationResult.Performed();
     }
 
@@ -77,7 +77,7 @@ public abstract class IdempotentAgentValidation : IAgentValidation
     /// <summary>
     /// Location for stamp files. Default: LocalApplicationData/Coven/agents/{AgentId}
     /// </summary>
-    protected virtual string GetStampDirectory()
+    protected virtual string GetStampDirectory(Spellcasting.Agents.SpellContext? context)
     {
         var root = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         return Path.Combine(root, "Coven", "agents", AgentId);
@@ -98,13 +98,14 @@ public abstract class IdempotentAgentValidation : IAgentValidation
         return Convert.ToHexString(hash);
     }
 
-    private string GetStampPath() => Path.Combine(GetStampDirectory(), "stamp.json");
+    private string GetStampPath(Spellcasting.Agents.SpellContext? context)
+        => Path.Combine(GetStampDirectory(context), "stamp.json");
 
-    private async Task<bool> StampMatchesAsync(string specHash, CancellationToken ct)
+    private async Task<bool> StampMatchesAsync(Spellcasting.Agents.SpellContext? context, string specHash, CancellationToken ct)
     {
         try
         {
-            var path = GetStampPath();
+            var path = GetStampPath(context);
             if (!File.Exists(path)) return false;
             await using var fs = File.OpenRead(path);
             var model = await JsonSerializer.DeserializeAsync<StampModel>(fs, cancellationToken: ct).ConfigureAwait(false);
@@ -121,7 +122,7 @@ public abstract class IdempotentAgentValidation : IAgentValidation
         try
         {
             var specHash = ComputeSpecHash(context);
-            await WriteStampAsync(specHash, ct).ConfigureAwait(false);
+            await WriteStampAsync(context, specHash, ct).ConfigureAwait(false);
         }
         catch
         {
@@ -129,14 +130,13 @@ public abstract class IdempotentAgentValidation : IAgentValidation
         }
     }
 
-    private async Task WriteStampAsync(string specHash, CancellationToken ct)
+    private async Task WriteStampAsync(Spellcasting.Agents.SpellContext? context, string specHash, CancellationToken ct)
     {
-        var dir = GetStampDirectory();
+        var dir = GetStampDirectory(context);
         Directory.CreateDirectory(dir);
-        var path = GetStampPath();
+        var path = GetStampPath(context);
         var model = new StampModel { SpecHash = specHash, WrittenAt = DateTimeOffset.UtcNow };
         var json = JsonSerializer.Serialize(model, new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(path, json, ct).ConfigureAwait(false);
     }
 }
-

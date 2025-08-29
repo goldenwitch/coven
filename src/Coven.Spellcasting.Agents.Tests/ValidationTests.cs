@@ -25,7 +25,7 @@ public class ValidationTests : IDisposable
         protected override Task ProvisionAsync(SpellContext? context, CancellationToken ct)
         { ProvisionCalls++; return Task.CompletedTask; }
 
-        protected override string GetStampDirectory() => _dir;
+        protected override string GetStampDirectory(SpellContext? _) => _dir;
     }
 
     private string NewTempDir()
