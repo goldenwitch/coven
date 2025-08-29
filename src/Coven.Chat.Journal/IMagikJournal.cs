@@ -136,12 +136,13 @@ public sealed class OpAwaitable
 }
 
 // In-memory implementations for dev/tests
-public sealed class InMemoryAgentJournalStore : IAgentJournalStore
+public sealed class InMemoryAgentJournalStore : IAgentJournalStore, IJournalPruner
 {
     private sealed class Corr
     {
         public long Seq;
-        public readonly ConcurrentQueue<JournalRecord> Records = new();
+        public readonly List<JournalRecord> Records = new();
+        public readonly object Gate = new();
         public readonly AsyncAutoResetEvent Signal = new(false);
     }
 
@@ -151,7 +152,10 @@ public sealed class InMemoryAgentJournalStore : IAgentJournalStore
     {
         var corr = _byCorr.GetOrAdd(correlationId, _ => new Corr());
         var next = Interlocked.Increment(ref corr.Seq);
-        corr.Records.Enqueue(new JournalRecord(correlationId, next, entry));
+        lock (corr.Gate)
+        {
+            corr.Records.Add(new JournalRecord(correlationId, next, entry));
+        }
         corr.Signal.Set();
         return ValueTask.FromResult(next);
     }
@@ -159,26 +163,43 @@ public sealed class InMemoryAgentJournalStore : IAgentJournalStore
     public async IAsyncEnumerable<JournalRecord> ReadAsync(Guid correlationId, long fromExclusive = 0, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
         var corr = _byCorr.GetOrAdd(correlationId, _ => new Corr());
-        long last = fromExclusive;
-        while (!ct.IsCancellationRequested)
+        List<JournalRecord> snapshot;
+        lock (corr.Gate)
         {
-            while (corr.Records.TryPeek(out var head) && head.Seq <= last)
-            {
-                // consume already checkpointed items
-                corr.Records.TryDequeue(out _);
-            }
-            if (corr.Records.TryPeek(out var peek) && peek.Seq > last)
-            {
-                corr.Records.TryDequeue(out var rec);
-                if (rec is not null)
-                {
-                    last = rec.Seq;
-                    yield return rec;
-                }
-                continue;
-            }
-            await corr.Signal.WaitAsync(ct).ConfigureAwait(false);
+            snapshot = corr.Records
+                .Where(r => r.Seq > fromExclusive)
+                .OrderBy(r => r.Seq)
+                .ToList();
         }
+        foreach (var rec in snapshot)
+        {
+            ct.ThrowIfCancellationRequested();
+            yield return rec;
+        }
+        await Task.CompletedTask;
+    }
+
+    // Testing/dev convenience: take a snapshot of current records for a correlation.
+    public IReadOnlyList<JournalRecord> Snapshot(Guid correlationId)
+    {
+        if (!_byCorr.TryGetValue(correlationId, out var corr)) return Array.Empty<JournalRecord>();
+        lock (corr.Gate)
+        {
+            return corr.Records.OrderBy(r => r.Seq).ToList();
+        }
+    }
+
+    public ValueTask<long> PruneAsync(Guid correlationId, long upToInclusive, IReadOnlySet<long> keepSeqs, DateTimeOffset olderThanUtc, CancellationToken ct = default)
+    {
+        if (!_byCorr.TryGetValue(correlationId, out var corr)) return ValueTask.FromResult(0L);
+        long before;
+        lock (corr.Gate)
+        {
+            before = corr.Records.Count;
+            corr.Records.RemoveAll(r => r.Seq <= upToInclusive && !keepSeqs.Contains(r.Seq) && r.Entry.AtUtc <= olderThanUtc);
+        }
+        var dropped = before - corr.Records.Count;
+        return ValueTask.FromResult((long)dropped);
     }
 }
 
