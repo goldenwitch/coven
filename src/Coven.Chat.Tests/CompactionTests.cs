@@ -77,7 +77,7 @@ public class CompactionTests
         // First compaction: no answer yet, keep ask
         await comp.CompactAsync(corr, new CompactionPolicy(TimeSpan.FromMinutes(1)), default);
         var list1 = store.Snapshot(corr).ToList();
-        Assert.Single(list1.Where(r => r.Entry is AskEntry));
+        Assert.Single(list1, r => r.Entry is AskEntry);
 
         // Append response and checkpoint
         await store.AppendAsync(corr, new HumanResponseEntry(call, new HumanResponse("Yes"), DateTimeOffset.UtcNow.AddMinutes(-5)));
@@ -86,8 +86,8 @@ public class CompactionTests
         // Compact with no TTL -> drop the answered request
         await comp.CompactAsync(corr, new CompactionPolicy(TimeSpan.FromMinutes(1), KeepAnsweredRequestTtl: null), default);
         var list2 = store.Snapshot(corr).ToList();
-        Assert.Single(list2.Where(r => r.Entry is HumanResponseEntry));
-        Assert.Empty(list2.Where(r => r.Entry is AskEntry));
+        Assert.Single(list2, r => r.Entry is HumanResponseEntry);
+        Assert.DoesNotContain(list2, r => r.Entry is AskEntry);
     }
 
     [Fact]
