@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../Coven.Spellcasting.Agents/Coven.Spellcasting.Agents.csproj" />
+    <ProjectReference Include="../Coven.Spellcasting.Agents.Codex/Coven.Spellcasting.Agents.Codex.csproj" />
     <ProjectReference Include="../Coven.Spellcasting/Coven.Spellcasting.csproj" />
     <ProjectReference Include="../Coven.Core/Coven.Core.csproj" />
   </ItemGroup>
