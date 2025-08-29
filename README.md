@@ -59,10 +59,47 @@ public class App
 }
 ```
 
+# Spellcasting
+
+Spellcasting makes agent blocks simple and type‑safe by providing three canonical “books” to your code: a `Guidebook<TGuide>`, a `Spellbook<TSpell>`, and a `Testbook<TTest>`. Inherit from `Coven.Spellcasting.MagikUser<TIn,TOut>` and implement a single `InvokeAsync` method; the books are created for you (with sensible defaults) and passed in.
+
+Quick example using defaults:
+
+```csharp
+using System.Threading;
+using System.Threading.Tasks;
+using Coven.Core.Builder;
+using Coven.Spellcasting;
+
+public sealed record ChangeRequest(string Goal);
+public sealed record PatchPlan(string GuideMarkdown);
+
+public sealed class MyUser : MagikUser<ChangeRequest, PatchPlan>
+{
+    protected override Task<PatchPlan> InvokeAsync(
+        ChangeRequest input,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
+        CancellationToken ct) =>
+        Task.FromResult(new PatchPlan(guide.Payload.Markdown));
+}
+
+var coven = new MagikBuilder<ChangeRequest, PatchPlan>()
+    .MagikBlock<ChangeRequest, PatchPlan>(new MyUser())
+    .Done();
+var result = await coven.Ritual<ChangeRequest, PatchPlan>(new("demo"));
+```
+
+- Configure defaults via DI: `services.AddSpellcastingDefaults<TIn>(b => b.UseGuide(...).UseSpell(...).UseTest(...));`
+- For typed books, inherit `MagikUser<TIn,TOut,TGuide,TSpell,TTest>` and inject your factories.
+- Design doc: see Arch/Spellcasting/Spellcasting.md for goals, API, and patterns.
+
 # Appendix 
 
 
-**Detailed Architecture.** [Click here](/Arch/README.md)
+- **Detailed Architecture.** [Click here](/Arch/README.md)
+- **Coven.Spellcasting** [Click here](/Arch/Spellcasting/Spellcasting.md)
 
 **License.** Dual‑license: MIT for individuals, nonprofits, and orgs under USD \$100M revenue; commercial license required at ≥ \$100M. Contact: Autumn Wyborny.
 

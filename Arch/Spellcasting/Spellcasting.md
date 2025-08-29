@@ -1,6 +1,6 @@
 # COVEN.Spellcasting — Design (single‑file, no composites)
 
-> Provide three canonical “books” (Guide/Spell/Test) to agent code automatically, keeping the system **unopinionated**, **code‑first**, and **type‑safe**. Agents remain user‑owned; no external config files or orchestration in this layer. This doc reflects the simplified design **without composite factories** and is intended to live as a single Markdown file alongside the library source.
+> Provide three canonical “books” (Guide/Spell/Test) to agent code automatically, keeping the system **unopinionated**, **code‑first**, and **type‑safe**. Agents remain user‑owned; no external config files or orchestration in this layer. This doc reflects the simplified design **without composite factories**.
 
 ---
 
