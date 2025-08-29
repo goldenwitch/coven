@@ -3,11 +3,11 @@ namespace Coven.Spellcasting;
 using System.Threading;
 using System.Threading.Tasks;
 
-public sealed record DefaultGuide(string Markdown = "# Guidebook\nFollow user intent; be safe and concise.");
+public record DefaultGuide(string Markdown = "# Guidebook\nFollow user intent; be safe and concise.");
 
-public sealed record DefaultSpell(string Version = "0.1");
+public record DefaultSpell(string Version = "0.1");
 
-public sealed record DefaultTest(string Suite = "smoke");
+public record DefaultTest(string Suite = "smoke");
 
 internal sealed class DefaultGuideFactory<TIn> : IGuidebookFactory<TIn, DefaultGuide>
 {
@@ -26,4 +26,3 @@ internal sealed class DefaultTestFactory<TIn> : ITestbookFactory<TIn, DefaultTes
     public Task<Testbook<DefaultTest>> CreateAsync(TIn input, CancellationToken ct)
         => Task.FromResult(new Testbook<DefaultTest>(new DefaultTest()));
 }
-
