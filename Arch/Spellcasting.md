@@ -92,7 +92,7 @@ public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<
 
 ## “Just‑Works” Defaults (for typical developers)
 
-Most users shouldn’t implement factories. The **standard base** below wires in default factories and default payload shapes.
+Most users shouldn’t implement factories. Inherit the 2‑arity `MagikUser<TIn,TOut>` which wires in default factories and default payload shapes. Advanced users can still inherit the 5‑arity `MagikUser<TIn,TOut,TGuide,TSpell,TTest>` and inject typed factories via DI.
 
 ```csharp
 namespace Coven.Spellcasting;
@@ -129,14 +129,22 @@ internal sealed class DefaultTestFactory<TIn> : ITestbookFactory<TIn, DefaultTes
         => Task.FromResult(new Testbook<DefaultTest>(new DefaultTest()));
 }
 
-// Standard base for typical developers
-public abstract class MagikUserStd<TIn, TOut>
-    : MagikUser<TIn, TOut, DefaultGuide, DefaultSpell, DefaultTest>
+// Defaulted base for typical developers
+public abstract class MagikUser<TIn, TOut>
+  : MagikUser<TIn, TOut, DefaultGuide, DefaultSpell, DefaultTest>
 {
-    protected MagikUserStd()
-        : base(new DefaultGuideFactory<TIn>(),
-               new DefaultSpellFactory<TIn>(),
-               new DefaultTestFactory<TIn>()) { }
+    // Zero-setup constructor uses library defaults
+    protected MagikUser()
+      : base(new DefaultGuideFactory<TIn>(),
+             new DefaultSpellFactory<TIn>(),
+             new DefaultTestFactory<TIn>()) { }
+
+    // Optional: allow DI overrides while staying on default book types
+    protected MagikUser(
+        IGuidebookFactory<TIn, DefaultGuide> guideFactory,
+        ISpellbookFactory<TIn, DefaultSpell> spellFactory,
+        ITestbookFactory<TIn, DefaultTest>   testFactory)
+      : base(guideFactory, spellFactory, testFactory) { }
 }
 ```
 
@@ -152,7 +160,7 @@ public sealed record ChangeRequest(string Goal, string RepoRoot);
 public sealed record PatchPlan(string Summary);
 
 // Developer only implements InvokeAsync
-public sealed class MyUser : Coven.Spellcasting.MagikUserStd<ChangeRequest, PatchPlan>
+public sealed class MyUser : Coven.Spellcasting.MagikUser<ChangeRequest, PatchPlan>
 {
     protected override Task<PatchPlan> InvokeAsync(
         ChangeRequest input,

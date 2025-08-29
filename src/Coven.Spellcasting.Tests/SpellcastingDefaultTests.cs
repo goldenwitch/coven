@@ -9,7 +9,7 @@ namespace Coven.Spellcasting.Tests;
 public sealed record ChangeRequest(string Goal, string RepoRoot);
 public sealed record PatchPlan(string GuideMarkdown, string SpellVersion, string TestSuite);
 
-public sealed class DefaultUser : MagikUserStd<ChangeRequest, PatchPlan>
+public sealed class DefaultUser : MagikUser<ChangeRequest, PatchPlan>
 {
     protected override Task<PatchPlan> InvokeAsync(
         ChangeRequest input,
@@ -45,4 +45,3 @@ public class SpellcastingDefaultTests
         Assert.Equal("smoke", result.TestSuite);
     }
 }
-

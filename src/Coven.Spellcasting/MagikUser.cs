@@ -40,11 +40,17 @@ public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<
         CancellationToken ct);
 }
 
-public abstract class MagikUserStd<TIn, TOut>
-    : MagikUser<TIn, TOut, DefaultGuide, DefaultSpell, DefaultTest>
+public abstract class MagikUser<TIn, TOut>
+  : MagikUser<TIn, TOut, DefaultGuide, DefaultSpell, DefaultTest>
 {
-    protected MagikUserStd()
-        : base(new DefaultGuideFactory<TIn>(), new DefaultSpellFactory<TIn>(), new DefaultTestFactory<TIn>())
+    protected MagikUser()
+      : base(new DefaultGuideFactory<TIn>(), new DefaultSpellFactory<TIn>(), new DefaultTestFactory<TIn>())
+    { }
+
+    protected MagikUser(
+        IGuidebookFactory<TIn, DefaultGuide> guideFactory,
+        ISpellbookFactory<TIn, DefaultSpell>  spellFactory,
+        ITestbookFactory<TIn, DefaultTest>    testFactory)
+      : base(guideFactory, spellFactory, testFactory)
     { }
 }
-
