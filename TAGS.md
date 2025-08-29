@@ -20,7 +20,7 @@ This document explains the initial tagging model and how it integrates with the 
 ## Default Emission
 - After each block runs, the Board appends a default observability tag: `by:<BlockTypeName>`.
 - The Board also injects forward-bias hint tags for all forward‑compatible downstream candidates: `next:<BlockTypeName>`.
-- `by:*` is for tracing only and does not affect selection; `next:*` participates in selection (capability overlap) to bias progress.
+- `by:*` is for tracing/observability and is not used in capability scoring; `next:*` participates in selection (capability overlap) to bias progress. Note: the default selection strategy uses the presence of any `by:*` tag only to detect that at least one hop has occurred and may prioritize special fork blocks (Tricks) on that hop.
 
 ## Routing Semantics
 After each `MagikBlock` finishes, the Board selects the next block to run based on the current epoch’s tags (tags added during the immediately preceding step, including forward hints):
@@ -92,6 +92,10 @@ var coven = new MagikBuilder<string, string>()
 ```
 
 If not provided, the `DefaultSelectionStrategy` applies the rules described above.
+
+### Strategy Hook: Trick Preference
+
+Implementations may apply meta-preferences that do not change capability scoring. The built-in `DefaultSelectionStrategy` treats the presence of `by:*` (meaning “after the first hop”) as a signal to prefer a `MagikTrick<T>` candidate on that hop, if present. Tricks are T→T fork blocks that fence the next selection to a predefined candidate set; capability matching and registration order still resolve ties within the fenced set.
 
 ## Canonical Magical Tags
 

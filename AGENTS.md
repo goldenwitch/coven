@@ -31,7 +31,7 @@ If tests fail to run due to SDK/TFM mismatch, install a newer .NET SDK that supp
   - `Board.cs`: core push-mode router and compiled pipeline cache
   - `Builder/`: builder interfaces and implementation
   - `Tags/`: ambient tag scope, capability interface
-  - `Algos/`: BFS helpers used by tests
+  - `Routing/`: selection engine/strategy and pipeline compiler (includes path checks/BFS)
   - `*.cs`: core abstractions (`IMagikBlock`, `MagikBlock`, `ICoven`, `IBoard`, `MagikBlockDescriptor`)
 - `src/Coven.Core.Tests/`: unit tests covering routing, tags, capabilities, and end-to-end flows
 - `README.md`: high-level concepts and examples
@@ -52,15 +52,15 @@ Builder
 
 Board
 - Executes work in push mode by default (the implemented mode).
-- Compiles and caches pipelines per `(startType, targetType)` for speed.
+- Compiles and caches pipelines per `(startType, targetType)` for speed (precompiled across discovered type pairs at builder finalization).
 - Uses tags to influence routing among valid next steps.
-  - Autotagging: Capability tags that point to the next block are automatically added during Builder finalization. This means that by default, every ritual progresses forward in the order it is registered in.
+  - Forward bias via runtime hints: After each step the Board emits `next:<BlockTypeName>` tags for forward‑compatible downstream candidates. Each block also carries a soft self‑capability `next:<SelfTypeName>`. Capability overlap on these `next:*` tags nudges default progress to the next compatible step without any builder‑time mutation.
 
 Pull Mode Internals
 - Orchestrated stepping: In pull mode, the orchestrator repeatedly calls `GetWork<TIn>(request)`; the Board advances exactly one step and completes to a sink.
-- Compiled wrapper: For each block, the Board compiles a pull wrapper `(Board, sink, branchId, input) => Task` that executes `DoMagik` and then calls an internal `FinalizePullStep<TOut>(...)`.
-- Finalize step: `FinalizePullStep<TOut>` adds `by:<BlockTypeName>`, persists `Tag.Current` to the branch, and calls `IOrchestratorSink.Complete<TOut>(output, branchId)` — no per-call reflection.
-- Finality: The orchestrator determines when to stop by checking if the step’s generic `TOut` is assignable to the requested final output type.
+- Step wrapper: For each block, the Board wraps execution of `DoMagik` and then calls an internal `FinalizePullStep<TOut>(...)`. Note: current implementation invokes the generic finalizer via reflection; future optimization may remove this.
+- Persisted tags: `FinalizePullStep<TOut>` adds `by:<BlockTypeName>`, re‑adds forward `next:*` hints for downstream compatibility, persists only the current‑epoch tags (excluding `by:*` and `next:*`) to the branch, and calls `IOrchestratorSink.Complete<TOut>(output, branchId)`.
+- Finality: The orchestrator determines when to stop by checking if the step’s declared generic `TOut` is assignable to the requested final output type (optionally gated by a completion policy).
 
 Tags and Capabilities
 - Ambient tag scope (per request) via `Coven.Core.Tags.Tag`.
@@ -70,10 +70,10 @@ Tags and Capabilities
 
 Routing Rules (per step)
 1. Explicit `to:*` tags win: `to:#<index>` (registry index) or `to:<BlockTypeName>`.
-2. Otherwise choose candidate with highest overlap between `Tag.Current` and candidate’s capabilities.
+2. Otherwise choose candidate with highest overlap between current‑epoch tags and candidate capabilities (includes runtime `next:*` hints).
 3. Tie-break by registration order.
-- Forward-only: once a block at registry index N runs, only candidates with index > N are considered.
-- After each step the Board emits `by:<BlockTypeName>` for observability.
+- Forward-only: once a block at registry index N runs, only candidates with index > N are considered (push mode).
+- After each step the Board emits `by:<BlockTypeName>` for observability; it is not used in capability scoring. Note: the default strategy uses the presence of any `by:*` tag only to detect "after the first hop" and gives priority to Tricks on that hop.
 
 ## Minimal Examples
 
@@ -142,6 +142,7 @@ Emitting Tags
 Advertising Capabilities
 - Implement `ITagCapabilities.SupportedTags` on a block to declare what tags it handles well.
 - Or assign capabilities at registration: `.MagikBlock<TIn,TOut>(block, new[] { "fast" })`.
+- With DI: you can also use `[TagCapabilities("tag1","tag2")]` on the block class. When building via `ServiceCollectionExtensions`, attribute tags are merged with builder‑assigned tags and, if the block implements `ITagCapabilities` and has a parameterless constructor, those tags are merged as well.
 
 ## Using the Builder
 
@@ -157,6 +158,13 @@ var coven = new MagikBuilder<TStart, TEnd>()
 ```
 
 `.Done()` returns an `ICoven` backed by a push-mode `Board` with pipelines precompiled at builder finalization time.
+
+## Tricks (Advanced)
+
+- What: `MagikTrick<T>` is a special T→T fork block that returns the input unchanged and fences the next selection to a predefined candidate set.
+- Registration: Use `.MagikTrick<TStart, TEnd, T>(configureCandidates, trickCapabilities)` to insert a Trick and declare its downstream candidates.
+- Selection: The active `ISelectionStrategy` chooses among the fenced candidates. The default strategy prioritizes selecting a Trick immediately after the first hop; thereafter capability scoring and order apply.
+- Tags: Tricks can carry capabilities like any other block.
 
 ## Working Style
 
@@ -193,7 +201,7 @@ Troubleshooting
 
 - Mode: push mode is implemented; the Board dispatches work immediately and awaits completion step-by-step.
 - Forward-only routing prevents most cycles and ensures progress by registry order.
-- After each step the Board adds `by:<BlockTypeName>` to the tag set for observability; it doesn’t affect selection.
+- After each step the Board adds `by:<BlockTypeName>` to the tag set for observability; it is not used in capability scoring. The default selection strategy does treat the presence of `by:*` as an indicator that the first hop has occurred and may prefer Tricks on that hop.
 - Pipelines are compiled and cached per `(startType, targetType)` at builder finalization time across discovered types to eliminate first-run latency.
 
 ## Where to Add Things
