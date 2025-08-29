@@ -1,7 +1,7 @@
 
 # Coven.Spellcasting.Agents
 
-> **Scope.** Add a tiny, future‑proof agent abstraction under `Coven.Spellcasting.*` that fits Coven’s generic patterns (`TIn, TOut`), keeps serialization out of the public API, uses *type‑safe* permissions, and plugs cleanly into **MagikUser** with an `Invoke` method. Examples show a Coven‑style ritual “from main,” with optional Books used only in samples (not in abstractions).
+> Scope. Provide a tiny, future‑proof agent abstraction that fits Coven’s generic patterns (`TIn, TOut`), keeps serialization out of the public API, uses type‑safe permissions, and composes naturally with `Coven.Spellcasting.MagikUser<TIn,TOut>`. Examples use a MagikUser that calls the agent inside `InvokeAsync`.
 
 ---
 
@@ -102,31 +102,45 @@ Everything else (e.g., defaults, process adapters, utilities) is `internal` and 
 
 ## How MagikUser participates
 
-> **Contract.** `MagikUser` is a first‑class `MagikBlock` that handles agent logic via an **`Invoke`** method. Samples below implement `Invoke` and, if needed for composition, forward `DoMagik` to `Invoke` so the user can be treated as a standard block in the ritual graph.
+> Contract. Implement `Coven.Spellcasting.MagikUser<TIn,TOut>`. Inside `InvokeAsync`, prepare a typed payload from the books, construct `SpellContext` from input as needed, call the agent via `ICovenAgent<TIn,TOut>.CastSpellAsync`, and return the result.
 
 ```csharp
-// Note: IMagikUser<TIn, TOut> lives in Coven.Core. We implement its Invoke method here.
-// If IMagikUser inherits IMagikBlock, DoMagik can forward to Invoke; if not, omit DoMagik.
+using System.Threading;
+using System.Threading.Tasks;
+using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 
-internal sealed class SummonAgent<TIn, TOut> : IMagikUser<TIn, TOut>, IMagikBlock<TIn, TOut>
+public sealed record ChangeRequest(string RepoRoot, string Goal);
+public sealed record FixSpell(string GuideMarkdown, string SpellVersion, string TestSuite, string Goal);
+
+public sealed class EndToEndUser : MagikUser<ChangeRequest, string>
 {
-    private readonly ICovenAgent<TIn, TOut> _agent;
-    private readonly SpellContext _context;
+    private readonly ICovenAgent<FixSpell, string> _agent;
+    public EndToEndUser(ICovenAgent<FixSpell, string> agent) => _agent = agent;
 
-    public SummonAgent(ICovenAgent<TIn, TOut> agent, SpellContext context)
-    { _agent = agent; _context = context; }
+    protected override Task<string> InvokeAsync(
+        ChangeRequest input,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
+        CancellationToken ct)
+    {
+        var payload = new FixSpell(
+            guide.Payload.Markdown,
+            spell.Payload.Version,
+            test.Payload.Suite,
+            input.Goal);
 
-    // MagikUser entrypoint for agent logic
-    public Task<TOut> Invoke(TIn input, CancellationToken ct = default)
-        => _agent.CastSpellAsync(input, _context, ct);
+        var ctx = new SpellContext
+        {
+            ContextUri = new Uri($"file://{Path.GetFullPath(input.RepoRoot)}"),
+            Permissions = AgentPermissions.AutoEdit()
+        };
 
-    // If your pipeline treats MagikUser as a MagikBlock, forward here:
-    public Task<TOut> DoMagik(TIn input) => Invoke(input);
+        return _agent.CastSpellAsync(payload, ctx, ct);
+    }
 }
 ```
-
-> We keep `SummonAgent` **internal** in the library. It’s a tiny pattern users can copy into their apps or samples; it does not need to be part of the public API.
 
 ---
 
@@ -211,63 +225,47 @@ public sealed class CodexCliAgent<TIn, TOut> : ICovenAgent<TIn, TOut>
 ## Ritual example
 
 ```csharp
-// Domain symbols
-public sealed record FixSpell(string Instruction, string[] Files, string? Heuristics = null, string? Conventions = null);
-
-// This is pseudocode, we should implement the below using the actual constructs that a IMagikUser supports.
-internal sealed class PrepareFixSpellUser : IMagikUser<(string RepoRoot, string[] FailingFiles), FixSpell>, IMagikBlock<(string, string[]), FixSpell>
-{
-    private readonly IBookshelf _books;
-    public PrepareFixSpellUser(IBookshelf books) => _books = books;
-
-    public Task<FixSpell> Invoke((string RepoRoot, string[] FailingFiles) input, CancellationToken ct = default)
-    {
-        var heur = _books.Get<TestingHeuristicsBook>()?.Advice;
-        var conv = _books.Get<ProjectConventionsBook>()?.Summary;
-        return Task.FromResult(new FixSpell("Fix failing tests and explain changes.", input.FailingFiles, heur, conv));
-    }
-
-    public Task<FixSpell> DoMagik((string, string[]) input) => Invoke(input);
-}
-
-// “main”
+using Coven.Core.Builder;
+using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex;
 
+public sealed record ChangeRequest(string RepoRoot, string Goal);
+public sealed record FixSpell(string GuideMarkdown, string SpellVersion, string TestSuite, string Goal);
+
+public sealed class EndToEndUser : MagikUser<ChangeRequest, string>
+{
+    private readonly ICovenAgent<FixSpell, string> _agent;
+    public EndToEndUser(ICovenAgent<FixSpell, string> agent) => _agent = agent;
+
+    protected override Task<string> InvokeAsync(
+        ChangeRequest input,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
+        CancellationToken ct)
+    {
+        var payload = new FixSpell(guide.Payload.Markdown, spell.Payload.Version, test.Payload.Suite, input.Goal);
+        var ctx = new SpellContext
+        {
+            ContextUri = new Uri($"file://{Path.GetFullPath(input.RepoRoot)}"),
+            Permissions = AgentPermissions.AutoEdit()
+        };
+        return _agent.CastSpellAsync(payload, ctx, ct);
+    }
+}
+
 var agent = new CodexCliAgent<FixSpell, string>(
-    toPrompt: s => $@"Apply the rules then fix tests.
-
-Heuristics:
-{s.Heuristics}
-
-Conventions:
-{s.Conventions}
-
-Files:
-{string.Join("\n", s.Files)}
-
-Task:
-{s.Instruction}
-
-Return a concise summary of changes and reasoning.",
+    toPrompt: s => $"Guide:\n{s.GuideMarkdown}\n\nGoal:\n{s.Goal}",
     parse: text => text);
 
-var context = new SpellContext
-{
-    ContextUri = new Uri($"file://{Path.GetFullPath(repoRoot)}"),
-    Permissions = AgentPermissions.AutoEdit()
-};
-
-var coven = new MagikBuilder<(string RepoRoot, string[] FailingFiles), string>()
-    .MagikBlock(new PrepareFixSpellUser(books))
-    .MagikBlock(new SummonAgent<FixSpell, string>(agent, context)) // MagikUser used as a block
+var coven = new MagikBuilder<ChangeRequest, string>()
+    .MagikBlock<ChangeRequest, string>(new EndToEndUser(agent))
     .Done();
 
-var result = await coven.Ritual<(string, string[]), string>((repoRoot, new[] { "Foo.Tests/BarTests.cs" }));
+var result = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(repoRoot: "/src/project", Goal: "implement feature X"));
 Console.WriteLine(result);
 ```
-
-This sample follows the README’s *split/compose/run ritual* flow and uses **MagikUser.Invoke** for agent logic.¹
 
 ---
 
@@ -297,13 +295,12 @@ var ctx = new SpellContext
 
 | Component | Public? | Why |
 |---|---|---|
-| `ICovenAgent<TIn,TOut>` | **Yes** | Primary extension point for writing/plugging agents |
-| `SpellContext` | **Yes** | Callers provide context; agents read it |
-| `ISpellAction` | **Yes** | Callers can mint custom action symbols |
-| `WriteFile`, `RunCommand`, `NetworkAccess` | **Yes (sealed)** | Common symbols users will reference |
-| `AgentPermissions` | **Yes (sealed)** | Users build permission sets |
-| `CodexCliAgent<,>` & `Options` | **Yes (sealed)** | Constructed/configured by app code |
-| `SummonAgent<,>` (sample) | **No (internal in samples)** | Just a pattern; users can copy/paste |
+| `ICovenAgent<TIn,TOut>` | Yes | Primary extension point for writing/plugging agents |
+| `SpellContext` | Yes | Callers provide context; agents read it |
+| `ISpellAction` | Yes | Callers can mint custom action symbols |
+| `WriteFile`, `RunCommand`, `NetworkAccess` | Yes (sealed) | Common symbols users will reference |
+| `AgentPermissions` | Yes (sealed) | Users build permission sets |
+| `CodexCliAgent<,>` & `Options` | Yes (sealed) | Constructed/configured by app code |
 
 Everything else remains **internal** by default. Make a symbol public only when you expect external code to **call** it or **extend** it.
 
