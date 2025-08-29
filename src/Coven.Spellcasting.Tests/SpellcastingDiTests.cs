@@ -17,30 +17,30 @@ public sealed record ChangeOut(string GuideMd, string SpellVer, string Suite);
 public sealed class CustomGuideFactory : IGuidebookFactory<ChangeIn, DefaultGuide>
 {
     public int Calls;
-    public Task<Guidebook<DefaultGuide>> CreateAsync(ChangeIn input, CancellationToken ct)
+    public Task<IBook<DefaultGuide>> CreateAsync(ChangeIn input, CancellationToken ct)
     {
         Calls++;
-        return Task.FromResult(new Guidebook<DefaultGuide>(new DefaultGuide("# DI Guide")));
+        return Task.FromResult<IBook<DefaultGuide>>(new Guidebook<DefaultGuide>(new DefaultGuide("# DI Guide")));
     }
 }
 
 public sealed class CustomSpellFactory : ISpellbookFactory<ChangeIn, DefaultSpell>
 {
     public int Calls;
-    public Task<Spellbook<DefaultSpell>> CreateAsync(ChangeIn input, CancellationToken ct)
+    public Task<IBook<DefaultSpell>> CreateAsync(ChangeIn input, CancellationToken ct)
     {
         Calls++;
-        return Task.FromResult(new Spellbook<DefaultSpell>(new DefaultSpell("9.9")));
+        return Task.FromResult<IBook<DefaultSpell>>(new Spellbook<DefaultSpell>(new DefaultSpell("9.9")));
     }
 }
 
 public sealed class CustomTestFactory : ITestbookFactory<ChangeIn, DefaultTest>
 {
     public int Calls;
-    public Task<Testbook<DefaultTest>> CreateAsync(ChangeIn input, CancellationToken ct)
+    public Task<IBook<DefaultTest>> CreateAsync(ChangeIn input, CancellationToken ct)
     {
         Calls++;
-        return Task.FromResult(new Testbook<DefaultTest>(new DefaultTest("regression")));
+        return Task.FromResult<IBook<DefaultTest>>(new Testbook<DefaultTest>(new DefaultTest("regression")));
     }
 }
 
@@ -55,9 +55,9 @@ public sealed class DefaultedUserWithOverrides : MagikUser<ChangeIn, ChangeOut>
 
     protected override Task<ChangeOut> InvokeAsync(
         ChangeIn input,
-        Guidebook<DefaultGuide> guide,
-        Spellbook<DefaultSpell> spell,
-        Testbook<DefaultTest>   test,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
         CancellationToken ct)
     {
         return Task.FromResult(new ChangeOut(
@@ -109,20 +109,20 @@ public sealed record MyTests2(IReadOnlyList<string> Cases);
 
 public sealed class MyGuide2Factory : IGuidebookFactory<TIn, MyGuide2>
 {
-    public Task<Guidebook<MyGuide2>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Guidebook<MyGuide2>(new MyGuide2("# Typed", "Architect")));
+    public Task<IBook<MyGuide2>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<MyGuide2>>(new Guidebook<MyGuide2>(new MyGuide2("# Typed", "Architect")));
 }
 
 public sealed class MySpell2Factory : ISpellbookFactory<TIn, MySpell2>
 {
-    public Task<Spellbook<MySpell2>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Spellbook<MySpell2>(new MySpell2("1.2.3")));
+    public Task<IBook<MySpell2>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<MySpell2>>(new Spellbook<MySpell2>(new MySpell2("1.2.3")));
 }
 
 public sealed class MyTests2Factory : ITestbookFactory<TIn, MyTests2>
 {
-    public Task<Testbook<MyTests2>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Testbook<MyTests2>(new MyTests2(new[] { "caseA" })));
+    public Task<IBook<MyTests2>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<MyTests2>>(new Testbook<MyTests2>(new MyTests2(new[] { "caseA" })));
 }
 
 public sealed class TypedUserDi : MagikUser<TIn, TOut, MyGuide2, MySpell2, MyTests2>
@@ -135,9 +135,9 @@ public sealed class TypedUserDi : MagikUser<TIn, TOut, MyGuide2, MySpell2, MyTes
 
     protected override Task<TOut> InvokeAsync(
         TIn input,
-        Guidebook<MyGuide2> guide,
-        Spellbook<MySpell2> spell,
-        Testbook<MyTests2>  test,
+        IBook<MyGuide2> guide,
+        IBook<MySpell2> spell,
+        IBook<MyTests2>  test,
         CancellationToken ct)
     {
         return Task.FromResult(new TOut(guide.Payload.Role, spell.Payload.Version, test.Payload.Cases));
@@ -169,4 +169,3 @@ public class SpellcastingDiTypedTests
         Assert.Collection(result.Cases, c => Assert.Equal("caseA", c));
     }
 }
-

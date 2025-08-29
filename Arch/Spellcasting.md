@@ -176,17 +176,14 @@ public sealed class DefaultBooksBuilder<TIn>
     private Func<TIn, CancellationToken, DefaultSpell>? makeSpell;
     private Func<TIn, CancellationToken, DefaultTest>?  makeTest;
 
-    public DefaultBooksBuilder<TIn> UseGuide<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : DefaultGuide
-    { makeGuide = (i, ct) => make(i, ct); return this; }
+    public DefaultBooksBuilder<TIn> UseGuide(Func<TIn, CancellationToken, DefaultGuide> make)
+    { makeGuide = make; return this; }
 
-    public DefaultBooksBuilder<TIn> UseSpell<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : DefaultSpell
-    { makeSpell = (i, ct) => make(i, ct); return this; }
+    public DefaultBooksBuilder<TIn> UseSpell(Func<TIn, CancellationToken, DefaultSpell> make)
+    { makeSpell = make; return this; }
 
-    public DefaultBooksBuilder<TIn> UseTest<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : DefaultTest
-    { makeTest = (i, ct) => make(i, ct); return this; }
+    public DefaultBooksBuilder<TIn> UseTest(Func<TIn, CancellationToken, DefaultTest> make)
+    { makeTest = make; return this; }
 
     internal void Apply(IServiceCollection services)
     {

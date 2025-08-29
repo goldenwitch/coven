@@ -18,9 +18,9 @@ public sealed class UserWithCtorDelegates : MagikUser<CIn, COut>
 
     protected override Task<COut> InvokeAsync(
         CIn input,
-        Guidebook<DefaultGuide> guide,
-        Spellbook<DefaultSpell> spell,
-        Testbook<DefaultTest>   test,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
         CancellationToken ct)
     {
         return Task.FromResult(new COut(
@@ -46,4 +46,3 @@ public class SpellcastingDelegateCtorTests
         Assert.Equal("nightly", result.Suite);
     }
 }
-

@@ -17,20 +17,20 @@ public sealed record MyTestsV1(string Version, IReadOnlyList<string> Cases);
 
 public sealed class MyGuideFactory : IGuidebookFactory<ChangeRequest2, MyGuide>
 {
-    public Task<Guidebook<MyGuide>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
-        => Task.FromResult(new Guidebook<MyGuide>(new MyGuide("# Guidebook\nTyped", "Senior Assistant")));
+    public Task<IBook<MyGuide>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
+        => Task.FromResult<IBook<MyGuide>>(new Guidebook<MyGuide>(new MyGuide("# Guidebook\nTyped", "Senior Assistant")));
 }
 
 public sealed class MySpellFactory : ISpellbookFactory<ChangeRequest2, MySpellV1>
 {
-    public Task<Spellbook<MySpellV1>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
-        => Task.FromResult(new Spellbook<MySpellV1>(new MySpellV1("0.1", Array.Empty<object>())));
+    public Task<IBook<MySpellV1>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
+        => Task.FromResult<IBook<MySpellV1>>(new Spellbook<MySpellV1>(new MySpellV1("0.1", Array.Empty<object>())));
 }
 
 public sealed class MyTestFactory : ITestbookFactory<ChangeRequest2, MyTestsV1>
 {
-    public Task<Testbook<MyTestsV1>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
-        => Task.FromResult(new Testbook<MyTestsV1>(new MyTestsV1("0.1", new[] { "rename_method_happy" })));
+    public Task<IBook<MyTestsV1>> CreateAsync(ChangeRequest2 input, CancellationToken ct)
+        => Task.FromResult<IBook<MyTestsV1>>(new Testbook<MyTestsV1>(new MyTestsV1("0.1", new[] { "rename_method_happy" })));
 }
 
 public sealed class TypedUser : MagikUser<ChangeRequest2, PatchPlan2, MyGuide, MySpellV1, MyTestsV1>
@@ -40,9 +40,9 @@ public sealed class TypedUser : MagikUser<ChangeRequest2, PatchPlan2, MyGuide, M
 
     protected override Task<PatchPlan2> InvokeAsync(
         ChangeRequest2 input,
-        Guidebook<MyGuide> guide,
-        Spellbook<MySpellV1> spell,
-        Testbook<MyTestsV1> test,
+        IBook<MyGuide> guide,
+        IBook<MySpellV1> spell,
+        IBook<MyTestsV1> test,
         CancellationToken ct)
     {
         var plan = new PatchPlan2(guide.Payload.Role, spell.Payload.Version, test.Payload.Cases);
@@ -69,4 +69,3 @@ public class SpellcastingTypedTests
         Assert.Collection(result.Cases, c => Assert.Equal("rename_method_happy", c));
     }
 }
-

@@ -21,22 +21,29 @@ public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<
         _testFactory  = testFactory  ?? throw new ArgumentNullException(nameof(testFactory));
     }
 
-    public async Task<TOut> DoMagik(TIn input)
+    public Task<TOut> DoMagik(TIn input) => RunAsync(input, CancellationToken.None);
+
+    public async Task<TOut> RunAsync(TIn input, CancellationToken ct)
     {
-        // Coven.Core.IMagikBlock doesn't pass CancellationToken; use None.
-        var ct = CancellationToken.None;
-        var guide = await _guideFactory.CreateAsync(input, ct).ConfigureAwait(false);
-        var spell = await _spellFactory.CreateAsync(input, ct).ConfigureAwait(false);
-        var test  = await _testFactory .CreateAsync(input, ct).ConfigureAwait(false);
+        // Build books in parallel
+        var gTask = _guideFactory.CreateAsync(input, ct);
+        var sTask = _spellFactory.CreateAsync(input, ct);
+        var tTask = _testFactory .CreateAsync(input, ct);
+
+        await Task.WhenAll(gTask, sTask, tTask).ConfigureAwait(false);
+
+        var guide = await gTask.ConfigureAwait(false);
+        var spell = await sTask.ConfigureAwait(false);
+        var test  = await tTask.ConfigureAwait(false);
 
         return await InvokeAsync(input, guide, spell, test, ct).ConfigureAwait(false);
     }
 
     protected abstract Task<TOut> InvokeAsync(
         TIn input,
-        Guidebook<TGuide> guidebook,
-        Spellbook<TSpell> spellbook,
-        Testbook<TTest>   testbook,
+        IBook<TGuide> guidebook,
+        IBook<TSpell> spellbook,
+        IBook<TTest>  testbook,
         CancellationToken ct);
 }
 
@@ -70,22 +77,22 @@ internal sealed class DelegateGuideFactory<TIn> : IGuidebookFactory<TIn, Default
 {
     private readonly Func<TIn, CancellationToken, DefaultGuide> make;
     public DelegateGuideFactory(Func<TIn, CancellationToken, DefaultGuide> make) => this.make = make;
-    public Task<Guidebook<DefaultGuide>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Guidebook<DefaultGuide>(make(input, ct)));
+    public Task<IBook<DefaultGuide>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultGuide>>(new Guidebook<DefaultGuide>(make(input, ct)));
 }
 
 internal sealed class DelegateSpellFactory<TIn> : ISpellbookFactory<TIn, DefaultSpell>
 {
     private readonly Func<TIn, CancellationToken, DefaultSpell> make;
     public DelegateSpellFactory(Func<TIn, CancellationToken, DefaultSpell> make) => this.make = make;
-    public Task<Spellbook<DefaultSpell>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Spellbook<DefaultSpell>(make(input, ct)));
+    public Task<IBook<DefaultSpell>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultSpell>>(new Spellbook<DefaultSpell>(make(input, ct)));
 }
 
 internal sealed class DelegateTestFactory<TIn> : ITestbookFactory<TIn, DefaultTest>
 {
     private readonly Func<TIn, CancellationToken, DefaultTest> make;
     public DelegateTestFactory(Func<TIn, CancellationToken, DefaultTest> make) => this.make = make;
-    public Task<Testbook<DefaultTest>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Testbook<DefaultTest>(make(input, ct)));
+    public Task<IBook<DefaultTest>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultTest>>(new Testbook<DefaultTest>(make(input, ct)));
 }

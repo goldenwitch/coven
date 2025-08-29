@@ -1,3 +1,3 @@
 namespace Coven.Spellcasting;
 
-public sealed record Spellbook<TSpell>(TSpell Payload);
+public sealed record Spellbook<TSpell>(TSpell Payload) : IBook<TSpell>;

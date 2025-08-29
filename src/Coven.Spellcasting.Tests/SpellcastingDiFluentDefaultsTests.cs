@@ -32,9 +32,9 @@ public sealed class UserDefaultedViaDi : MagikUser<Req, Resp>
 
     protected override Task<Resp> InvokeAsync(
         Req input,
-        Guidebook<DefaultGuide> guide,
-        Spellbook<DefaultSpell> spell,
-        Testbook<DefaultTest>   test,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
         CancellationToken ct)
     {
         // Downcast is safe if DI provided derived payloads; otherwise properties may be null/default
@@ -60,9 +60,9 @@ public class SpellcastingDiFluentDefaultsTests
         var services = new ServiceCollection();
 
         services.AddSpellcastingDefaults<Req>(b =>
-            b.UseGuide<MyGuide3>((req, ct) => new MyGuide3("# guide fluent", "Architect"))
-             .UseSpell<MySpell3>((req, ct) => new MySpell3("7.7", "std"))
-             .UseTest<MyTest3>((req, ct)  => new MyTest3("regression", "A"))
+            b.UseGuide((req, ct) => new MyGuide3("# guide fluent", "Architect"))
+             .UseSpell((req, ct) => new MySpell3("7.7", "std"))
+             .UseTest((req, ct)  => new MyTest3("regression", "A"))
         );
 
         services.BuildCoven(c =>
@@ -83,4 +83,3 @@ public class SpellcastingDiFluentDefaultsTests
         Assert.Equal("A", result.Track);
     }
 }
-

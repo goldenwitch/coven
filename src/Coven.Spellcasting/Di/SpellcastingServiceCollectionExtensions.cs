@@ -26,27 +26,24 @@ public sealed class DefaultBooksBuilder<TIn>
     private Func<TIn, CancellationToken, Coven.Spellcasting.DefaultSpell>? _makeSpell;
     private Func<TIn, CancellationToken, Coven.Spellcasting.DefaultTest>?  _makeTest;
 
-    public DefaultBooksBuilder<TIn> UseGuide<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : Coven.Spellcasting.DefaultGuide
+    public DefaultBooksBuilder<TIn> UseGuide(Func<TIn, CancellationToken, Coven.Spellcasting.DefaultGuide> make)
     {
         if (make is null) throw new ArgumentNullException(nameof(make));
-        _makeGuide = (i, ct) => make(i, ct);
+        _makeGuide = make;
         return this;
     }
 
-    public DefaultBooksBuilder<TIn> UseSpell<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : Coven.Spellcasting.DefaultSpell
+    public DefaultBooksBuilder<TIn> UseSpell(Func<TIn, CancellationToken, Coven.Spellcasting.DefaultSpell> make)
     {
         if (make is null) throw new ArgumentNullException(nameof(make));
-        _makeSpell = (i, ct) => make(i, ct);
+        _makeSpell = make;
         return this;
     }
 
-    public DefaultBooksBuilder<TIn> UseTest<TDerived>(Func<TIn, CancellationToken, TDerived> make)
-        where TDerived : Coven.Spellcasting.DefaultTest
+    public DefaultBooksBuilder<TIn> UseTest(Func<TIn, CancellationToken, Coven.Spellcasting.DefaultTest> make)
     {
         if (make is null) throw new ArgumentNullException(nameof(make));
-        _makeTest = (i, ct) => make(i, ct);
+        _makeTest = make;
         return this;
     }
 
@@ -71,4 +68,3 @@ public sealed class DefaultBooksBuilder<TIn>
         }
     }
 }
-

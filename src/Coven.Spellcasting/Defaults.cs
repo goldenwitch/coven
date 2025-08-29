@@ -11,18 +11,18 @@ public record DefaultTest(string Suite = "smoke");
 
 internal sealed class DefaultGuideFactory<TIn> : IGuidebookFactory<TIn, DefaultGuide>
 {
-    public Task<Guidebook<DefaultGuide>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Guidebook<DefaultGuide>(new DefaultGuide()));
+    public Task<IBook<DefaultGuide>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultGuide>>(new Guidebook<DefaultGuide>(new DefaultGuide()));
 }
 
 internal sealed class DefaultSpellFactory<TIn> : ISpellbookFactory<TIn, DefaultSpell>
 {
-    public Task<Spellbook<DefaultSpell>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Spellbook<DefaultSpell>(new DefaultSpell()));
+    public Task<IBook<DefaultSpell>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultSpell>>(new Spellbook<DefaultSpell>(new DefaultSpell()));
 }
 
 internal sealed class DefaultTestFactory<TIn> : ITestbookFactory<TIn, DefaultTest>
 {
-    public Task<Testbook<DefaultTest>> CreateAsync(TIn input, CancellationToken ct)
-        => Task.FromResult(new Testbook<DefaultTest>(new DefaultTest()));
+    public Task<IBook<DefaultTest>> CreateAsync(TIn input, CancellationToken ct)
+        => Task.FromResult<IBook<DefaultTest>>(new Testbook<DefaultTest>(new DefaultTest()));
 }

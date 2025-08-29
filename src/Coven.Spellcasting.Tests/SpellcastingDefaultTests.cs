@@ -13,9 +13,9 @@ public sealed class DefaultUser : MagikUser<ChangeRequest, PatchPlan>
 {
     protected override Task<PatchPlan> InvokeAsync(
         ChangeRequest input,
-        Guidebook<DefaultGuide> guide,
-        Spellbook<DefaultSpell> spell,
-        Testbook<DefaultTest>   test,
+        IBook<DefaultGuide> guide,
+        IBook<DefaultSpell> spell,
+        IBook<DefaultTest>  test,
         CancellationToken ct)
     {
         var plan = new PatchPlan(
