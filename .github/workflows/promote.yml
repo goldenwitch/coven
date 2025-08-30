@@ -161,19 +161,26 @@ jobs:
             d="${d//[$'\r\n']/}"
             [[ -z "$d" ]] && continue
       
-            found_any=false
             for csproj in "$d"/*.csproj; do
-              found_any=true
               echo "Packing: $csproj"
-              dotnet pack "$csproj" -c Release -o artifacts/nupkg \
-                /p:Version="$version" \
-                /p:ContinuousIntegrationBuild=true \
-                /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
+      
+              # Heuristic: treat as analyzer if PackageType=Analyzer OR it already packs to analyzers/*
+              if grep -qiE '<PackageType>\s*Analyzer\s*</PackageType>|PackagePath="analyzers' "$csproj"; then
+                echo "  Detected analyzer -> no .snupkg; suppress NU5128 warning"
+                dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                  /p:Version="$version" \
+                  /p:ContinuousIntegrationBuild=true \
+                  /p:NoWarn=NU5128
+              else
+                dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                  /p:Version="$version" \
+                  /p:ContinuousIntegrationBuild=true \
+                  /p:IncludeSymbols=true \
+                  /p:SymbolPackageFormat=snupkg
+              fi
             done
-            if [[ "$found_any" = false ]]; then
-              echo "WARN: No .csproj found in $d — skipping" >&2
-            fi
           done
+
 
       - name: Upload artifacts
         if: steps.plan.outputs.any == 'true'
