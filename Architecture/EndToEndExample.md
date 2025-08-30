@@ -57,4 +57,3 @@ Key points:
 - `ICoven.Ritual<TIn, TOut>` only fixes the start and end types; the internal route is chosen dynamically per step based on explicit `to:*` tags (optional), capability overlap, then registration order.
 - Tags are scoped to a single invocation of `PostWork`/`Ritual`; blocks use `Tag.Add(...)` and `Tag.Contains(...)` during execution only.
 - Capabilities can be advertised by a block (`ITagCapabilities`) and/or assigned at registration time with builder overloads.
-
