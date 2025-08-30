@@ -12,7 +12,9 @@ Structure
   - Coven.Samples.sln        # Opens all samples side-by-side
   - Directory.Build.props    # Common settings for all samples
   - GettingStarted/          # Category for simpler samples with local machine testable results.
-    - 01.LocalCodexCLI       # Sample demonstrating using Coven with a console app to extend Codex CLI
+    - 01.LocalCodexCLI/
+      - src/                 # Console app using Coven + Codex CLI
+      - test/                # xUnit smoke tests for the sample
   - DeveloperTools/          # Category for code productivity implementations.
   - Science/                 # Category for academic focused work targeting cutting edge solutions.
 
@@ -39,4 +41,3 @@ Contributing a sample
 4) Place one or more projects under `src/` and reference `../..../../src/*` projects as needed.
 5) Write a `README.md` with quick start and prerequisites.
 6) Open `samples/Coven.Samples.sln` to see your sample side-by-side with others.
-

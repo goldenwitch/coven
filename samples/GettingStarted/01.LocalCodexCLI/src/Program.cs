@@ -1,6 +1,6 @@
 using System;
 
-namespace Coven.Samples.Spellcasting.LocalCodexCLI;
+namespace Coven.Samples.LocalCodexCLI;
 
 internal static class Program
 {
@@ -10,4 +10,3 @@ internal static class Program
         return 0;
     }
 }
-

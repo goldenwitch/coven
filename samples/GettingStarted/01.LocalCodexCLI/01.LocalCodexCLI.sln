@@ -4,6 +4,8 @@ VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Console", "src/01.LocalCodexCLI.Console.csproj", "{CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Tests", "test/01.LocalCodexCLI.Tests.csproj", "{7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}"
+EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
         Debug|Any CPU = Debug|Any CPU
@@ -14,6 +16,10 @@ Global
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Release|Any CPU.Build.0 = Release|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE

@@ -16,7 +16,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Agents", "Agents", "{D4E5F6
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "EndToEnd", "EndToEnd", "{F6A7B8C9-D0E1-F2A3-4B5C-6D7E8F9012AB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Console", "Spellcasting/01.LocalCodexCLI/src/01.LocalCodexCLI.Console.csproj", "{CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Console", "GettingStarted/01.LocalCodexCLI/src/01.LocalCodexCLI.Console.csproj", "{CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Tests", "GettingStarted/01.LocalCodexCLI/test/01.LocalCodexCLI.Tests.csproj", "{7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}"
 EndProject
 Global
     GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,11 +30,16 @@ Global
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Debug|Any CPU.Build.0 = Debug|Any CPU
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Release|Any CPU.ActiveCfg = Release|Any CPU
         {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C}.Release|Any CPU.Build.0 = Release|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E}.Release|Any CPU.Build.0 = Release|Any CPU
     EndGlobalSection
     GlobalSection(SolutionProperties) = preSolution
         HideSolutionNode = FALSE
     EndGlobalSection
     GlobalSection(NestedProjects) = preSolution
-        {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C} = {8F2A1D3B-9A7B-41E3-AF3F-0C6A2A1B2F33}
+        {CB9C8A3D-0F9A-4E5A-8A3C-0F2C8F9E2B1C} = {B5A0C6C2-5F1A-4C8F-8C3D-6D6E2E8E1C11}
+        {7B5F6E4D-2C1A-4B7E-9F32-2F8D2A1C3B4E} = {B5A0C6C2-5F1A-4C8F-8C3D-6D6E2E8E1C11}
     EndGlobalSection
 EndGlobal
