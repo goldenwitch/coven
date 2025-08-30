@@ -12,4 +12,7 @@
     <ProjectReference Include="../../../../src/Coven.Spellcasting.Agents.Codex/Coven.Spellcasting.Agents.Codex.csproj" />
     <ProjectReference Include="../../../../src/Coven.Spellcasting.Agents.Validation/Coven.Spellcasting.Agents.Validation.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
 </Project>

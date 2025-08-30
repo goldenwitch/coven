@@ -1,8 +1,5 @@
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Coven.Core;
 using Coven.Core.Di;
 using Coven.Spellcasting;
@@ -100,10 +97,12 @@ internal static class Program
             return 2;
         }
 
+        // Use HostApplicationBuilder for DI + configuration
+        var builder = Host.CreateApplicationBuilder(args);
+
         // DI wiring: register Codex CLI agent and compose pipeline
-        var services = new ServiceCollection();
-        services.AddSingleton(new SampleConfig { RepoRoot = repo });
-        services.AddSingleton<ICovenAgent<FixSpell, string>>(sp =>
+        builder.Services.AddSingleton(new SampleConfig { RepoRoot = repo });
+        builder.Services.AddSingleton<ICovenAgent<FixSpell, string>>(sp =>
         {
             string ToPrompt(FixSpell f) => $"goal={f.Goal}; version={f.SpellVersion}; suite={f.TestSuite}";
             string Parse(string s) => s.Trim();
@@ -113,12 +112,12 @@ internal static class Program
             };
             return new CodexCliAgent<FixSpell, string>(ToPrompt, Parse, opts);
         });
-        services.AddSingleton<IAgentValidation>(sp => new CodexCliValidation(new CodexCliValidation.Options
+        builder.Services.AddSingleton<IAgentValidation>(sp => new CodexCliValidation(new CodexCliValidation.Options
         {
             ExecutablePath = string.IsNullOrWhiteSpace(codexPath) ? "codex" : codexPath
         }));
 
-        services.BuildCoven(c =>
+        builder.BuildCoven(c =>
         {
             // string (goal) -> ChangeRequest
             c.AddBlock<string, ChangeRequest, MakeChangeRequestBlock>();
@@ -134,8 +133,8 @@ internal static class Program
             c.Done();
         });
 
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
+        using var host = builder.Build();
+        var coven = host.Services.GetRequiredService<ICoven>();
 
         // Start pipeline from string (goal)
         var output = await coven.Ritual<string, string>(goal!);
