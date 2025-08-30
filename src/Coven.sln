@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Adapter.Discord"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Adapter.Discord.Tests", "Coven.Chat.Adapter.Discord.Tests\Coven.Chat.Adapter.Discord.Tests.csproj", "{0603D0AE-611E-479D-B862-20AE7DA27C7D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Agents.Validation", "Coven.Spellcasting.Agents.Validation\Coven.Spellcasting.Agents.Validation.csproj", "{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -223,6 +225,18 @@ Global
 		{0603D0AE-611E-479D-B862-20AE7DA27C7D}.Release|x64.Build.0 = Release|Any CPU
 		{0603D0AE-611E-479D-B862-20AE7DA27C7D}.Release|x86.ActiveCfg = Release|Any CPU
 		{0603D0AE-611E-479D-B862-20AE7DA27C7D}.Release|x86.Build.0 = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|x64.Build.0 = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D12D25A-F194-4F42-BE3A-DF219A9BEB6C}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
