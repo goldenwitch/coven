@@ -1,0 +1,250 @@
+name: prerelease-on-pr
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-prerelease-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  NUGET_SOURCE: https://api.nuget.org/v3/index.json
+  # Booleans as strings for easy `if:` checks
+  HAS_NUGET_KEY: ${{ secrets.NUGET_API_KEY != '' }}
+  IS_SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+
+jobs:
+  prerelease:
+    # Skip the run that is caused by our own bot commit to avoid loops
+    if: ${{ github.actor != 'github-actions[bot]' }}
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (PR head, full history + tags)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'   # switch to 'ga' when 10 is stable
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Determine changed packages (PR delta)
+        id: affected
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.pull_request.base.sha }}"
+          HEAD="${{ github.event.pull_request.head.sha }}"
+          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+          echo "Files changed between $BASE and $HEAD:"
+          echo "$CHANGED"
+
+          if [[ ! -f Build/packages.manifest.json ]]; then
+            echo "Missing Build/packages.manifest.json" >&2
+            exit 1
+          fi
+          mapfile -t MAP < <(jq -r '.packages[] | "\(.id)|\(.path)"' Build/packages.manifest.json)
+
+          # if shared inputs changed, force all packages
+          if echo "$CHANGED" | grep -E -q \
+             '^(Build/|Directory\.Build\.|global\.json$|NuGet\.config$|\.config/nuget\.config|\.github/workflows/)'; then
+            ids="$(printf '%s\n' "${MAP[@]}" | cut -d'|' -f1 | paste -sd, -)"
+            paths="$(printf '%s\n' "${MAP[@]}" | cut -d'|' -f2 | paste -sd, -)"
+            any=true
+          else
+            ids=""
+            paths=""
+            for pair in "${MAP[@]}"; do
+              id="${pair%%|*}"; pth="${pair##*|}"
+              if echo "$CHANGED" | grep -E -q "^${pth%/}/"; then
+                ids="${ids:+$ids,}$id"
+                paths="${paths:+$paths,}$pth"
+              fi
+            done
+            any=$([[ -n "$ids" ]] && echo true || echo false)
+          fi
+
+          echo "any=$any"   | tee -a "$GITHUB_OUTPUT"
+          echo "ids=$ids"   | tee -a "$GITHUB_OUTPUT"
+          echo "paths=$paths" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Stop early if nothing changed
+        if: steps.affected.outputs.any != 'true'
+        run: echo "No package roots changed; skipping prerelease."
+
+      - name: Compute prerelease version (PR-scoped)
+        if: steps.affected.outputs.any == 'true'
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="$(tr -d '\r\n' < Build/VERSION)"
+          base="${base%%-*}" # strip existing pre-release if any
+          pr="${{ github.event.pull_request.number }}"
+          short="$(git rev-parse --short=7 HEAD)"
+          # SemVer2: <base>-preview.pr<PR>.<run>.<shortsha>
+          version="${base}-preview.pr${pr}.${{ github.run_number }}.${short}"
+          echo "version=$version" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build everything (fast fail if broken)
+        if: steps.affected.outputs.any == 'true'
+        run: dotnet build -c Release --nologo
+
+      - name: (Optional) Build CodeFixes bundle for analyzers
+        if: steps.affected.outputs.any == 'true'
+        run: |
+          # Only build if the project exists; harmless otherwise
+          if [[ -f src/Coven.Analyzers.CodeFixes/Coven.Analyzers.CodeFixes.csproj ]]; then
+            dotnet build src/Coven.Analyzers.CodeFixes/Coven.Analyzers.CodeFixes.csproj -c Release -f netstandard2.0
+          fi
+
+      - name: Pack changed packages
+        if: steps.affected.outputs.any == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/nupkg
+          version="${{ steps.ver.outputs.version }}"
+
+          IFS=',' read -ra dirs <<< "${{ steps.affected.outputs.paths }}"
+          shopt -s nullglob
+          for d in "${dirs[@]}"; do
+            d="${d//[$'\r\n']/}"
+            [[ -z "$d" ]] && continue
+            for csproj in "$d"/*.csproj; do
+              echo "Packing: $csproj"
+              if grep -qiE '<PackageType>\s*Analyzer\s*</PackageType>|PackagePath="analyzers' "$csproj"; then
+                dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                  /p:Version="$version" \
+                  /p:ContinuousIntegrationBuild=true \
+                  /p:NoWarn=NU5128
+              else
+                dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                  /p:Version="$version" \
+                  /p:ContinuousIntegrationBuild=true \
+                  /p:IncludeSymbols=true \
+                  /p:SymbolPackageFormat=snupkg
+              fi
+            done
+          done
+
+      - name: Publish prerelease to NuGet.org
+        if: steps.affected.outputs.any == 'true' && env.HAS_NUGET_KEY == 'true' && env.IS_SAME_REPO == 'true'
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          for pkg in artifacts/nupkg/*.nupkg; do
+            echo "Pushing $pkg"
+            dotnet nuget push "$pkg" --skip-duplicate --api-key "$NUGET_API_KEY" --source "$NUGET_SOURCE"
+          done
+
+      - name: Update samples/tests to the new prerelease
+        if: steps.affected.outputs.any == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${{ steps.ver.outputs.version }}"
+          IFS=',' read -ra ids <<< "${{ steps.affected.outputs.ids }}"
+          changed_any=false
+
+          if [[ -f Directory.Packages.props ]]; then
+            python3 - <<'PY'
+import xml.etree.ElementTree as ET
+ids = """${{ steps.affected.outputs.ids }}""".split(',')
+ver = """${{ steps.ver.outputs.version }}"""
+p = 'Directory.Packages.props'
+ns = {'msb':'http://schemas.microsoft.com/developer/msbuild/2003'}
+ET.register_namespace('', ns['msb'])
+t = ET.parse(p); r = t.getroot()
+igs = r.findall('msb:ItemGroup', ns)
+ig = igs[0] if igs else ET.SubElement(r, '{%s}ItemGroup' % ns['msb'])
+seen=set()
+for pv in ig.findall('msb:PackageVersion', ns):
+    inc = pv.attrib.get('Include')
+    if inc in ids:
+        pv.set('Version', ver); seen.add(inc)
+for i in ids:
+    if i and i not in seen:
+        ET.SubElement(ig, '{%s}PackageVersion' % ns['msb'], Include=i, Version=ver)
+t.write(p, encoding='utf-8', xml_declaration=True)
+PY
+            changed_any=true
+          fi
+
+          mapfile -t PROJS < <(git ls-files '**/*.csproj' \
+            | grep -E '/(samples?|examples?|demos?|tests?)/' \
+            | grep -Ev '^src/')
+
+          if [[ ${#PROJS[@]} -gt 0 ]]; then
+            for proj in "${PROJS[@]}"; do
+              for id in "${ids[@]}"; do
+                [[ -z "$id" ]] && continue
+                echo "Updating $proj -> $id $version"
+                dotnet add "$proj" package "$id" --version "$version" || true
+                changed_any=true
+              done
+            done
+          fi
+
+          echo "changed_any=$changed_any" >> "$GITHUB_OUTPUT"
+
+      - name: Validate integration (use local nupkgs + nuget.org)
+        if: steps.affected.outputs.any == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Prefer freshly built artifacts to avoid nuget.org indexing delay
+          dotnet restore -s artifacts/nupkg -s https://api.nuget.org/v3/index.json --nologo
+          dotnet build   -c Release --nologo
+          if git ls-files | grep -E '^tests?/|/tests?/' >/dev/null 2>&1; then
+            dotnet test -c Release --nologo --no-build
+          fi
+
+      - name: Commit & push sample/test updates back to the PR branch
+        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Only commit if there are changes
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name  "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "chore(samples): use prerelease ${{ steps.ver.outputs.version }} [skip ci] [prerelease-bot]"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          else
+            echo "No sample/test updates to commit."
+          fi
+
+      - name: Leave a note on fork PRs (no secrets to publish)
+        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO != 'true'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ This PR comes from a fork, so secrets are unavailable and the prerelease
+            auto-publish/update steps were skipped. Once this branch exists in the main
+            repo, or after merge, the prerelease pipeline will engage.
