@@ -1,6 +1,6 @@
 # Promote a stable release
-# - Computes a stable semantic version (from input or bump based on Build/VERSION).
-# - Selects which packages to include (ids -> paths via Build/packages.manifest.json).
+# - Computes a stable semantic version (from input or bump based on build/VERSION).
+# - Selects which packages to include (ids -> paths via build/packages.manifest.json).
 # - Packs with the exact stable version and creates a GitHub Release (non-prerelease).
 # - Optional: publish to NuGet.org if NUGET_API_KEY is provided.
 
@@ -14,7 +14,7 @@ on:
         required: false
         type: string
       bump:
-        description: "Semver bump to compute from Build/VERSION"
+        description: "Semver bump to compute from build/VERSION"
         required: false
         default: patch
         type: choice
@@ -56,12 +56,11 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Setup .NET (include preview)
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: |
-            10.0.x
-          include-prerelease: true
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
 
       - name: Cache NuGet
         uses: actions/cache@v4
@@ -76,7 +75,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base=$(tr -d '\r\n' < Build/VERSION)
+          base=$(tr -d '\r\n' < build/VERSION)
 
           # Compute version
           if [[ -n "${{ inputs.version }}" ]]; then
@@ -106,10 +105,10 @@ jobs:
               jq_query+=']'
               selected_paths=$(jq -r --argjson ids "${jq_query}" \
                 '.packages | map(select(.id as $i | $ids | index($i))) | .[].path' \
-                Build/packages.manifest.json | paste -sd, -)
+                build/packages.manifest.json | paste -sd, -)
             fi
           else
-            selected_paths=$(jq -r '.packages[].path' Build/packages.manifest.json | paste -sd, -)
+            selected_paths=$(jq -r '.packages[].path' build/packages.manifest.json | paste -sd, -)
           fi
 
           if [[ -z "$selected_paths" ]]; then
@@ -147,8 +146,29 @@ jobs:
         if: steps.plan.outputs.any == 'true'
         shell: bash
         run: |
-          chmod +x Build/pack.sh
-          ./Build/pack.sh --no-prerelease --release-version "${{ steps.plan.outputs.version }}" --paths "${{ steps.plan.outputs.paths }}"
+          set -euo pipefail
+          mkdir -p artifacts/nupkg
+          version="${{ steps.plan.outputs.version }}"
+      
+          IFS=',' read -ra dirs <<< "${{ steps.plan.outputs.paths }}"
+          shopt -s nullglob
+          for d in "${dirs[@]}"; do
+            d="${d//[$'\r\n']/}"
+            [[ -z "$d" ]] && continue
+      
+            found_any=false
+            for csproj in "$d"/*.csproj; do
+              found_any=true
+              echo "Packing: $csproj"
+              dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                /p:Version="$version" \
+                /p:ContinuousIntegrationBuild=true \
+                /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
+            done
+            if [[ "$found_any" = false ]]; then
+              echo "WARN: No .csproj found in $d — skipping" >&2
+            fi
+          done
 
       - name: Upload artifacts
         if: steps.plan.outputs.any == 'true'
