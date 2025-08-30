@@ -1,80 +1,76 @@
+[CmdletBinding()]
 param(
-    [switch]$PreRelease = $true,
-    [string]$Suffix = "preview",
-    [string]$ReleaseVersion,
-    [string]$Configuration = "Release",
-    [string[]]$Paths
+  [switch]$NoPrerelease,                # --no-prerelease
+  [string]$Suffix = "preview",          # --suffix
+  [string]$ReleaseVersion = "",         # --release-version (required if -NoPrerelease)
+  [string]$Configuration = "Release",   # -c / --configuration
+  [string]$Paths = ""                   # --paths (comma-separated roots)
 )
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 
-$ErrorActionPreference = 'Stop'
+$ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$RepoRoot  = Resolve-Path (Join-Path $ScriptDir "..")
 
 function Get-BaseVersion {
-    $versionPath = Join-Path $PSScriptRoot 'VERSION'
-    if (-not (Test-Path $versionPath)) {
-        throw "VERSION file not found at $versionPath"
+  (Get-Content -Path (Join-Path $ScriptDir "VERSION") -Raw).Trim()
+}
+
+function Compute-Version {
+  param([bool]$Prerelease)
+  if (-not $Prerelease) {
+    if ([string]::IsNullOrWhiteSpace($ReleaseVersion)) {
+      Write-Error "--release-version is required when --no-prerelease is set"
     }
-    (Get-Content $versionPath -Raw).Trim()
+    return $ReleaseVersion
+  }
+  $base = Get-BaseVersion
+  $run  = if ($env:GITHUB_RUN_NUMBER) { $env:GITHUB_RUN_NUMBER } else { (Get-Date -Format "yyyyMMddHHmm") }
+  $sha  = if ($env:GITHUB_SHA) { $env:GITHUB_SHA } else { $(git rev-parse --short HEAD 2>$null) }
+  if (-not $sha) { $sha = "local" } else { $sha = $sha.Substring(0, [Math]::Min(7, $sha.Length)) }
+  return "{0}-{1}.{2}+sha.{3}" -f $base, $Suffix, $run, $sha
 }
 
-function Get-Version {
-    param(
-        [bool]$IsPre,
-        [string]$Suffix,
-        [string]$ReleaseVersion
-    )
-    if (-not $IsPre) { return $ReleaseVersion }
-    $base = Get-BaseVersion
-    $run = if ($env:GITHUB_RUN_NUMBER) { $env:GITHUB_RUN_NUMBER } else { Get-Date -Format 'yyyyMMddHHmm' }
-    $sha = if ($env:GITHUB_SHA) { $env:GITHUB_SHA.Substring(0,7) } else { (git rev-parse --short HEAD) 2>$null }
-    if ([string]::IsNullOrWhiteSpace($sha)) { $sha = 'local' }
-    return "$base-$Suffix.$run+sha.$sha"
-}
+$isPrerelease = -not $NoPrerelease.IsPresent
+$version = Compute-Version -Prerelease:$isPrerelease
+Write-Host ("Packing version {0} (Prerelease={1})" -f $version, $isPrerelease)
 
-function Get-Projects {
-    param([string[]]$Paths)
-    $root = Resolve-Path (Join-Path $PSScriptRoot '..')
-    if ($Paths -and $Paths.Length -gt 0) {
-        $all = @()
-        foreach ($p in $Paths) {
-            if (-not [string]::IsNullOrWhiteSpace($p)) {
-                $dir = Join-Path $root $p
-                if (Test-Path $dir) {
-                    $all += Get-ChildItem -Path $dir -Recurse -Filter *.csproj | Where-Object { $_.Name -notmatch 'Tests\.csproj$' }
-                }
-            }
-        }
-        return $all | Select-Object -Unique
-    }
-    else {
-        return Get-ChildItem -Path (Join-Path $root 'src') -Recurse -Filter *.csproj | Where-Object { $_.Name -notmatch 'Tests\.csproj$' }
-    }
-}
-
-$isPre = $PreRelease -and [string]::IsNullOrWhiteSpace($ReleaseVersion)
-if (-not $isPre -and [string]::IsNullOrWhiteSpace($ReleaseVersion)) {
-    throw "Provide -ReleaseVersion for stable builds or use -PreRelease."
-}
-
-$version = Get-Version -IsPre:$isPre -Suffix:$Suffix -ReleaseVersion:$ReleaseVersion
-Write-Host "Packing version $version (PreRelease=$isPre)"
-
-$repoRoot = Resolve-Path (Join-Path $PSScriptRoot '..')
-Push-Location $repoRoot
+Push-Location $RepoRoot
 try {
-    dotnet --info | Out-Null
-    dotnet restore
-    $outDir = Join-Path $repoRoot 'artifacts' 'nupkg'
-    New-Item -ItemType Directory -Force -Path $outDir | Out-Null
+  $outDir = Join-Path $RepoRoot "artifacts/nupkg"
+  New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 
-    $projects = Get-Projects -Paths:$Paths
-    foreach ($proj in $projects) {
-        Write-Host "Packing $($proj.FullName)"
-        dotnet pack $proj.FullName -c $Configuration -p:Version=$version -p:ContinuousIntegrationBuild=true --include-symbols -p:SymbolPackageFormat=snupkg -o $outDir
+  & dotnet --info | Out-Null
+  & dotnet restore
+
+  # Collect projects to pack
+  $projects = @()
+  if (-not [string]::IsNullOrWhiteSpace($Paths)) {
+    $roots = $Paths.Split(",") | ForEach-Object { $_.Trim() } | Where-Object { $_ }
+    foreach ($p in $roots) {
+      $abs = Join-Path $RepoRoot $p
+      if (Test-Path $abs) {
+        $projects += Get-ChildItem -Path $abs -Filter *.csproj -Recurse | Where-Object { $_.Name -notmatch "Tests\.csproj$" } | ForEach-Object { $_.FullName }
+      }
     }
+  } else {
+    $src = Join-Path $RepoRoot "src"
+    if (Test-Path $src) {
+      $projects += Get-ChildItem -Path $src -Filter *.csproj -Recurse | Where-Object { $_.Name -notmatch "Tests\.csproj$" } | ForEach-Object { $_.FullName }
+    }
+  }
 
-    Write-Host "Packages written to $outDir"
-}
-finally {
-    Pop-Location
-}
+  $projects = $projects | Sort-Object -Unique
+  if (-not $projects -or $projects.Count -eq 0) {
+    Write-Error "No projects found to pack."
+  }
 
+  foreach ($proj in $projects) {
+    Write-Host "Packing $proj"
+    & dotnet pack $proj -c $Configuration -p:Version="$version" -p:ContinuousIntegrationBuild=true --include-symbols -p:SymbolPackageFormat=snupkg -o $outDir
+  }
+
+  Write-Host "Packages written to $outDir"
+} finally {
+  Pop-Location
+}
