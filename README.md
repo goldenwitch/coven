@@ -83,6 +83,10 @@ Note: Ensure `codex` is on your PATH, or pass `new CodexCliAgent<FixSpell, strin
 
 See fuller, two-part end‑to‑end examples in `/Architecture/EndToEndExample.md`.
 
+## Samples
+
+Explore runnable examples in `/samples`. Open `samples/Coven.Samples.sln` to browse all samples side-by-side, or use each sample’s individual `.sln` in its folder.
+
 # Appendix 
 
 - [Code Index](/INDEX.md)
