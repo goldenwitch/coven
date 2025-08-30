@@ -146,8 +146,29 @@ jobs:
         if: steps.plan.outputs.any == 'true'
         shell: bash
         run: |
-          chmod +x build/pack.sh
-          ./build/pack.sh --no-prerelease --release-version "${{ steps.plan.outputs.version }}" --paths "${{ steps.plan.outputs.paths }}"
+          set -euo pipefail
+          mkdir -p artifacts/nupkg
+          version="${{ steps.plan.outputs.version }}"
+      
+          IFS=',' read -ra dirs <<< "${{ steps.plan.outputs.paths }}"
+          shopt -s nullglob
+          for d in "${dirs[@]}"; do
+            d="${d//[$'\r\n']/}"
+            [[ -z "$d" ]] && continue
+      
+            found_any=false
+            for csproj in "$d"/*.csproj; do
+              found_any=true
+              echo "Packing: $csproj"
+              dotnet pack "$csproj" -c Release -o artifacts/nupkg \
+                /p:Version="$version" \
+                /p:ContinuousIntegrationBuild=true \
+                /p:IncludeSymbols=true /p:SymbolPackageFormat=snupkg
+            done
+            if [[ "$found_any" = false ]]; then
+              echo "WARN: No .csproj found in $d — skipping" >&2
+            fi
+          done
 
       - name: Upload artifacts
         if: steps.plan.outputs.any == 'true'
