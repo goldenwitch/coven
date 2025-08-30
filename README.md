@@ -79,6 +79,10 @@ Directory.CreateDirectory(repo);
 var output = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(repo, "demo-goal"));
 ```
 
+Note: Ensure `codex` is on your PATH, or pass `new CodexCliAgent<FixSpell, string>.Options { ExecutablePath = "/absolute/path/to/codex" }` when constructing the agent.
+
+See fuller, two-part end‑to‑end examples in `/Architecture/EndToEndExample.md`.
+
 # Appendix 
 
 - [Code Index](/INDEX.md)

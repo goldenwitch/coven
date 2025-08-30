@@ -20,8 +20,6 @@ Project overview: see [README](/README.md).
 - [Coven.Chat](/src/Coven.Chat/)
 - [Coven.Chat.Journal](/src/Coven.Chat.Journal/)
 - [Coven.Chat.Tests](/src/Coven.Chat.Tests/)
-- [Coven.Chat.Adapter](/src/Coven.Chat.Adapter/)
-- [Coven.Chat.Adapter.Tests](/src/Coven.Chat.Adapter.Tests/)
 
 ### Chat integration implementations
 - [Coven.Chat.Adapter.Discord](/src/Coven.Chat.Adapter.Discord/)
@@ -38,7 +36,6 @@ Start with Overview, then explore by topic. This index includes all design docs 
 
 ## Getting Started
 - [Overview](./Overview.md)
-- [Project Scope](./ProjectScope.md)
 - [End-to-End Example](./EndToEndExample.md)
 
 ## Core Concepts
@@ -48,7 +45,6 @@ Start with Overview, then explore by topic. This index includes all design docs 
 
 ## Runtime
 - [Board (Push & Pull)](./Board.md)
-- [Pull Mode Internals](./PullMode.md)
 - [Dependency Injection](./DependencyInjection.md)
 - [Connectivity](./Connectivity.md)
 
