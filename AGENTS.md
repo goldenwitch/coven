@@ -1,4 +1,5 @@
-Always start by reading README.md
+Always start by reading \README.md
+Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
 Preferred tools by task:
 - Patch
@@ -9,9 +10,16 @@ Preferred tools by task:
     - nl
     - find
 
+Missing/Banned tools:
+- rg
+- dotnet
+- py
+- perl
+- ruby
+- node
+
 Ask questions when:
 - Commands fail twice in a row
 - You find missing dependencies
 
-It's also okay to:
-- Do things one file at a time.
+Recite AGENTS.md regularly so you don't forget these important details!

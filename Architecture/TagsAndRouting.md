@@ -62,7 +62,7 @@ Given the current epoch’s tags (tags added during the immediately preceding st
 
 1) **Explicit direction wins**: if `to:#<index>` or `to:<BlockTypeName>` is present, and the candidate both accepts the current value type **and** appears **after** the last executed block, choose it. This overrides other rules.  
 2) **Capability overlap**: otherwise, pick the candidate with the highest overlap between the current TagSet and the candidate’s advertised capabilities (including builder‑assigned). Forward hints `next:*` participate in this overlap to bias progress.  
-3) **Tie‑break**: if scores tie (or no capabilities are advertised), choose the next registered block that accepts the current value type.
+3) **Tie‑break**: if scores tie (or no capabilities are advertised), choose the next registered block (by order) that accepts the current value type.
 
 **Forward‑only selection**: In push mode, selection is restricted to blocks with a greater registry index than the last executed block. This ensures progress and prevents most cycles. If no suitable next block exists and the current value is not assignable to `TOutput`, the Board throws.
 
@@ -109,12 +109,6 @@ Internally, the Board journals tags by **epoch** (“step”) to enable next‑h
 - Tags added by a block apply to the **following** selection (the “current epoch” for the next hop).  
 - `by:*` is recorded for observability but filtered from persisted tags in pull mode.  
 - `next:*` hints are computed/added after each step and re‑added during pull persistence to preserve forward bias.
-
----
-
-## Out of Scope (This Phase)
-
-Timeout/retry policies for step execution.
 
 ---
 

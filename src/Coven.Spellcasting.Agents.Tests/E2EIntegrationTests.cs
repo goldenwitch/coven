@@ -2,7 +2,10 @@ using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Xunit;
@@ -66,11 +69,16 @@ public class E2EIntegrationTests
         var temp = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("n"));
         Directory.CreateDirectory(temp);
 
-        var agent = new FakeAgent();
+        var services = new ServiceCollection();
+        services.AddSingleton<ICovenAgent<FixSpell, string>, FakeAgent>();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<ChangeRequest, string, EndToEndUser>();
+            c.Done();
+        });
 
-        var coven = new MagikBuilder<ChangeRequest, string>()
-            .MagikBlock<ChangeRequest, string>(new EndToEndUser(agent))
-            .Done();
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(temp, "demo-task"));
 

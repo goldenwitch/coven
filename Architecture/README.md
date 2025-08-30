@@ -4,7 +4,6 @@ Start with Overview, then explore by topic. This index includes all design docs 
 
 ## Getting Started
 - [Overview](./Overview.md)
-- [Project Scope](./ProjectScope.md)
 - [End-to-End Example](./EndToEndExample.md)
 
 ## Core Concepts
@@ -14,7 +13,6 @@ Start with Overview, then explore by topic. This index includes all design docs 
 
 ## Runtime
 - [Board (Push & Pull)](./Board.md)
-- [Pull Mode Internals](./PullMode.md)
 - [Dependency Injection](./DependencyInjection.md)
 - [Connectivity](./Connectivity.md)
 
