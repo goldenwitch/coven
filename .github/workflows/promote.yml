@@ -1,0 +1,160 @@
+name: promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Stable version to release (overrides bump)"
+        required: false
+        type: string
+      bump:
+        description: "Semver bump to compute from Build/VERSION"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      commit:
+        description: "Commit SHA or ref to build from"
+        required: false
+        type: string
+      packages:
+        description: "Comma-separated package IDs to promote (default: all manifest packages)"
+        required: false
+        type: string
+      publish_nuget:
+        description: "Publish to NuGet.org if NUGET_API_KEY is set"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-pack-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit || github.ref }}
+
+      - name: Setup .NET (include preview)
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            10.0.x
+          include-prerelease: true
+
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Plan release (version and selection)
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          base=$(cat Build/VERSION | tr -d '\n' | tr -d '\r')
+          # Compute version
+          if [[ -n "${{ inputs.version }}" ]]; then
+            version="${{ inputs.version }}"
+          else
+            bump="${{ inputs.bump }}"
+            IFS='.' read -r MA MI PA <<< "${base%%-*}"
+            MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
+            case "$bump" in
+              major) MA=$((MA+1)); MI=0; PA=0 ;;
+              minor) MI=$((MI+1)); PA=0 ;;
+              patch|*) PA=$((PA+1)) ;;
+            esac
+            version="$MA.$MI.$PA"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+          # Compute selected package paths from manifest
+          if [[ -n "${{ inputs.packages }}" ]]; then
+            mapfile -t want < <(echo "${{ inputs.packages }}" | tr ',' '\n' | sed 's/^\s*//; s/\s*$//;' | awk 'NF')
+            if [[ ${#want[@]} -eq 0 ]]; then selected_paths=""; else
+              # Build jq filter for selected ids
+              jq_query='['
+              for id in "${want[@]}"; do jq_query+="\"$id\","; done
+              jq_query=${jq_query%,}
+              jq_query+=']'
+              selected_paths=$(jq -r --argjson ids "${jq_query}" '.packages | map(select(.id as $i | $ids | index($i))) | .[].path' Build/packages.manifest.json | paste -sd, -)
+            fi
+          else
+            selected_paths=$(jq -r '.packages[].path' Build/packages.manifest.json | paste -sd, -)
+          fi
+
+          if [[ -z "$selected_paths" ]]; then
+            echo "any=false" >> "$GITHUB_OUTPUT"
+            echo "paths=" >> "$GITHUB_OUTPUT"
+          else
+            echo "any=true" >> "$GITHUB_OUTPUT"
+            echo "paths=$selected_paths" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Determine previous stable version from existing tags: vMAJOR.MINOR.PATCH
+          prev=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -n1 || true)
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Pack stable
+        shell: bash
+        if: steps.plan.outputs.any == 'true'
+        run: |
+          chmod +x Build/pack.sh
+          ./Build/pack.sh --no-prerelease --release-version "${{ steps.plan.outputs.version }}" --paths "${{ steps.plan.outputs.paths }}"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        if: steps.plan.outputs.any == 'true'
+        with:
+          name: nupkgs-stable
+          path: artifacts/nupkg/*
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        if: steps.plan.outputs.any == 'true'
+        with:
+          tag_name: v${{ steps.plan.outputs.version }}
+          name: v${{ steps.plan.outputs.version }}
+          prerelease: false
+          draft: false
+          generate_release_notes: true
+          files: |
+            artifacts/nupkg/*.nupkg
+            artifacts/nupkg/*.snupkg
+
+      - name: Publish to NuGet.org
+        if: ${{ inputs.publish_nuget && secrets.NUGET_API_KEY != '' }}
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          dotnet nuget push "artifacts/nupkg/*.nupkg" --skip-duplicate --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+      - name: Validate version monotonicity
+        if: steps.plan.outputs.any == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          new="${{ steps.plan.outputs.version }}"
+          prev="${{ steps.plan.outputs.prev }}"
+          if [[ -n "$prev" ]]; then
+            max=$(printf '%s\n%s\n' "$prev" "$new" | sort -V | tail -n1)
+            if [[ "$max" != "$new" ]]; then
+              echo "Requested version $new must be greater than previous stable $prev" >&2
+              exit 1
+            fi
+            if [[ "$new" == "$prev" ]]; then
+              echo "Requested version $new equals previous stable $prev; must be greater." >&2
+              exit 1
+            fi
+          fi
