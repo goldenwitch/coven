@@ -8,8 +8,7 @@
     { "id": "Coven.Chat", "path": "src/Coven.Chat" },
     { "id": "Coven.Chat.Journal", "path": "src/Coven.Chat.Journal" },
     { "id": "Coven.Chat.Adapter.Discord", "path": "src/Coven.Chat.Adapter.Discord" },
-    { "id": "Coven.Analyzers", "path": "src/Coven.Analyzers" },
-    { "id": "Coven.Analyzers.CodeFixes", "path": "src/Coven.Analyzers.CodeFixes" }
+    { "id": "Coven.Analyzers", "path": "src/Coven.Analyzers" }
   ]
 }
 
