@@ -1,13 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <PackageType>Analyzer</PackageType>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <AssemblyName>Coven.Analyzers</AssemblyName>
     <RootNamespace>Coven.Analyzers</RootNamespace>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
 
@@ -19,6 +21,21 @@
 
   <ItemGroup>
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Analyzer assembly -->
+    <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" />
+    <None Include="$(TargetDir)$(AssemblyName).xml"
+          Pack="true" PackagePath="analyzers/dotnet/cs"
+          Condition="Exists('$(TargetDir)$(AssemblyName).xml')" />
+
+    <!-- CodeFix assembly (built from the referenced project) -->
+    <None Include="..\Coven.Analyzers.CodeFixes\bin\$(Configuration)\$(TargetFramework)\Coven.Analyzers.CodeFixes.dll"
+          Pack="true" PackagePath="analyzers/dotnet/cs" />
+    <None Include="..\Coven.Analyzers.CodeFixes\bin\$(Configuration)\$(TargetFramework)\Coven.Analyzers.CodeFixes.xml"
+          Pack="true" PackagePath="analyzers/dotnet/cs"
+          Condition="Exists('..\Coven.Analyzers.CodeFixes\bin\$(Configuration)\$(TargetFramework)\Coven.Analyzers.CodeFixes.xml')" />
   </ItemGroup>
 
 </Project>
