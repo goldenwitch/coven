@@ -93,13 +93,13 @@ var result = await coven.Ritual<ChangeRequest, PatchPlan>(new("demo"));
 
 - Configure defaults via DI: `services.AddSpellcastingDefaults<TIn>(b => b.UseGuide(...).UseSpell(...).UseTest(...));`
 - For typed books, inherit `MagikUser<TIn,TOut,TGuide,TSpell,TTest>` and inject your factories.
-- Design doc: see Arch/Spellcasting/Spellcasting.md for goals, API, and patterns.
+- Design doc: see [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md) for goals, API, and patterns.
 
 # Appendix 
 
 
-- **Detailed Architecture.** [Click here](/Arch/README.md)
-- **Coven.Spellcasting** [Click here](/Arch/Spellcasting/Spellcasting.md)
+- [Architecture Guide](/Architecture/README.md)
+- [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md)
 
 **License.** Dual‑license: MIT for individuals, nonprofits, and orgs under USD \$100M revenue; commercial license required at ≥ \$100M. Contact: Autumn Wyborny.
 

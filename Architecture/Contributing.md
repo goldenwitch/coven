@@ -13,4 +13,3 @@ If someone has multiple contributions they would like to make to this repo reach
 - Dependency injection and configuration must happen at the very root of integration.
 
 Breaking these rules is fine, we can talk about it in the PR if you've got a good reason.
-

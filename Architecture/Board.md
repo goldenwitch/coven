@@ -28,4 +28,3 @@ In Pull mode the orchestration loop repeatedly calls `GetWork<TIn>(request)`; th
 - Selection: Board picks the next block using Push scoring (`to:*` > capability overlap > registration order) against merged tags (board + request).
 - Execute: Board runs that block with `request.Input`, emits `by:*`, updates tags, and calls `Complete<TOut>(output)` back to the orchestrator.
 - No forward-only: Pull doesn’t enforce index monotonicity; a Roslyn analyzer ensures reachability.
-

@@ -28,4 +28,3 @@ The function that assigns tags MUST be static and only has access to limited inf
 ## Type limitations
 Each MagikBlock supports generic TOutput and T, T2 ... T20 inputs.
 - To handle arbitrary numbers of types of inputs, we dynamically generate T2 -> T20 based on usage.
-
