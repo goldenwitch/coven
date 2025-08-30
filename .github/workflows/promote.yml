@@ -1,6 +1,6 @@
 # Promote a stable release
-# - Computes a stable semantic version (from input or bump based on Build/VERSION).
-# - Selects which packages to include (ids -> paths via Build/packages.manifest.json).
+# - Computes a stable semantic version (from input or bump based on build/VERSION).
+# - Selects which packages to include (ids -> paths via build/packages.manifest.json).
 # - Packs with the exact stable version and creates a GitHub Release (non-prerelease).
 # - Optional: publish to NuGet.org if NUGET_API_KEY is provided.
 
@@ -14,7 +14,7 @@ on:
         required: false
         type: string
       bump:
-        description: "Semver bump to compute from Build/VERSION"
+        description: "Semver bump to compute from build/VERSION"
         required: false
         default: patch
         type: choice
@@ -75,7 +75,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base=$(tr -d '\r\n' < Build/VERSION)
+          base=$(tr -d '\r\n' < build/VERSION)
 
           # Compute version
           if [[ -n "${{ inputs.version }}" ]]; then
@@ -105,10 +105,10 @@ jobs:
               jq_query+=']'
               selected_paths=$(jq -r --argjson ids "${jq_query}" \
                 '.packages | map(select(.id as $i | $ids | index($i))) | .[].path' \
-                Build/packages.manifest.json | paste -sd, -)
+                build/packages.manifest.json | paste -sd, -)
             fi
           else
-            selected_paths=$(jq -r '.packages[].path' Build/packages.manifest.json | paste -sd, -)
+            selected_paths=$(jq -r '.packages[].path' build/packages.manifest.json | paste -sd, -)
           fi
 
           if [[ -z "$selected_paths" ]]; then
@@ -146,8 +146,8 @@ jobs:
         if: steps.plan.outputs.any == 'true'
         shell: bash
         run: |
-          chmod +x Build/pack.sh
-          ./Build/pack.sh --no-prerelease --release-version "${{ steps.plan.outputs.version }}" --paths "${{ steps.plan.outputs.paths }}"
+          chmod +x build/pack.sh
+          ./build/pack.sh --no-prerelease --release-version "${{ steps.plan.outputs.version }}" --paths "${{ steps.plan.outputs.paths }}"
 
       - name: Upload artifacts
         if: steps.plan.outputs.any == 'true'
