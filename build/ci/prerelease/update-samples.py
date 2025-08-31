@@ -1,160 +1,107 @@
 #!/usr/bin/env python3
 # build/ci/prerelease/update-samples.py
-import argparse, os, re, json, glob, xml.etree.ElementTree as ET
-from urllib.request import urlopen, Request
-from urllib.error import URLError, HTTPError
+# Writes samples/Directory.Packages.props so that every Coven.* PackageReference
+# in /samples has a matching <PackageVersion Include="...">.
+# - Changed IDs get the current prerelease (passed in).
+# - Unchanged IDs get the stable base read from Build/VERSION (strip any -pre tag).
+
+import argparse, os, re, glob, xml.etree.ElementTree as ET
 
 def ns_of(tag):
     m = re.match(r'^\{([^}]+)\}', tag or '')
     return m.group(1) if m else None
-
 def q(ns, name): return f'{{{ns}}}{name}' if ns else name
 
-def find_sample_projects():
-    return glob.glob(os.path.join('samples', '**', '*.csproj'), recursive=True)
+def sample_projects():
+    return glob.glob(os.path.join('samples','**','*.csproj'), recursive=True)
 
-def read_coven_refs(csproj_path, prefix):
+def coven_refs(csproj, prefix):
     try:
-        tree = ET.parse(csproj_path); root = tree.getroot()
+        root = ET.parse(csproj).getroot()
     except ET.ParseError:
         return set()
     ns = ns_of(root.tag)
-    ids = set()
-    for pr in root.findall(f".//{q(ns,'PackageReference')}"):
+    out = set()
+    for pr in root.findall(f".//{q(ns,'PackageReference')}") or []:
         inc = pr.attrib.get('Include') or pr.attrib.get('Update')
-        if inc and inc.startswith(prefix):
-            ids.add(inc)
-    return ids
+        if inc and inc.startswith(prefix): out.add(inc)
+    return out
 
-def read_defined_ids(props_path):
-    """Return set of IDs that have a PackageVersion entry in props_path."""
-    if not os.path.exists(props_path): return set()
-    tree = ET.parse(props_path); root = tree.getroot()
+def read_stable_base():
+    candidates = ['Build/VERSION', 'build/VERSION']
+    for p in candidates:
+        if os.path.exists(p):
+            with open(p, 'r', encoding='utf-8') as f:
+                base = f.read().strip()
+                return base.split('-')[0]  # strip any prerelease
+    raise SystemExit("VERSION file not found under Build/ or build/")
+
+def ensure_overlay():
+    path = os.path.join('samples', 'Directory.Packages.props')
+    if os.path.exists(path):
+        root = ET.parse(path).getroot()
+    else:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        root = ET.Element("Project")
     ns = ns_of(root.tag)
-    ids = set()
-    for pv in root.findall(f".//{q(ns,'PackageVersion')}"):
-        inc = pv.attrib.get('Include')
-        upd = pv.attrib.get('Update')
-        if inc: ids.add(inc)
-        if upd: ids.add(upd)
-    return ids
 
-def nuget_latest_version(id_lower: str, prefer_stable=True):
-    url = f"https://api.nuget.org/v3-flatcontainer/{id_lower}/index.json"
-    try:
-        req = Request(url, headers={"User-Agent": "coven-prerelease-bot/1.0"})
-        with urlopen(req, timeout=10) as r:
-            data = json.loads(r.read().decode('utf-8'))
-    except (HTTPError, URLError, TimeoutError):
-        return None
-    versions = data.get('versions') or []
-    if prefer_stable:
-        stables = [v for v in versions if '-' not in v]
-        if stables: return stables[-1]
-    return versions[-1] if versions else None
+    # Ensure CPM is on
+    pg = next((n for n in root.findall(q(ns,'PropertyGroup')) or []), None)
+    if pg is None: pg = ET.SubElement(root, q(ns,'PropertyGroup'))
+    mpvc = pg.find(q(ns,'ManagePackageVersionsCentrally'))
+    if mpvc is None: mpvc = ET.SubElement(pg, q(ns,'ManagePackageVersionsCentrally'))
+    mpvc.text = "true"
 
-def ensure_parent_import_first(root):
-    ns = ns_of(root.tag)
-    # Look for an Import with GetPathOfFileAbove
-    has = any(
-        (e.tag == q(ns,'Import')) and ('GetPathOfFileAbove' in (e.attrib.get('Project','')))
-        for e in list(root)
-    )
-    if not has:
+    # Ensure import of parent (so non-Coven versions still flow down)
+    has_import = any((e.tag == q(ns,'Import')) and ('GetPathOfFileAbove' in (e.attrib.get('Project',''))) for e in list(root))
+    if not has_import:
         imp = ET.Element(q(ns,'Import'))
-        # Fully quoted args for GetPathOfFileAbove
-        imp.set('Project', "$([MSBuild]::GetPathOfFileAbove('Directory.Packages.props','$(MSBuildThisFileDirectory)..'))")
+        imp.set('Project', "$([MSBuild]::GetPathOfFileAbove(Directory.Packages.props, $(MSBuildThisFileDirectory)..))")
         root.insert(0, imp)
+
+    tree = ET.ElementTree(root)
+    return path, tree, root, ns
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ids", required=True, help="CSV of CHANGED package IDs (from detect-changed)")
-    ap.add_argument("--version", required=True, help="Prerelease semver for changed IDs")
-    ap.add_argument("--prefix", default="Coven.", help="Internal package ID prefix to manage in samples")
-    ap.add_argument("--props", default=os.path.join("samples","Directory.Packages.props"))
-    ap.add_argument("--allow-prerelease-fallback", action="store_true",
-                    help="If no stable exists on nuget.org, allow prerelease fallback")
-    ap.add_argument("--root-props", default="Directory.Packages.props",
-                    help="Path to parent CPM file to inspect (default: repository root)")
+    ap.add_argument("--version", required=True, help="Prerelease version for CHANGED IDs")
+    ap.add_argument("--prefix", default="Coven.", help="Package ID prefix to manage")
     args = ap.parse_args()
 
     changed = {s for s in (args.ids or "").split(",") if s}
     prerelease = args.version
-    prefix = args.prefix
+    stable_base = read_stable_base()
 
-    # Discover all Coven.* package IDs referenced by samples
+    # Gather every Coven.* referenced under /samples
     needed = set()
-    for p in find_sample_projects():
-        needed |= read_coven_refs(p, prefix)
+    for proj in sample_projects():
+        needed |= coven_refs(proj, args.prefix)
 
-    # If nothing to do, exit cleanly
-    if not needed and not changed:
-        return
+    # Nothing to do? still ensure the overlay skeleton exists
+    path, tree, root, ns = ensure_overlay()
 
-    # Build the props tree (create if missing)
-    if os.path.exists(args.props):
-        tree = ET.parse(args.props); root = tree.getroot()
-    else:
-        root = ET.Element("Project")
-        tree = ET.ElementTree(root)
-
-    # Import parent first so its items exist before we emit Update
-    ensure_parent_import_first(root)
-
-    # Find or create ItemGroup
-    ns = ns_of(root.tag)
-    ig = None
-    for e in root.findall(q(ns,'ItemGroup')): ig = e; break
+    # Find/create the ItemGroup for PackageVersion entries
+    ig = next((n for n in root.findall(q(ns,'ItemGroup')) or []), None)
     if ig is None: ig = ET.SubElement(root, q(ns,'ItemGroup'))
 
-    # What IDs are already defined upstream / locally?
-    parent_defined = read_defined_ids(args.root_props)
-    overlay_defined = read_defined_ids(args.props)
+    # Drop any existing PackageVersion for the managed prefix (clean slate)
+    for pv in list(ig.findall(q(ns,'PackageVersion')) or []):
+        pid = pv.attrib.get('Include') or pv.attrib.get('Update')
+        if pid and pid.startswith(args.prefix):
+            ig.remove(pv)
 
-    # Existing nodes in overlay by id (either Include or Update)
-    existing = {}
-    for pv in ig.findall(q(ns,'PackageVersion')):
-        k = pv.attrib.get('Update') or pv.attrib.get('Include')
-        if k: existing[k] = pv
-
-    def desired_version(pid):
-        if pid in changed:
-            return prerelease
-        # Keep overlay version if present
-        node = existing.get(pid)
-        if node is not None and node.attrib.get('Version'):
-            return node.attrib['Version']
-        # Otherwise, try nuget.org (prefer stable)
-        v = nuget_latest_version(pid.lower(), prefer_stable=True)
-        if not v and args.allow_prerelease_fallback:
-            v = nuget_latest_version(pid.lower(), prefer_stable=False)
-        return v
-
-    # Upsert entries with Include-or-Update semantics
+    # Emit Include entries for all needed IDs (changed -> prerelease; unchanged -> stable)
     for pid in sorted(needed):
-        ver = desired_version(pid)
-        if not ver:
-            # Leave unresolved; restore will surface it (rare: brand new package id with no published version)
-            continue
+        ver = prerelease if pid in changed else stable_base
+        ET.SubElement(ig, q(ns,'PackageVersion'), {'Include': pid, 'Version': ver})
 
-        node = existing.get(pid)
-        if node is None:
-            # Choose Update if parent/overlay already define; otherwise Include
-            use_update = (pid in parent_defined) or (pid in overlay_defined)
-            if use_update:
-                node = ET.SubElement(ig, q(ns,'PackageVersion'), {'Update': pid, 'Version': ver})
-            else:
-                node = ET.SubElement(ig, q(ns,'PackageVersion'), {'Include': pid, 'Version': ver})
-            existing[pid] = node
-        else:
-            # Normalize and set Version
-            if 'Include' in node.attrib and pid in parent_defined:
-                # Prefer Update when parent already has it (override instead of duplicate)
-                node.attrib.pop('Include', None)
-                node.set('Update', pid)
-            node.set('Version', ver)
-
-    tree.write(args.props, encoding="utf-8", xml_declaration=True)
+    tree.write(path, encoding='utf-8', xml_declaration=True)
+    # Optional: print a summary mapping for logs
+    print(f"Updated {path} with {len(needed)} PackageVersion Include entries.")
+    for pid in sorted(needed):
+        v = prerelease if pid in changed else stable_base
+        print(f"  - {pid} -> {v}")
 
 if __name__ == "__main__":
     main()

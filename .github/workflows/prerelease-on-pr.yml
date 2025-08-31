@@ -108,16 +108,15 @@ jobs:
         run: |
           build/ci/prerelease/publish.sh --source "$NUGET_SOURCE"
 
-      - name: Update samples CPM overlay
+      - name: Update samples CPM overlay (Include= only)
         if: steps.affected.outputs.any == 'true'
         run: |
           python3 build/ci/prerelease/update-samples.py \
             --ids "${{ steps.affected.outputs.ids }}" \
             --version "${{ steps.ver.outputs.version }}" \
-            --prefix "Coven." \
-            --allow-prerelease-fallback \
-            --root-props "Directory.Packages.props"
+            --prefix "Coven."
         id: bump
+
 
       - name: CPM debug report (what refs vs what central versions)
         if: steps.affected.outputs.any == 'true'
