@@ -115,7 +115,8 @@ jobs:
             --ids "${{ steps.affected.outputs.ids }}" \
             --version "${{ steps.ver.outputs.version }}" \
             --prefix "Coven." \
-            --allow-prerelease-fallback
+            --allow-prerelease-fallback \
+            --root-props "Directory.Packages.props"
         id: bump
 
       # (Changed-detection for commit stays the same)
