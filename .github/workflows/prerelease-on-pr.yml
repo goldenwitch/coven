@@ -119,6 +119,23 @@ jobs:
             --root-props "Directory.Packages.props"
         id: bump
 
+      - name: CPM debug report (what refs vs what central versions)
+        if: steps.affected.outputs.any == 'true'
+        run: |
+          python3 build/ci/prerelease/cpm-report.py \
+            --overlay "samples/Directory.Packages.props" \
+            --parent  "Directory.Packages.props" \
+            --prefix  "Coven." \
+            --out     "artifacts/cpm/cpm-report.md"
+
+      - name: Upload CPM report
+        if: steps.affected.outputs.any == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpm-report
+          path: artifacts/cpm/cpm-report.md
+          retention-days: 7
+
       # (Changed-detection for commit stays the same)
       - name: Commit & push samples update to PR branch
         if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'
