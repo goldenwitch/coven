@@ -76,7 +76,7 @@ jobs:
 
       - name: Build (sanity)
         if: steps.affected.outputs.any == 'true'
-        run: dotnet build -c Release --nologo
+        run: dotnet build ./src/ -c Release --nologo
 
       - name: (Optional) Build CodeFix bundle for analyzers
         if: steps.affected.outputs.any == 'true'
