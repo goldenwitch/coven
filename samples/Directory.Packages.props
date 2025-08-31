@@ -4,10 +4,10 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Version="1.0.1-preview.pr17.4.fa90205" Update="Coven.Core" />
-    <PackageVersion Version="1.0.1-preview.pr17.4.fa90205" Update="Coven.Spellcasting" />
-    <PackageVersion Version="1.0.1-preview.pr17.4.fa90205" Update="Coven.Spellcasting.Agents" />
-    <PackageVersion Version="1.0.1-preview.pr17.4.fa90205" Update="Coven.Spellcasting.Agents.Codex" />
-    <PackageVersion Version="1.0.1-preview.pr17.4.fa90205" Update="Coven.Spellcasting.Agents.Validation" />
+    <PackageVersion Version="1.0.1-preview.pr17.5.89bfd90" Update="Coven.Core" />
+    <PackageVersion Version="1.0.1-preview.pr17.5.89bfd90" Update="Coven.Spellcasting" />
+    <PackageVersion Version="1.0.1-preview.pr17.5.89bfd90" Update="Coven.Spellcasting.Agents" />
+    <PackageVersion Version="1.0.1-preview.pr17.5.89bfd90" Update="Coven.Spellcasting.Agents.Codex" />
+    <PackageVersion Version="1.0.1-preview.pr17.5.89bfd90" Update="Coven.Spellcasting.Agents.Validation" />
   </ItemGroup>
 </Project>
