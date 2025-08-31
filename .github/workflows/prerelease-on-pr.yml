@@ -113,14 +113,19 @@ jobs:
         run: |
           python3 build/ci/prerelease/update-samples.py \
             --ids "${{ steps.affected.outputs.ids }}" \
-            --version "${{ steps.ver.outputs.version }}"
-          # Expose whether we changed anything
-          if [[ -n "$(git status --porcelain)" ]]; then
-            echo "changed_any=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed_any=false" >> "$GITHUB_OUTPUT"
-          fi
+            --version "${{ steps.ver.outputs.version }}" \
+            --prefix "Coven." \
+            --allow-prerelease-fallback
         id: bump
+
+      # (Changed-detection for commit stays the same)
+      - name: Commit & push samples update to PR branch
+        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'
+        run: |
+          build/ci/prerelease/commit-push.sh \
+            --message "chore(samples): use prerelease ${{ steps.ver.outputs.version }} [skip ci] [prerelease-bot]" \
+            --head-ref "${{ github.event.pull_request.head.ref }}"
+
 
       - name: Validate samples against prerelease
         if: steps.affected.outputs.any == 'true'
