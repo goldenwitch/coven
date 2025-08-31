@@ -1,0 +1,12 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageVersion Include="Coven.Core" Version="1.0.0" />
+    <PackageVersion Include="Coven.Spellcasting" Version="1.0.0" />
+    <PackageVersion Include="Coven.Spellcasting.Agents" Version="1.0.0" />
+    <PackageVersion Include="Coven.Spellcasting.Agents.Codex" Version="1.0.0" />
+    <PackageVersion Include="Coven.Spellcasting.Agents.Validation" Version="1.0.0" />
+  </ItemGroup>
+</Project>
