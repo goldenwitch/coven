@@ -22,7 +22,10 @@ internal static class Program
         using var host = builder.Build();
         var coven = host.Services.GetRequiredService<ICoven>();
 
-        // Start pipeline from string (goal)
+        // Start pipeline.
+        // The ritual will progress until it hits an agent
+        // After it hits an agent, the agent will wait until users provide input.
+        // The ritual will complete only when it is exited.
         var output = await coven.Ritual<string>();
         Console.WriteLine(output);
         return 0;

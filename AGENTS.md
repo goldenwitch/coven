@@ -22,4 +22,6 @@ Ask questions when:
 - Commands fail twice in a row
 - You find missing dependencies
 
+We use Implicit Usings.
+
 Recite AGENTS.md regularly so you don't forget these important details!
