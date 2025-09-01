@@ -4,5 +4,14 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Coven.Core" Version="1.0.1-preview.pr17.7.b635fa1" /><PackageVersion Include="Coven.Spellcasting" Version="1.0.1-preview.pr17.7.b635fa1" /><PackageVersion Include="Coven.Spellcasting.Agents" Version="1.0.1-preview.pr17.7.b635fa1" /><PackageVersion Include="Coven.Spellcasting.Agents.Codex" Version="1.0.1-preview.pr17.7.b635fa1" /><PackageVersion Include="Coven.Spellcasting.Agents.Validation" Version="1.0.1-preview.pr17.7.b635fa1" /></ItemGroup>
+    <PackageVersion Include="Coven.Chat" Version="1.0.1" /><PackageVersion Include="Coven.Chat.Journal" Version="1.0.1" /><PackageVersion Include="Coven.Core" Version="1.0.1-preview.pr18.8.1344f0a" /><PackageVersion Include="Coven.Spellcasting" Version="1.0.1" /><PackageVersion Include="Coven.Spellcasting.Agents" Version="1.0.1" /><PackageVersion Include="Coven.Spellcasting.Agents.Codex" Version="1.0.1-preview.pr18.8.1344f0a" /><PackageVersion Include="Coven.Spellcasting.Agents.Validation" Version="1.0.1-preview.pr18.8.1344f0a" /></ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.8" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.4" />
+  </ItemGroup>
 </Project>

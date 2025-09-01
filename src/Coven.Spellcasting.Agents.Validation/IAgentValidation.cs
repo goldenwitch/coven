@@ -19,7 +19,6 @@ public interface IAgentValidation
     /// Must be idempotent.
     /// </summary>
     Task<AgentValidationResult> ValidateAsync(
-        Spellcasting.Agents.SpellContext? context = null,
         CancellationToken ct = default);
 }
 

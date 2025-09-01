@@ -5,7 +5,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../src/01.LocalCodexCLI.Console.csproj" />
+    <ProjectReference Include="..\..\01.LocalCodexCLI.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
@@ -20,4 +20,3 @@
     </PackageReference>
   </ItemGroup>
 </Project>
-

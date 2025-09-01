@@ -7,4 +7,6 @@ public interface ICoven
 
     // Runs a ritual from T to TOutput seeding initial tags that influence routing
     public Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags);
+
+    public Task<TOutput> Ritual<TOutput>();
 }
