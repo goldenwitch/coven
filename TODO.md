@@ -4,7 +4,9 @@
   - Replace MIT with busl1.1
   - MIT in 4 years.
 
-- Need a Ritual overload with no input for action blocks.
+- No input support
+  - Need to overload magikblock so it has a no input version canonically.
+  - Need to hide Empty from the world and remove it if we can.
 
 - Type system breadth:
   - Support multi-input MagikBlocks with generic inputs `T, T2, ... T20` and dynamic generation of arity based on usage.

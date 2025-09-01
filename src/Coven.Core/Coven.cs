@@ -56,4 +56,23 @@ internal class Coven : ICoven
             if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
         }
     }
+
+    public async Task<TOutput> Ritual<TOutput>()
+    {
+        // Ask the board if it's okay to post with no input
+        if (!board.WorkSupported<Empty>(new List<string>()))
+        {
+            throw new InvalidOperationException("Board does not support this work.");
+        }
+
+        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        try
+        {
+            return await board.PostWork<Empty, TOutput>(Empty.Value).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+        }
+    }
 }

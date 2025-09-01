@@ -21,4 +21,13 @@
     <Compile Remove="test\**\*.cs" />
     <None Remove="test\**\*" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Spellcasting\Coven.Spellcasting.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents\Coven.Spellcasting.Agents.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents.Codex\Coven.Spellcasting.Agents.Codex.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents.Validation\Coven.Spellcasting.Agents.Validation.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Chat\Coven.Chat.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Chat.Journal\Coven.Chat.Journal.csproj" />
+  </ItemGroup>
 </Project>
