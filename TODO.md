@@ -4,6 +4,8 @@
   - Replace MIT with busl1.1
   - MIT in 4 years.
 
+- Need a Ritual overload with no input for action blocks.
+
 - Type system breadth:
   - Support multi-input MagikBlocks with generic inputs `T, T2, ... T20` and dynamic generation of arity based on usage.
     - Key feature this enables is developer accessibility for complex typings like tuples.

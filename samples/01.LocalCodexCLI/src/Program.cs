@@ -6,6 +6,7 @@ using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex;
 using Coven.Spellcasting.Agents.Validation;
+using System.Text.RegularExpressions;
 
 namespace Coven.Samples.LocalCodexCLI;
 
@@ -73,63 +74,28 @@ internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        // Arguments: --repo <path> --goal <text> [--codex <exe>]
-        if (args.Length == 0 || HasArg(args, "-h") || HasArg(args, "--help"))
-        {
-            PrintHelp();
-            return 2;
-        }
-
-        var repo = GetValue(args, "--repo") ?? Environment.CurrentDirectory;
-        var goal = GetValue(args, "--goal");
-        var codexPath = GetValue(args, "--codex");
-
-        if (string.IsNullOrWhiteSpace(goal))
-        {
-            Console.Error.WriteLine("error: --goal is required.\n");
-            PrintHelp();
-            return 2;
-        }
-
-        if (!Directory.Exists(repo))
-        {
-            Console.Error.WriteLine($"error: repo directory not found: {repo}");
-            return 2;
-        }
-
         // Use HostApplicationBuilder for DI + configuration
         var builder = Host.CreateApplicationBuilder(args);
 
-        // DI wiring: register Codex CLI agent and compose pipeline
-        builder.Services.AddSingleton(new SampleConfig { RepoRoot = repo });
-        builder.Services.AddSingleton<ICovenAgent<FixSpell, string>>(sp =>
-        {
-            string ToPrompt(FixSpell f) => $"goal={f.Goal}; version={f.SpellVersion}; suite={f.TestSuite}";
-            string Parse(string s) => s.Trim();
-            var opts = new CodexCliAgent<FixSpell, string>.Options
-            {
-                ExecutablePath = string.IsNullOrWhiteSpace(codexPath) ? "codex" : codexPath
-            };
-            return new CodexCliAgent<FixSpell, string>(ToPrompt, Parse, opts);
-        });
+
+
         builder.Services.AddSingleton<IAgentValidation>(sp => new CodexCliValidation(new CodexCliValidation.Options
         {
             ExecutablePath = string.IsNullOrWhiteSpace(codexPath) ? "codex" : codexPath
         }));
 
+        builder.Services.AddSingleton<Wizard.PreferenceGuidebook>();
+        builder.Services.AddSingleton<Wizard.ISharedStore, Wizard.InMemorySharedStore>();
+        builder.Services.AddSingleton<Wizard.CodingSpellbook>();
+        builder.Services.AddSingleton<Wizard.DeltaTestbook>();
+        builder.Services.AddSingleton<Oracle.IWebSpellbook, Oracle.WebSpellbook>();
+        builder.Services.AddSingleton<Oracle.SearchGuidebook>();
+
+        // Here is where build our ritual
         builder.BuildCoven(c =>
         {
-            // string (goal) -> ChangeRequest
-            c.AddBlock<string, ChangeRequest, MakeChangeRequestBlock>();
-            // ChangeRequest -> SpellContext
-            c.AddBlock<ChangeRequest, SpellContext, MakeContextBlock>();
-            // SpellContext -> SpellContext (validation)
-            c.AddBlock<SpellContext, SpellContext, ValidateAgentBlock>();
-            // SpellContext -> string (invoke agent)
-            c.AddBlock<SpellContext, string>(sp =>
-                new SpellUserFromContext(
-                    sp.GetRequiredService<ICovenAgent<FixSpell, string>>(),
-                    goal!));
+            
+
             c.Done();
         });
 
@@ -137,7 +103,7 @@ internal static class Program
         var coven = host.Services.GetRequiredService<ICoven>();
 
         // Start pipeline from string (goal)
-        var output = await coven.Ritual<string, string>(goal!);
+        var output = await coven.Ritual<string, string>();
         Console.WriteLine(output);
         return 0;
     }
