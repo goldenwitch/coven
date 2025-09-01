@@ -9,13 +9,13 @@ namespace Coven.Sophia;
 /// </summary>
 /// <typeparam name="TIn"></typeparam>
 /// <typeparam name="TOut"></typeparam>
-public class ThruribleBlock<TIn, TOut> : IMagikBlock<TIn, TOut>
+public class ThuribleBlock<TIn, TOut> : IMagikBlock<TIn, TOut>
 {
     private readonly Func<TIn, IDurableList<string>, Task<TOut>> _magik;
     private readonly string _label;
     private readonly IDurableList<string> _storage;
 
-    public ThruribleBlock(string Label, IDurableList<string> Storage, Func<TIn, IDurableList<string>, Task<TOut>> Magik)
+    public ThuribleBlock(string Label, IDurableList<string> Storage, Func<TIn, IDurableList<string>, Task<TOut>> Magik)
     {
         _label = Label;
         _magik = Magik;

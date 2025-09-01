@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Coven.Durables;
 
-public class SimpleFileStorage<T> : IDurableList<T> where T : new()
+public class SimpleFileStorage<T> : IDurableList<T>
 {
     private readonly string _storageLocation;
 
@@ -13,7 +13,15 @@ public class SimpleFileStorage<T> : IDurableList<T> where T : new()
 
     public async Task Append(T item)
     {
-        var current = await Load().ConfigureAwait(false);
+        List<T> current;
+        if (!File.Exists(_storageLocation))
+        {
+            current = new List<T>();
+        }
+        else
+        {
+            current = await Load().ConfigureAwait(false);
+        }
         current.Add(item);
         await Save(current).ConfigureAwait(false);
     }
@@ -22,24 +30,35 @@ public class SimpleFileStorage<T> : IDurableList<T> where T : new()
     {
         if (!File.Exists(_storageLocation))
         {
-            return new List<T>();
+            throw new InvalidOperationException($"File at {_storageLocation} does not exist. Save or Append before loading.");
         }
 
-        await using var stream = new FileStream(
-            _storageLocation,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read,
-            bufferSize: 4096,
-            useAsync: true);
-
-        var options = new JsonSerializerOptions
+        var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        for (int i = 0; i < 3; i++)
         {
-            PropertyNameCaseInsensitive = true
-        };
-
-        var result = await JsonSerializer.DeserializeAsync<List<T>>(stream, options).ConfigureAwait(false);
-        return result ?? new List<T>();
+            try
+            {
+                await using var stream = new FileStream(
+                    _storageLocation,
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.Read,
+                    bufferSize: 4096,
+                    useAsync: true);
+                var result = await JsonSerializer.DeserializeAsync<List<T>>(stream, options).ConfigureAwait(false);
+                return result ?? new List<T>();
+            }
+            catch (IOException)
+            {
+                await Task.Delay(10).ConfigureAwait(false);
+            }
+            catch (JsonException)
+            {
+                await Task.Delay(10).ConfigureAwait(false);
+            }
+        }
+        // If still failing after retries, treat as not ready
+        throw new InvalidOperationException($"Unable to read storage at {_storageLocation}.");
     }
 
     public async Task Save(List<T> input)
