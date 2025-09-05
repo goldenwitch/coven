@@ -12,7 +12,7 @@ namespace Coven.Chat;
 /// </para>
 /// </summary>
 /// <typeparam name="TJournalEntryType">The typed entry that is appended to and read from the journal.</typeparam>
-public interface IScrivener<TJournalEntryType>
+public interface IScrivener<TJournalEntryType> where TJournalEntryType : notnull
 {
     /// <summary>
     /// Append one entry; returns the assigned journal position for chaining/awaits.
@@ -20,7 +20,7 @@ public interface IScrivener<TJournalEntryType>
     /// <param name="entry">The entry to append.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>The monotonically increasing journal position assigned to the entry.</returns>
-    ValueTask<long> WriteAsync(TJournalEntryType entry, CancellationToken ct = default);
+    Task<long> WriteAsync(TJournalEntryType entry, CancellationToken ct = default);
 
     /// <summary>
     /// Stream entries with <c>journalPosition &gt; afterPosition</c> (forward).
@@ -45,7 +45,7 @@ public interface IScrivener<TJournalEntryType>
     /// <param name="match">Predicate to select the desired entry.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>The first matching (journalPosition, entry) pair.</returns>
-    ValueTask<(long journalPosition, TJournalEntryType entry)> WaitForAsync(long afterPosition, System.Func<TJournalEntryType, bool> match, CancellationToken ct = default);
+    Task<(long journalPosition, TJournalEntryType entry)> WaitForAsync(long afterPosition, System.Func<TJournalEntryType, bool> match, CancellationToken ct = default);
 
     /// <summary>
     /// Convenience overload: wait for the next entry of a specific derived type.
@@ -54,7 +54,6 @@ public interface IScrivener<TJournalEntryType>
     /// <param name="afterPosition">Only consider entries strictly after this position.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>The first matching (journalPosition, entry) pair with the derived entry.</returns>
-    ValueTask<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, CancellationToken ct = default)
+    Task<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, CancellationToken ct = default)
         where TDerived : TJournalEntryType;
 }
-

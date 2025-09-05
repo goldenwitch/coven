@@ -13,7 +13,5 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../Coven.Chat/Coven.Chat.csproj" />
-    <ProjectReference Include="../Coven.Chat.Journal/Coven.Chat.Journal.csproj" />
   </ItemGroup>
 </Project>
-

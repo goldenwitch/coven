@@ -43,6 +43,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "01.LocalCodexCLI.Tests", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Grimoire", "Coven.Spellcasting.Grimoire\Coven.Spellcasting.Grimoire.csproj", "{2D1F4EE1-FDDF-48F1-AE1D-99B99E002BB5}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Tests", "Coven.Chat.Tests\Coven.Chat.Tests.csproj", "{2FF76318-6B37-4651-B1CA-074222AB9065}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -281,6 +283,18 @@ Global
 		{2D1F4EE1-FDDF-48F1-AE1D-99B99E002BB5}.Release|x64.Build.0 = Release|Any CPU
 		{2D1F4EE1-FDDF-48F1-AE1D-99B99E002BB5}.Release|x86.ActiveCfg = Release|Any CPU
 		{2D1F4EE1-FDDF-48F1-AE1D-99B99E002BB5}.Release|x86.Build.0 = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|x64.Build.0 = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Debug|x86.Build.0 = Debug|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x64.ActiveCfg = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x64.Build.0 = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x86.ActiveCfg = Release|Any CPU
+		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

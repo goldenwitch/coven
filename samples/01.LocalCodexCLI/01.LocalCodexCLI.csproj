@@ -18,10 +18,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Remove="test\**\*.cs" />
-    <None Remove="test\**\*" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\..\src\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\..\src\Coven.Sophia\Coven.Sophia.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting\Coven.Spellcasting.csproj" />
