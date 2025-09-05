@@ -6,77 +6,53 @@ using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Coven.Spellcasting.Spells;
 
-public sealed class CodexCliAgent<TIn, TOut> : Coven.Spellcasting.Agents.ICovenAgent<TIn, TOut>
+
+public sealed class CodexCliAgent<TOut> : ICovenAgent<string, TOut>
 {
-    public sealed class Options
-    {
-        public string ExecutablePath { get; init; } = "codex";
-        public IReadOnlyList<string> FixedArgs { get; init; } = Array.Empty<string>();
-    }
-
     public string Id => "codex";
+    private readonly string _codexExecutablePath;
+    private readonly string _workspaceDirectory;
 
-    private readonly Func<TIn, string> _toPrompt;
-    private readonly Func<string, TOut> _parse;
-    private readonly Options _opts;
-
-    public CodexCliAgent(Func<TIn, string> toPrompt, Func<string, TOut> parse, Options? options = null)
+    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory)
     {
-        _toPrompt = toPrompt ?? throw new ArgumentNullException(nameof(toPrompt));
-        _parse    = parse    ?? throw new ArgumentNullException(nameof(parse));
-        _opts     = options  ?? new Options();
+        _codexExecutablePath = codexExecutablePath;
+        _workspaceDirectory = workspaceDirectory;
     }
 
-    public async Task<TOut> CastSpellAsync(
-        TIn input,
-        Coven.Spellcasting.Agents.SpellContext? context = null,
-        CancellationToken ct = default)
+    public Task RegisterSpells(List<SpellDefinition> Spells)
     {
-        var prompt = _toPrompt(input);
+        throw new NotImplementedException();
+    }
 
+    public async Task<TOut> CastSpell(string input, CancellationToken ct = default)
+    {
+        throw new NotImplementedException();
         var psi = new ProcessStartInfo
         {
-            FileName = _opts.ExecutablePath,
+            FileName = _codexExecutablePath,
+            WorkingDirectory = _workspaceDirectory,
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             CreateNoWindow = true,
         };
 
-        foreach (var a in _opts.FixedArgs) psi.ArgumentList.Add(a);
-        psi.ArgumentList.Add(prompt);
-
-        if (context?.ContextUri is { IsAbsoluteUri: true, Scheme: "file" } uri)
-        {
-            psi.WorkingDirectory = Path.GetFullPath(uri.LocalPath);
-        }
-
-        // Map type-safe permissions to a simple autonomy environment variable for the subprocess.
-        var perms = context?.Permissions;
-        var autonomy = perms?.Allows<Coven.Spellcasting.Agents.RunCommand>() == true ? "full-auto"
-                    : perms?.Allows<Coven.Spellcasting.Agents.WriteFile>()  == true ? "auto-edit"
-                    : "suggest";
-        // Environment requires UseShellExecute=false
-        psi.Environment["CODEX_AUTONOMY"] = autonomy;
+        psi.ArgumentList.Add(input);
 
         using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
         try
         {
-            proc.Start();
-            var stdOutTask = proc.StandardOutput.ReadToEndAsync(ct);
-            var stdErrTask = proc.StandardError.ReadToEndAsync(ct);
-            await proc.WaitForExitAsync(ct).ConfigureAwait(false);
+            // Read all of what codex says as each line gets posted.
 
-            var stdout = await stdOutTask.ConfigureAwait(false);
-            var stderr = await stdErrTask.ConfigureAwait(false);
-            var text = stdout.Length > 0 ? stdout : stderr;
-            return _parse(text);
+            // Simultaneously validate that no errors stream out.
+            // If we get an error, build it into an exception.
+
+            // When Codex posts our "prompt" line, make an Ask call.
         }
         catch (OperationCanceledException)
         {
-            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { /* ignore */ }
-            throw;
         }
     }
 }

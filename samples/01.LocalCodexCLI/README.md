@@ -35,23 +35,22 @@ Think of this as a mental model for building with Coven.
 ```
 samples/
   01.LocalCodexCLI/
-    src/
-      Program.cs
-      Wizard/
-        Wizard.cs
-        Wizard.Validation.cs
-        PreferenceGuidebook.cs      // Uses shared storage to persist per-user preferences
-        CodingSpellbook.cs          // Ask, WebResearch, ReadFile, PatchFile, RunTests
-        DeltaTestbook.cs            // {placeholder: what deltas/tests are generated?}
-      Oracle/
-        Oracle.cs
-        Oracle.Validation.cs
-        WebSpellbook.cs
+    README.md   <-- This file
+    Program.cs
+    Wizard/
+      Wizard.cs
+      Wizard.Validation.cs
+      PreferenceGuidebook.cs      // Uses shared storage to persist per-user preferences
+      CodingSpellbook.cs          // Ask, WebResearch, ReadFile, PatchFile, RunTests
+      DeltaTestbook.cs            // {placeholder: what deltas/tests are generated?}
+    Oracle/
+      Oracle.cs
+      Oracle.Validation.cs
+      WebSpellbook.cs
         SearchGuidebook.cs
-    test/
-      01.LocalCodexCLI.Tests/
-        {tests for all of the above}
-    README.md   <-- this file
+  01.LocalCodexCLI.Tests/
+    {tests for all of the above}
+
 ```
 ---
 

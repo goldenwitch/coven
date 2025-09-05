@@ -6,5 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Spellcasting\Coven.Spellcasting.csproj" />
+  </ItemGroup>
+
 </Project>
 

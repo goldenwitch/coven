@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Coven.Samples.LocalCodexCLI</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Coven.Core" />
@@ -12,7 +13,6 @@
     <PackageReference Include="Coven.Spellcasting.Agents.Codex" />
     <PackageReference Include="Coven.Spellcasting.Agents.Validation" />
     <PackageReference Include="Coven.Chat" />
-    <PackageReference Include="Coven.Chat.Journal" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" />
@@ -23,11 +23,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Sophia\Coven.Sophia.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting\Coven.Spellcasting.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents\Coven.Spellcasting.Agents.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents.Codex\Coven.Spellcasting.Agents.Codex.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents.Validation\Coven.Spellcasting.Agents.Validation.csproj" />
     <ProjectReference Include="..\..\src\Coven.Chat\Coven.Chat.csproj" />
-    <ProjectReference Include="..\..\src\Coven.Chat.Journal\Coven.Chat.Journal.csproj" />
   </ItemGroup>
 </Project>

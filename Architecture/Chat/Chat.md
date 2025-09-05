@@ -1,229 +1,262 @@
-# Coven.Chat — Adapter‑Agnostic Chat Integration
+# Coven Journaling Pattern (3‑type, DI‑friendly core) — updated generics & backward reads
 
-**Scope**: Abstractions and contracts only. No provider‑specific logic here.
+**Scope:** Three public surfaces that match the diagram: `IAdapterHost<TClientMessage, TJournalEntryType>`, `IAgentHost<TClientMessage, TJournalEntryType>`, `IScrivener<TJournalEntryType>`. The **Journal** is conceptual only (the log/stream), not a class.
 
----
-
-## 1) Summary
-
-Coven.Chat defines a *small*, provider‑agnostic surface that turns agent activity into conversation updates and lets chat messages launch and resume rituals. It builds on the **journal** pattern (agents write entries; readers project them into side effects).
-
-- Agents write to a journal (`IMagikJournal` from *Coven.Chat.Journal*).  
-- A **ChatJournalReader** maps journal entries into **OutboundChange** objects.  
-- Provider packages implement **IChatDelivery** to apply those changes to a specific chat system.  
-- Hosts bind a running invocation to a **TranscriptRef** so readers know *where* to post.  
-- Optional **ingress** and **routing** abstractions allow chat messages to start/continue rituals.
-
-The result: reliable, testable chat behavior without leaking provider details into agents or core orchestration.
+> Supported patterns: **WaitForMessage**, **SendMessage**, **Ask**.
 
 ---
 
-## 2) Glossary
+## 1) Principles
 
-- **Transcript**: The conversation space (room/channel/thread) where an invocation’s updates appear.  
-- **TranscriptRef**: Opaque locator of a transcript (endpoint + place + root message id).  
-- **OutboundChange**: An append or update to the transcript produced from a journal entry.  
-- **Delivery**: Provider‑specific application of an OutboundChange (implemented by adapters).
+* **Journal is conceptual:** storage chooses how to persist entries and metadata.
+* **Typed entries:** `TJournalEntryType` **is the journal entry type** your app writes/reads (often a union/base + derived records).
+* **DI‑first:** Concrete scriveners/hosts are wired via your container. Implementations **must use constructor injection** to receive their `IScrivener<TJournalEntryType>`. No opinions here about run loops.
+* **Append + Tail/Wait:** All flows reduce to appending entries and awaiting the next matching entry (forward **and backward** reads supported).
+* **Metadata stays behind the interface:** sequence numbers, timestamps, etc., are store concerns and surface only as return values alongside `TJournalEntryType`. We refer to the location of an entry as its `journalPosition` (a monotonically increasing long).
 
 ---
 
-## 3) Core Types & Ports
+## 2) Contract
 
-> Namespace examples use `Coven.Chat`. The journal interfaces live in `Coven.Chat.Journal` (see that design doc).
-
-### 3.1 Transcript identity
+### `IScrivener<TJournalEntryType>.cs`
 
 ```csharp
-namespace Coven.Chat;
+namespace Coven.Chat.Journal;
 
-public sealed record TranscriptRef(
-    string Endpoint,     // opaque id, e.g., "discord:alpha", "slack:ops", "teams:contoso"
-    string Place,        // channel/room/space id
-    string RootMessageId // “thread root” or conversation root message id
-);
-```
-
-### 3.2 Locating the transcript for a running invocation
-
-```csharp
-public interface ITranscriptIndex
+/// <summary>
+/// Minimal journal API bound to a single journal stream (binding handled by DI).
+/// TJournalEntryType is the message/entry type. No correlation id is exposed.
+/// </summary>
+public interface IScrivener<TJournalEntryType>
 {
-    bool TryGet(Guid correlationId, out TranscriptRef transcript);
-}
+    /// <summary>Append one entry; returns the assigned journal position for chaining/awaits.</summary>
+    ValueTask<long> WriteAsync(TJournalEntryType entry, CancellationToken ct = default);
 
-public interface IInvocationBinder : ITranscriptIndex
-{
-    void Bind(Guid correlationId, TranscriptRef transcript);
-}
-```
+    /// <summary>Stream entries with journalPosition > afterPosition (forward).</summary>
+    IAsyncEnumerable<(long journalPosition, TJournalEntryType entry)> TailAsync(long afterPosition = 0, CancellationToken ct = default);
 
-> The engine/host binds `(correlationId → TranscriptRef)` at ritual start (or when resuming). Readers only need the read‑only `ITranscriptIndex` view.
+    /// <summary>Stream entries with journalPosition < beforePosition in descending order (backward).</summary>
+    IAsyncEnumerable<(long journalPosition, TJournalEntryType entry)> ReadBackwardAsync(long beforePosition = long.MaxValue, CancellationToken ct = default);
 
-### 3.3 Outbound changes (what to do to the transcript)
+    /// <summary>Wait for the next entry after 'afterPosition' that matches the predicate.</summary>
+    ValueTask<(long journalPosition, TJournalEntryType entry)> WaitForAsync(long afterPosition, Func<TJournalEntryType, bool> match, CancellationToken ct = default);
 
-```csharp
-public enum DeliveryMode { Append, Update }
-
-public sealed record OutboundChange(
-    DeliveryMode Mode,
-    string Text,                   // already-formatted text (adapters may transform)
-    string? UpdateKey = null,      // stable key for coalescing (e.g., "thought", "progress")
-    string? RenderKind = null,     // optional hint: "progress", "reply", "error", etc.
-    IReadOnlyDictionary<string,string>? Meta = null // optional rendering metadata
-);
-```
-
-### 3.4 Delivery (adapter port)
-
-```csharp
-public interface IChatDelivery
-{
-    // Apply a change to the transcript. Must be idempotent w.r.t. idempotencyKey.
-    ValueTask ApplyAsync(TranscriptRef where, OutboundChange change, string idempotencyKey, CancellationToken ct);
+    /// <summary>Convenience: wait for the next entry of a specific derived type.</summary>
+    ValueTask<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, CancellationToken ct = default)
+        where TDerived : TJournalEntryType;
 }
 ```
 
-- **Idempotency**: `idempotencyKey` is typically `"correlationId:seq"`. Adapters must ensure duplicate applies are safe.  
-- **Coalescing**: If `change.Mode == Update`, adapters update the prior message identified by `UpdateKey`; if native updates are not supported, adapters emulate by appending a new message and tracking the mapping internally.
+---
 
+## 3) Test call patterns for `IScrivener<TJournalEntryType>`
 
-## 4) ChatJournalReader (core projection)
+> In the snippets below, `TUserMessage`, `TReply`, `TProgress`, `TError`, `TAsk`, `TAnswer`, etc., are **your** concrete types that implement/extend `TJournalEntryType`. The scrivener is obtained via DI (constructor‑injected). Variable names are expanded for clarity.
 
-**Purpose**: Turn journal entries (Thought, Progress, Reply, Ask, Completed, Error, etc.) into `OutboundChange`s and hand them to `IChatDelivery` with reliable, idempotent semantics.
+### A) Basic request → wait for a terminal response
 
 ```csharp
-using Coven.Chat.Journal;
-
-public sealed class ChatJournalReader : IJournalReader
+public sealed class Handler<TJournalEntryType>(IScrivener<TJournalEntryType> scrivener)
 {
-    private readonly ITranscriptIndex _index;
-    private readonly IChatDelivery _delivery;
-
-    public string ReaderId => "chat";
-
-    public ChatJournalReader(ITranscriptIndex index, IChatDelivery delivery)
-    { _index = index; _delivery = delivery; }
-
-    public async ValueTask OnRecordAsync(JournalRecord record, CancellationToken ct)
+    public async Task<string> RequestReplyAsync(TJournalEntryType userMessageEntry, CancellationToken cancellationToken)
     {
-        if (!_index.TryGet(record.CorrelationId, out var where)) return;
+        // 1) Append the inbound user message. The returned journalPosition is our durable anchor.
+        //    This follows the design's "Append + Wait" model and prevents races.
+        long afterPosition = await scrivener.WriteAsync(userMessageEntry, cancellationToken);
 
-        var change = Map(record.Entry);
-        var idempotencyKey = $"{record.CorrelationId}:{record.Seq}";
+        // 2) Wait for the next terminal entry (Reply/Completed/Error) strictly AFTER the anchor.
+        //    The predicate works directly on the typed entry (TJournalEntryType) — no payload wrapper.
+        var (_, matchingEntry) = await scrivener.WaitForAsync(
+            afterPosition,
+            entry => entry is TReply || entry is TError || entry is TCompleted,
+            cancellationToken);
 
-        await _delivery.ApplyAsync(where, change, idempotencyKey, ct);
+        // 3) Interpret the terminal entry. Error path throws; others are domain-specific.
+        return matchingEntry switch
+        {
+            TReply replyEntry         => /* map reply to string */ replyEntry.ToString()!,
+            TCompleted completedEntry => /* serialize result */ completedEntry.ToString()!,
+            TError errorEntry         => throw new Exception(errorEntry.ToString()),
+            _                         => throw new InvalidOperationException("Unexpected entry")
+        };
     }
-
-    private static OutboundChange Map(AgentEntry e) => e switch
-    {
-        ThoughtEntry t   => new OutboundChange(DeliveryMode.Update, $"🧠 {t.Text}", UpdateKey: t.CoalesceKey, RenderKind: "thought"),
-        ProgressEntry p  => new OutboundChange(DeliveryMode.Update, FormatProgress(p), UpdateKey: p.CoalesceKey, RenderKind: "progress"),
-        ReplyEntry r     => new OutboundChange(DeliveryMode.Append, r.Text, RenderKind: "reply"),
-        AskEntry a       => new OutboundChange(DeliveryMode.Append, FormatAsk(a), UpdateKey: a.CoalesceKey, RenderKind: "ask"),
-        CompletedEntry c => new OutboundChange(DeliveryMode.Append, "✅ Completed.", RenderKind: "completed"),
-        ErrorEntry err   => new OutboundChange(DeliveryMode.Append, $"🛑 {err.Message}", RenderKind: "error"),
-        _ => new OutboundChange(DeliveryMode.Append, "ℹ️ (unhandled entry)")
-    };
-
-    private static string FormatProgress(ProgressEntry p)
-    {
-        var pct = p.Percent is null ? "" : $" {(int)System.Math.Round((p.Percent.Value)*100)}%";
-        var stage = string.IsNullOrWhiteSpace(p.Stage) ? "" : $" — {p.Stage}";
-        var text = string.IsNullOrWhiteSpace(p.Text) ? "" : $": {p.Text}";
-        return $"⏳{pct}{stage}{text}".Trim();
-    }
-
-    private static string FormatAsk(AskEntry a)
-        => a.Ask.Options is { Count: >0 } opts
-            ? $"❓ {a.Ask.Prompt}  Options: {string.Join(", ", opts)}"
-            : $"❓ {a.Ask.Prompt}";
 }
 ```
 
-> This reader is **provider‑agnostic** and small enough to review quickly. Each adapter supplies its own `IChatDelivery` to render/transport changes.
-
----
-
-
-## 5) Sequence diagrams (mermaid)
-
-### 5.1 Thought → Chat (with barrier)
-
-```mermaid
-sequenceDiagram
-    participant Agent
-    participant Journal as Journal Store
-    participant Pump as JournalPump
-    participant Reader as ChatJournalReader
-    participant Delivery as IChatDelivery
-    Agent->>Journal: Append(ThoughtEntry)
-    Note right of Agent: IMagikJournal returns AppendReceipt (corr, seq)
-    Pump->>Journal: Read(corr, >seq0)
-    Journal-->>Pump: JournalRecord(seq)
-    Pump->>Reader: OnRecord(record)
-    Reader->>Delivery: ApplyAsync(TranscriptRef, OutboundChange(Update,"🧠 ..."), idempotencyKey)
-    Delivery-->>Reader: Ok (idempotent)
-    Reader-->>Pump: return
-    Pump->>Pump: Checkpoint(ReaderId="chat", seq)
-    Note over Agent,Delivery: barrier.WhenAppliedAsync(corr, seq, "chat") now completes
-```
-
-### 5.2 Ask → Human → Response → Resume
-
-```mermaid
-sequenceDiagram
-    participant Agent
-    participant Journal
-    participant Pump
-    participant ChatReader as ChatJournalReader
-    participant Delivery as IChatDelivery
-    participant Ingress as Adapter Ingress
-    Agent->>Journal: Append(AskEntry(CallId, Prompt,...))
-    Pump->>ChatReader: OnRecord(AskEntry)
-    ChatReader->>Delivery: Apply(append ask with actions incl. token)
-    Ingress->>Journal: Append(HumanResponseEntry(CallId, ...)) on click/submit
-    Agent->>Agent: await AskAwaitable.Response() completes with HumanResponse
-```
-
----
-
-## 6) DI & Defaults (host)
+### B) Multi‑turn Ask/Answer (race‑safe via anchor)
 
 ```csharp
-// Core journal components (see Coven.Chat.Journal doc for details)
-services.AddSingleton<IAgentJournalStore, InMemoryAgentJournalStore>();
-services.AddSingleton<ICheckpointStore, InMemoryCheckpointStore>();
-services.AddSingleton<IJournalBarrier, DefaultJournalBarrier>();
-services.AddSingleton<IJournalWaiter, DefaultJournalWaiter>();
-services.AddScoped<IMagikJournal>(sp => new DefaultMagikJournal(
-    sp.GetRequiredService<IAgentJournalStore>(),
-    sp.GetRequiredService<IJournalBarrier>(),
-    sp.GetRequiredService<IJournalWaiter>(),
-    correlationId: ExecutionScope.CurrentCorrelationId));
+public async Task<string> AskThenWaitAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    TAsk askEntry,
+    Func<TAnswer, bool> answerMatches,
+    CancellationToken cancellationToken)
+{
+    // 1) Write the Ask entry. Any correlation needed (e.g., callId) is part of your typed entry.
+    //    No correlationId API is required.
+    long afterPosition = await scrivener.WriteAsync(askEntry, cancellationToken);
 
-// Chat projection
-services.AddSingleton<IInvocationBinder, InMemoryInvocationBinder>(); // also ITranscriptIndex
-services.AddSingleton<IChatDelivery, YourAdapterDelivery>();          // per provider package
-services.AddSingleton<IJournalReader, ChatJournalReader>();
+    // 2) Anchor-safe wait: if the user answers immediately, we still won't miss it
+    //    because we are waiting strictly AFTER the Ask's journalPosition.
+    var (_, matchingEntry) = await scrivener.WaitForAsync(
+        afterPosition,
+        e => e is TAnswer a && answerMatches(a),
+        cancellationToken);
 
-// Pump (host triggers DrainAsync on new appends or on a schedule)
-services.AddSingleton<JournalPump>();
+    // 3) Return or project the answer as your domain requires.
+    return ((TAnswer)matchingEntry).ToString()!;
+}
 ```
 
----
+### C) Stream updates forward to a UI sink
 
-## 7) Testing
+```csharp
+public async Task StreamForwardAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    long afterPosition,
+    IUiSink uiSink,
+    CancellationToken cancellationToken)
+{
+    // 1) Tail forward: emit entries whose journalPosition > afterPosition (strictly newer).
+    await foreach (var (_, journalEntry) in scrivener.TailAsync(afterPosition, cancellationToken))
+    {
+        // 2) UI decides how to coalesce/progress; API doesn't enforce coalescing.
+        switch (journalEntry)
+        {
+            case TProgress progressEntry: uiSink.Progress(progressEntry); break;
+            case TReply replyEntry:       uiSink.Reply(replyEntry);       break;
+            case TError errorEntry:       uiSink.Error(errorEntry);       break;
+        }
+    }
+}
+```
 
-- **FakeDelivery** implementing `IChatDelivery` captures `OutboundChange`s for assertions.  
-- Snapshot tests for `ChatJournalReader.Map(...)`.  
-- Idempotency tests: re‑apply the same `JournalRecord` (same idempotencyKey) and assert no duplicates.
+### D) Backward paging: fetch last N entries (newest → oldest → chronological)
 
----
+```csharp
+public async Task<IReadOnlyList<TJournalEntryType>> LastNAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    int count,
+    CancellationToken cancellationToken)
+{
+    // 1) Read backward starting from the logical end (long.MaxValue).
+    var buffer = new List<TJournalEntryType>(count);
+    await foreach (var (_, journalEntry) in scrivener.ReadBackwardAsync(long.MaxValue, cancellationToken))
+    {
+        buffer.Add(journalEntry);
+        if (buffer.Count == count) break;
+    }
+    // 2) Reverse to chronological order (oldest → newest) for display.
+    buffer.Reverse();
+    return buffer;
+```
 
-## 8) Non‑Goals
+### E) Bookmark & resume (robust consumer)
 
-- No compile‑time or runtime provider branching in core.  
-- No persistence mandates; hosts choose stores (in‑memory vs SQL).  
-- No UI layout contracts beyond plain text + minimal hints; adapters own rich rendering.
+```csharp
+public async Task ConsumeForeverAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    IBookmarkStore bookmarkStore,
+    CancellationToken cancellationToken)
+{
+    // 1) Load last committed journalPosition from durable storage.
+    long bookmarkPosition = await bookmarkStore.LoadAsync();
 
----
+    // 2) Resume tailing strictly AFTER the bookmark to avoid duplicates.
+    await foreach (var (journalPosition, journalEntry) in scrivener.TailAsync(bookmarkPosition, cancellationToken))
+    {
+        // 3) Process the entry. Make handling idempotent where possible.
+        await HandleAsync(journalEntry, cancellationToken);
+
+        // 4) Advance the bookmark only after successful handling, ensuring at-least-once semantics.
+        await bookmarkStore.SaveAsync(journalPosition);
+    }
+}
+```
+
+### F) Wait with timeout (non‑blocking UX)
+
+```csharp
+public async Task<TJournalEntryType?> WaitOrNullAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    long afterPosition,
+    TimeSpan timeoutDuration,
+    CancellationToken cancellationToken)
+{
+    // 1) Derive a timeout token to bound the wait. This keeps UIs responsive.
+    using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+    timeoutCts.CancelAfter(timeoutDuration);
+
+    try
+    {
+        // 2) Anchor-safe wait for "any" next entry. If timed out, return null/default.
+        var (_, journalEntry) = await scrivener.WaitForAsync(afterPosition, _ => true, timeoutCts.Token);
+        return journalEntry;
+    }
+    catch (OperationCanceledException)
+    {
+        return default;
+    }
+}
+```
+
+### G) Idempotent write (simple dedupe by key)
+
+```csharp
+public async Task WriteOnceAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    Func<TJournalEntryType, bool> isDuplicateOf,
+    TJournalEntryType entryToWrite,
+    CancellationToken cancellationToken)
+{
+    // 1) Heuristic dedupe: scan backward for a matching entry.
+    //    Store implementations could optimize this; the API supports either approach.
+    await foreach (var (_, journalEntry) in scrivener.ReadBackwardAsync(long.MaxValue, cancellationToken))
+        if (isDuplicateOf(journalEntry)) return; // already present
+
+    // 2) Safe to append.
+    await scrivener.WriteAsync(entryToWrite, cancellationToken);
+}
+```
+
+### H) Typed wait helper (when you know the exact derived type)
+
+```csharp
+public async Task<TAnswer> WaitForAnswerAsync<TAnswer>(
+    IScrivener<TJournalEntryType> scrivener,
+    long afterPosition,
+    CancellationToken cancellationToken)
+    where TAnswer : TJournalEntryType
+{
+    // 1) Use the generic convenience overload to wait for a specific derived type.
+    //    This aligns with the design's typed-entry model.
+    var (_, answerEntry) = await scrivener.WaitForAsync<TAnswer>(afterPosition, cancellationToken);
+    return answerEntry;
+}
+```
+
+### I) Fan‑out processing loop (agent side)
+
+```csharp
+public async Task AgentLoopAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    CancellationToken cancellationToken)
+{
+    // 1) Tail from the beginning (afterPosition = 0). Multiple consumers can do this concurrently.
+    await foreach (var (journalPosition, journalEntry) in scrivener.TailAsync(0, cancellationToken))
+    {
+        // 2) Fan-out processing if desired. Order-sensitive pipelines may avoid Task.Run.
+        _ = Task.Run(async () => await ProcessOneAsync(scrivener, journalPosition, journalEntry, cancellationToken), cancellationToken);
+    }
+}
+
+private async Task ProcessOneAsync(
+    IScrivener<TJournalEntryType> scrivener,
+    long afterPosition,
+    TJournalEntryType journalEntry,
+    CancellationToken cancellationToken)
+{
+    // 3) Write follow-up entries (Thought/Progress/Reply/etc.). Use 'afterPosition' as the anchor for subsequent waits if needed.
+    await scrivener.WriteAsync(/* next entry */, cancellationToken);
+}
+```

@@ -2,14 +2,17 @@ namespace Coven.Spellcasting.Agents;
 
 using System.Threading;
 using System.Threading.Tasks;
+using Coven.Spellcasting.Spells;
+
 
 public interface ICovenAgent<TIn, TOut>
 {
     string Id { get; }
 
-    Task<TOut> CastSpellAsync(
+    Task RegisterSpells(List<SpellDefinition> Spells);
+
+    Task<TOut> CastSpell(
         TIn input,
-        SpellContext? context = null,
         CancellationToken ct = default);
 }
 

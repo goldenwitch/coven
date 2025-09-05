@@ -4,8 +4,5 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="../Coven.Chat.Journal/Coven.Chat.Journal.csproj" />
-  </ItemGroup>
 </Project>
 

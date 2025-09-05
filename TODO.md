@@ -11,10 +11,11 @@
 - Type system breadth:
   - Support multi-input MagikBlocks with generic inputs `T, T2, ... T20` and dynamic generation of arity based on usage.
     - Key feature this enables is developer accessibility for complex typings like tuples.
+  - Support variadic MagikUser with various books.
 
 - Spellcasting library (Coven.Spellcasting):
-  - Custom spellbook that automatically loads MCP as a tool.
-  - Custom testbook that automatically uses git delta to understand what tests map to which code regions.
+  - Spellbook that automatically grabs all of the spells with their relevant documentation.
+  - Testbook that automatically uses git delta to understand what tests map to which code regions.
   - Guidebook samples that preload full codebase into context.
 
 - Samples:
@@ -28,12 +29,15 @@
   - Public XML documents
   - Generate github pages for project
   - Consolidate testing into clear structures and paths that sell desired paths rather than possible paths.
-  - Hide public interfaces such that it's harder to misuse.
+  - Evaluate hiding public interfaces such that it's harder to misuse.
   - Detailed diagrams
   - Concept glyphs/colors
+  - Autogenerate index
 
 - Automagical distribution and reliability.
   - Distributed/multi-box execution (explicitly out-of-scope for now; track as future work).
   - Honor timeouts and retries for work dispatch in both modes.
 
 - Observability and dashboards
+
+- Sandboxing for custom agents
