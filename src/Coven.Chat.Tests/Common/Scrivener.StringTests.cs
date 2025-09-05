@@ -118,7 +118,7 @@ public class ScrivenerStringTests
         using var cts = new CancellationTokenSource();
         var task = s.WaitForAsync(anchor, _ => false, cts.Token);
         cts.CancelAfter(20);
-        await Assert.ThrowsAsync<OperationCanceledException>(() => task);
+        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
     }
 }
 
