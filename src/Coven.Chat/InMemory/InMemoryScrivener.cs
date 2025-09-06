@@ -145,3 +145,4 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
     private static TaskCompletionSource<bool> NewSignal()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
+

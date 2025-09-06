@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using Coven.Chat.Tests.TestTooling;
 
 namespace Coven.Chat.Tests;
 
@@ -8,10 +9,7 @@ namespace Coven.Chat.Tests;
 public static class FlowScrivenerFactories
 {
     public static IEnumerable<object[]> Create()
-    {
-        yield return new object[] { new Func<IScrivener<FlowEntry>>(() => new InMemoryScrivener<FlowEntry>()) };
-        // Add new IScrivener<FlowEntry> implementations here as factories.
-    }
+        => ScrivenerFactory.Both<FlowEntry>("Coven_FileScrivener_Common_Flow_");
 }
 
 public abstract record FlowEntry;
@@ -65,4 +63,3 @@ public class ScrivenerPatternTests
         Assert.Equal("Yes", ans.Selection);
     }
 }
-

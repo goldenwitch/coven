@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
+using Coven.Chat.Tests.TestTooling;
 
 namespace Coven.Chat.Tests;
 
@@ -9,10 +10,7 @@ namespace Coven.Chat.Tests;
 public static class StringScrivenerFactories
 {
     public static IEnumerable<object[]> Create()
-    {
-        yield return new object[] { new Func<IScrivener<string>>(() => new InMemoryScrivener<string>()) };
-        // Add new IScrivener<string> implementations here as factories.
-    }
+        => ScrivenerFactory.Both<string>("Coven_FileScrivener_Common_String_");
 }
 
 public class ScrivenerStringTests
@@ -121,4 +119,3 @@ public class ScrivenerStringTests
         await Assert.ThrowsAsync<TaskCanceledException>(() => task);
     }
 }
-

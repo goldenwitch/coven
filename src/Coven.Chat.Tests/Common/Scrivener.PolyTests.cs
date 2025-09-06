@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using Coven.Chat.Tests.TestTooling;
 
 namespace Coven.Chat.Tests;
 
@@ -8,10 +9,7 @@ namespace Coven.Chat.Tests;
 public static class PolyScrivenerFactories
 {
     public static IEnumerable<object[]> Create()
-    {
-        yield return new object[] { new Func<IScrivener<TestBaseEntry>>(() => new InMemoryScrivener<TestBaseEntry>()) };
-        // Add new IScrivener<TestBaseEntry> implementations here as factories.
-    }
+        => ScrivenerFactory.Both<TestBaseEntry>("Coven_FileScrivener_Common_Poly_");
 }
 
 // Simple polymorphic entry hierarchy for derived-type tests
@@ -36,4 +34,3 @@ public class ScrivenerPolyTests
         Assert.Equal(42, entry.Number);
     }
 }
-
