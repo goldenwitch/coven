@@ -1,18 +1,23 @@
-namespace Coven.Spellcasting.Agents;
-
-using System.Threading;
-using System.Threading.Tasks;
 using Coven.Spellcasting.Spells;
 
+namespace Coven.Spellcasting.Agents;
 
-public interface ICovenAgent<TIn, TOut>
+public interface ICovenAgent<TIn, TMessageFormat, TOut> : ICovenAgent<TMessageFormat>
 {
-    string Id { get; }
+    public string Id { get; }
 
-    Task RegisterSpells(List<SpellDefinition> Spells);
+    public Task InvokeAgent(TIn input, CancellationToken ct = default);
+    public Task<TOut> CloseAgentWithResult();
+}
 
-    Task<TOut> CastSpell(
-        TIn input,
-        CancellationToken ct = default);
+public interface ICovenAgent<TMessageFormat>
+{
+    protected Task<TMessageFormat> ReadMessage();
+    protected Task SendMessage(TMessageFormat message);
+
+    public Task RegisterSpells(List<SpellDefinition> spells);
+
+    public Task InvokeAgent(CancellationToken ct = default);
+    public Task CloseAgent();
 }
 

@@ -1,58 +1,92 @@
-namespace Coven.Spellcasting.Agents.Codex;
-
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
+using Coven.Chat;
 using Coven.Spellcasting.Spells;
 
+namespace Coven.Spellcasting.Agents.Codex;
 
-public sealed class CodexCliAgent<TOut> : ICovenAgent<string, TOut>
+public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> where TMessageFormat : notnull
 {
     public string Id => "codex";
     private readonly string _codexExecutablePath;
     private readonly string _workspaceDirectory;
+    private readonly List<SpellDefinition> _registeredSpells = new();
+    private readonly IScrivener<TMessageFormat> _scrivener;
 
-    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory)
+    private Process? _proc;
+    private Task? _stdoutTask;
+    private Task? _stderrTask;
+    private TaskCompletionSource<bool>? _nextMessageRequestedTcs;
+
+    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener)
     {
         _codexExecutablePath = codexExecutablePath;
         _workspaceDirectory = workspaceDirectory;
+        _scrivener = scrivener;
     }
 
     public Task RegisterSpells(List<SpellDefinition> Spells)
     {
-        throw new NotImplementedException();
+        _registeredSpells.Clear();
+        _registeredSpells.AddRange(Spells ?? new List<SpellDefinition>());
+
+        // Build MCP tools for each spell.
+
+        return Task.CompletedTask;
     }
 
-    public async Task<TOut> CastSpell(string input, CancellationToken ct = default)
+
+    public async Task InvokeAgent(CancellationToken ct = default)
     {
-        throw new NotImplementedException();
-        var psi = new ProcessStartInfo
-        {
-            FileName = _codexExecutablePath,
-            WorkingDirectory = _workspaceDirectory,
-            UseShellExecute = false,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            CreateNoWindow = true,
-        };
-
-        psi.ArgumentList.Add(input);
-
-        using var proc = new Process { StartInfo = psi, EnableRaisingEvents = true };
         try
         {
-            // Read all of what codex says as each line gets posted.
+            await using var mux = new ProcessTailMux(
+                fileName: _codexExecutablePath,
+                workingDirectory: _workspaceDirectory,
+                configurePsi: psi =>
+                {
+                    psi.CreateNoWindow = true;
+                });
 
-            // Simultaneously validate that no errors stream out.
-            // If we get an error, build it into an exception.
+            await mux.TailAsync(async ev =>
+            {
+                switch (ev)
+                {
+                    case Line o:
+                        // _ = _scrivener.Thought(o.Line);
+                        if (o.Line == "> ")
+                        {
+                            TMessageFormat msg = await ReadMessage();
+                            var payload = msg is string s ? s : msg?.ToString() ?? string.Empty;
+                            await mux.WriteLineAsync(payload, ct);
+                        }
+                        break;
 
-            // When Codex posts our "prompt" line, make an Ask call.
+                    case ErrorLine e:
+                        // _ = _scrivener.Error(e.Line);
+                        break;
+                }
+            }, ct);
         }
-        catch (OperationCanceledException)
+        catch
         {
+
         }
     }
+
+    public Task CloseAgent()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<TMessageFormat> ReadMessage()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task SendMessage(TMessageFormat message)
+    {
+        throw new NotImplementedException();
+    }
+
 }
