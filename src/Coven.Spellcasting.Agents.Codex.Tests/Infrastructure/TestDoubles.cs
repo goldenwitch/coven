@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
+using Coven.Spellcasting.Agents.Codex.MCP.Stdio;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Tail;
 
@@ -33,6 +34,13 @@ public sealed class FakeMcpServerHost : IMcpServerHost
     public McpToolbelt? LastToolbelt { get; private set; }
     public IMcpSpellExecutorRegistry? LastRegistry { get; private set; }
     public int StartCalls { get; private set; }
+    public string? LastPipeName { get; private set; }
+    private readonly bool _startStdio;
+
+    public FakeMcpServerHost(bool startStdio = false)
+    {
+        _startStdio = startStdio;
+    }
 
     private sealed class Session : IMcpServerSession
     {
@@ -49,7 +57,26 @@ public sealed class FakeMcpServerHost : IMcpServerHost
     public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry, CancellationToken ct = default)
     {
         LastToolbelt = toolbelt; LastRegistry = registry; StartCalls++;
-        IMcpServerSession s = new Session("toolbelt.json", "pipe_test");
+        var pipeName = $"coven_mcp_test_{Guid.NewGuid():N}";
+        LastPipeName = pipeName;
+
+        if (_startStdio)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var serverStream = new System.IO.Pipes.NamedPipeServerStream(pipeName, System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+                    await serverStream.WaitForConnectionAsync(ct).ConfigureAwait(false);
+                    var server = new McpStdioServer(toolbelt, serverStream, registry);
+                    server.Start();
+                    // server owns stream lifecycle via its Dispose
+                }
+                catch { }
+            }, ct);
+        }
+
+        IMcpServerSession s = new Session("toolbelt.json", pipeName);
         return Task.FromResult(s);
     }
 }

@@ -50,7 +50,9 @@ public sealed class CodexCliAgentDiTests
 
         // Config writer should be invoked with shim + pipe
         // Pipe is set by FakeMcpServerHost as "pipe_test"
-        Assert.Contains(configCapture.Calls, c => c.shim == "shim.exe" && c.pipe == "pipe_test");
+        var pipe = hostDouble.LastPipeName;
+        Assert.False(string.IsNullOrEmpty(pipe));
+        Assert.Contains(configCapture.Calls, c => c.shim == "shim.exe" && c.pipe == pipe);
 
         // Feed a rollout message and assert scrivener sees translated entry
         var mux = tailFactory.LastInstance ?? throw new InvalidOperationException("Tail mux not created");
