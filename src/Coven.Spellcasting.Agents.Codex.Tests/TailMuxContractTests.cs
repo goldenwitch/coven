@@ -23,7 +23,12 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
         }, cts.Token);
 
         await Fixture.CreateBackingFileAsync(mux);
-        await Fixture.WaitUntilTailReadyAsync(mux, cts.Token);
+        // Sentinel-based readiness: write a marker and wait until observed
+        const string sentinel = "__ready__";
+        await Fixture.StimulateIncomingAsync(mux, new[] { sentinel });
+        var ready = await TailMuxTestHelpers.WaitUntilAsync(() => received.Contains(sentinel), TimeSpan.FromSeconds(3));
+        Assert.True(ready, "Timed out waiting for tail readiness sentinel");
+
         await Fixture.StimulateIncomingAsync(mux, new[] { "one", "two", "three" });
 
         var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received.Count >= 3, TimeSpan.FromSeconds(3));
@@ -67,11 +72,25 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
         using (var cts = new CancellationTokenSource())
         {
             var received = 0;
-            var t = mux.TailAsync((line, isError) => { if (!isError) received++; return ValueTask.CompletedTask; }, cts.Token);
+            bool ready2 = false;
+            const string sentinel = "__ready2__";
+            var t = mux.TailAsync((line, isError) =>
+            {
+                if (!isError)
+                {
+                    if (line == sentinel) ready2 = true;
+                    else received++;
+                }
+                return ValueTask.CompletedTask;
+            }, cts.Token);
             await Fixture.CreateBackingFileAsync(mux);
-            await Fixture.WaitUntilTailReadyAsync(mux, cts.Token);
+            await Fixture.StimulateIncomingAsync(mux, new[] { sentinel });
+            var readyOk = await TailMuxTestHelpers.WaitUntilAsync(() => ready2, TimeSpan.FromSeconds(3));
+            Assert.True(readyOk, "Timed out waiting for tail readiness sentinel (restart)");
             await Fixture.StimulateIncomingAsync(mux, new[] { "x" });
-
+            cts.Cancel();
+            await t.WaitAsync(TimeSpan.FromSeconds(2));
+            
             var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received >= 1, TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(25));
 
             Assert.True(ok, "Timed out waiting for 1 line");

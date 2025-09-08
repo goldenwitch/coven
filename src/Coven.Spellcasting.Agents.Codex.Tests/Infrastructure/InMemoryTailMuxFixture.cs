@@ -32,7 +32,6 @@ public sealed class InMemoryTailMuxFixture : ITailMuxFixture, IDisposable
     }
 
     public Task CreateBackingFileAsync(ITestTailMux mux) => Task.CompletedTask;
-    public Task WaitUntilTailReadyAsync(ITestTailMux mux, CancellationToken ct = default) => Task.CompletedTask;
 
     public void Dispose()
     {

@@ -42,9 +42,6 @@ internal sealed class ProcessDocumentTailMux : ITailMux
 
     private volatile bool _disposed;
 
-    // Signals (for tests) that the file has been opened for reading at least once.
-    private readonly TaskCompletionSource<bool> _fileOpenedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
     internal ProcessDocumentTailMux(
         string documentPath,
         string fileName,
@@ -271,8 +268,7 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                 // Comment the next line to read from start of file instead.
                 fs.Seek(0, SeekOrigin.End);
 
-                // Signal readiness after the file stream is opened and positioned.
-                try { _fileOpenedTcs.TrySetResult(true); } catch { }
+                // At this point the file stream is open and positioned at EOF for tailing.
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -303,7 +299,4 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         }
     }
 
-    // Internal utility for tests to await until the tailer has opened the file at least once.
-    internal Task WaitUntilReadyAsync(CancellationToken ct = default)
-        => _fileOpenedTcs.Task.WaitAsync(ct);
 }

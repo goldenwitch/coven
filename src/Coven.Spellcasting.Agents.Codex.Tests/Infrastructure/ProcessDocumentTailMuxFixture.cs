@@ -56,11 +56,7 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
         // detect and open the file before we append, to avoid losing lines due to initial seek-to-end.
         bool createdNow = false;
         if (!File.Exists(path)) { using (File.Create(path)) { } createdNow = true; }
-        if (createdNow)
-        {
-            // wait deterministically for tail readiness
-            await WaitUntilTailReadyAsync(mux, CancellationToken.None);
-        }
+        // No explicit readiness await here; tests can send a sentinel and wait for it.
         await TailMuxTestHelpers.AppendLinesAsync(path, lines);
     }
 
@@ -68,14 +64,6 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
     {
         if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");
         if (!File.Exists(path)) using (File.Create(path)) { }
-        return Task.CompletedTask;
-    }
-
-    public Task WaitUntilTailReadyAsync(ITestTailMux mux, CancellationToken ct = default)
-    {
-        var underlying = ((MuxAdapter)mux).Underlying;
-        if (underlying is ProcessDocumentTailMux pd)
-            return pd.WaitUntilReadyAsync(ct);
         return Task.CompletedTask;
     }
 

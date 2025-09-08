@@ -32,9 +32,12 @@ public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<Proce
         // Give the tailer a moment to start its loop
         await Task.Delay(150);
 
-        // Act: Ensure the file gets created after tail starts, then wait for readiness, then append.
+        // Act: Ensure the file gets created after tail starts, then send a readiness sentinel, then append.
         await Fixture.CreateBackingFileAsync(mux);
-        await Fixture.WaitUntilTailReadyAsync(mux, cts.Token);
+        const string sentinel = "__ready_proc__";
+        await Fixture.StimulateIncomingAsync(mux, new[] { sentinel });
+        var ready = await TailMuxTestHelpers.WaitUntilAsync(() => received.Contains(sentinel), TimeSpan.FromSeconds(3));
+        Assert.True(ready, "Timed out waiting for tail readiness sentinel (proc)");
         await Fixture.StimulateIncomingAsync(mux, new[] { "alpha", "beta", "gamma" });
 
         // Assert: We eventually observe the appended lines and no errors
