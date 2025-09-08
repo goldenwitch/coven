@@ -1,0 +1,177 @@
+using Coven.Chat;
+using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
+using Coven.Spellcasting.Spells;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Coven.Spellcasting.Agents.Codex.Tests;
+
+public sealed class CodexCliAgentDiTests
+{
+    private sealed class EchoIn { public string? Message { get; set; } }
+    private sealed class EchoSpell : ISpell<EchoIn, string>
+    {
+        public Task<string> CastSpell(EchoIn input) => Task.FromResult(input.Message ?? string.Empty);
+    }
+
+    [Fact]
+    public async Task Wires_Host_Config_And_Tails_Rollout_To_Scrivener()
+    {
+        var hostDouble = new FakeMcpServerHost();
+        var configCapture = new CapturingConfigWriter();
+        var tailFactory = new CapturingInMemoryTailFactory();
+
+        using var testHost = new CodexAgentTestHost<string>()
+            .UseTempWorkspace()
+            .Configure(o =>
+            {
+                o.ExecutablePath = "codex"; // not actually started (NoopProcessFactory)
+                o.ShimExecutablePath = "shim.exe";
+                o.Spells = new object[] { new EchoSpell() };
+            })
+            .WithHost(hostDouble)
+            .WithConfigWriter(configCapture)
+            .WithTailFactory(tailFactory)
+            .WithProcessFactory(new NoopProcessFactory())
+            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
+            .Build();
+
+        var agent = testHost.GetAgent();
+        using var cts = new CancellationTokenSource();
+
+        // Kick off the agent in the background
+        var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
+
+        // Wait a beat to let setup complete
+        await Task.Delay(100);
+
+        // The host should have been started with a registry (because spells were provided)
+        Assert.True(hostDouble.StartCalls >= 1);
+        Assert.NotNull(hostDouble.LastRegistry);
+
+        // Config writer should be invoked with shim + pipe
+        // Pipe is set by FakeMcpServerHost as "pipe_test"
+        Assert.Contains(configCapture.Calls, c => c.shim == "shim.exe" && c.pipe == "pipe_test");
+
+        // Feed a rollout message and assert scrivener sees translated entry
+        var mux = tailFactory.LastInstance ?? throw new InvalidOperationException("Tail mux not created");
+        var scrivener = testHost.Services.GetRequiredService<IScrivener<string>>();
+
+        // Arrange a waiter before feeding
+        var waiter = scrivener.WaitForAsync(0, s => s.Contains("assistant: hello", StringComparison.OrdinalIgnoreCase));
+
+        var line = "{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"hello\"}";
+        await mux.FeedAsync(new Line(line, DateTimeOffset.UtcNow));
+
+        // Confirm entry observed, then cancel the agent loop
+        var seen = await waiter;
+        Assert.Contains("assistant: hello", seen.entry, StringComparison.OrdinalIgnoreCase);
+
+        cts.Cancel();
+        try { await runTask; } catch { }
+    }
+
+    [Fact]
+    public async Task NoSpells_DoesNot_StartHost_Or_WriteConfig_But_Tails()
+    {
+        var hostDouble = new FakeMcpServerHost();
+        var configCapture = new CapturingConfigWriter();
+        var tailFactory = new CapturingInMemoryTailFactory();
+
+        using var testHost = new CodexAgentTestHost<string>()
+            .UseTempWorkspace()
+            .Configure(o =>
+            {
+                o.ExecutablePath = "codex";
+                // No spells
+            })
+            .WithHost(hostDouble)
+            .WithConfigWriter(configCapture)
+            .WithTailFactory(tailFactory)
+            .WithProcessFactory(new NoopProcessFactory())
+            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
+            .Build();
+
+        var agent = testHost.GetAgent();
+        using var cts = new CancellationTokenSource();
+        var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
+        await Task.Delay(100);
+
+        Assert.Equal(0, hostDouble.StartCalls);
+        Assert.Empty(configCapture.Calls);
+
+        var mux = tailFactory.LastInstance ?? throw new InvalidOperationException("Tail mux not created");
+        var scrivener = testHost.Services.GetRequiredService<IScrivener<string>>();
+
+        var waiter = scrivener.WaitForAsync(0, s => s.Contains("$ echo", StringComparison.OrdinalIgnoreCase));
+        var cmdLine = "{\"type\":\"command\",\"command\":\"echo hi\",\"cwd\":\"/tmp\"}";
+        await mux.FeedAsync(new Line(cmdLine, DateTimeOffset.UtcNow));
+
+        var seen = await waiter;
+        Assert.Contains("$ echo hi", seen.entry, StringComparison.OrdinalIgnoreCase);
+
+        cts.Cancel();
+        try { await runTask; } catch { }
+    }
+
+    [Fact]
+    public async Task Uses_Resolver_Path_And_ProcessFactory()
+    {
+        var tailFactory = new CapturingInMemoryTailFactory();
+        var proc = new CapturingProcessFactory();
+        var resolverPath = Path.Combine(Path.GetTempPath(), "rollout-from-resolver.jsonl");
+
+        using var testHost = new CodexAgentTestHost<string>()
+            .UseTempWorkspace()
+            .Configure(o => o.ExecutablePath = "codex")
+            .WithTailFactory(tailFactory)
+            .WithProcessFactory(proc)
+            .WithRolloutResolver(new StubRolloutResolver(resolverPath))
+            .Build();
+
+        var agent = testHost.GetAgent();
+        using var cts = new CancellationTokenSource();
+        var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
+
+        await Task.Delay(100);
+
+        Assert.Equal(1, proc.StartCalls);
+        Assert.Equal(resolverPath, tailFactory.LastRolloutPath);
+
+        cts.Cancel();
+        try { await runTask; } catch { }
+    }
+
+    [Fact]
+    public async Task WithSpells_But_No_Shim_DoesNot_WriteConfig()
+    {
+        var hostDouble = new FakeMcpServerHost();
+        var configCapture = new CapturingConfigWriter();
+
+        using var testHost = new CodexAgentTestHost<string>()
+            .UseTempWorkspace()
+            .Configure(o =>
+            {
+                o.ExecutablePath = "codex";
+                o.Spells = new object[] { new EchoSpell() };
+                // No shim provided
+            })
+            .WithHost(hostDouble)
+            .WithConfigWriter(configCapture)
+            .WithProcessFactory(new NoopProcessFactory())
+            .WithTailFactory(new CapturingInMemoryTailFactory())
+            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
+            .Build();
+
+        var agent = testHost.GetAgent();
+        using var cts = new CancellationTokenSource();
+        var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
+        await Task.Delay(100);
+
+        Assert.True(hostDouble.StartCalls >= 1); // tools exist, host started
+        Assert.NotNull(hostDouble.LastRegistry);
+        Assert.Empty(configCapture.Calls); // no shim => no config write
+
+        cts.Cancel();
+        try { await runTask; } catch { }
+    }
+}

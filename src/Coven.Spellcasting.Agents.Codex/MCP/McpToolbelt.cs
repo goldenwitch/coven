@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP;
 
-internal sealed class McpToolbelt
+public sealed class McpToolbelt
 {
     public IReadOnlyList<McpTool> Tools { get; }
 
@@ -21,4 +21,3 @@ internal sealed class McpToolbelt
         return JsonSerializer.Serialize(payload);
     }
 }
-

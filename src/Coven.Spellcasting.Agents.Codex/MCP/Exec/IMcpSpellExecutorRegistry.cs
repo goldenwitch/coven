@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP.Exec;
 
-internal interface IMcpSpellExecutorRegistry
+public interface IMcpSpellExecutorRegistry
 {
     IReadOnlyList<McpTool> Tools { get; }
 
@@ -13,4 +13,3 @@ internal interface IMcpSpellExecutorRegistry
         out Task<object?> resultTask,
         out bool returnsJson);
 }
-

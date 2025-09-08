@@ -8,7 +8,7 @@ namespace Coven.Spellcasting.Agents.Codex;
 /// Abstraction for a tail multiplexer that can emit tail events and accept posted input.
 /// Implementations may be asymmetric (e.g., read from one source, write to another).
 /// </summary>
-internal interface ITailMux : IAsyncDisposable
+public interface ITailMux : IAsyncDisposable
 {
     /// <summary>
     /// Tails the underlying source and invokes <paramref name="onMessage"/> for each event.

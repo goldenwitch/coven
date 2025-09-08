@@ -5,6 +5,9 @@ using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 using Coven.Spellcasting.Agents.Codex.MCP;
+using Coven.Spellcasting.Agents.Codex.Processes;
+using Coven.Spellcasting.Agents.Codex.Tail;
+using Coven.Spellcasting.Agents.Codex.Config;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
@@ -19,6 +22,11 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
     private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
     private readonly string? _shimExecutablePath;
     private readonly IMcpSpellExecutorRegistry? _executorRegistry;
+    private readonly IMcpServerHost? _hostOverride;
+    private readonly ICodexProcessFactory? _procFactory;
+    private readonly ITailMuxFactory? _tailFactory;
+    private readonly ICodexConfigWriter? _configWriter;
+    private readonly IRolloutPathResolver? _rolloutResolver;
     private McpToolbelt? _toolbelt;
     private IMcpServerSession? _mcpSession;
 
@@ -47,6 +55,26 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         }
     }
 
+    public CodexCliAgent(
+        string codexExecutablePath,
+        string workspaceDirectory,
+        IScrivener<TMessageFormat> scrivener,
+        string? shimExecutablePath,
+        IEnumerable<object>? spells,
+        IMcpServerHost? host,
+        ICodexProcessFactory? processFactory,
+        ITailMuxFactory? tailFactory,
+        ICodexConfigWriter? configWriter,
+        IRolloutPathResolver? rolloutResolver)
+        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath, spells)
+    {
+        _hostOverride = host;
+        _procFactory = processFactory;
+        _tailFactory = tailFactory;
+        _configWriter = configWriter;
+        _rolloutResolver = rolloutResolver;
+    }
+
     public Task RegisterSpells(List<SpellDefinition> Spells)
     {
         _registeredSpells.Clear();
@@ -70,38 +98,31 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             // Start disposable MCP server session for this invocation if we have tools.
             if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
             {
-                var host = new LocalMcpServerHost(_workspaceDirectory);
+                var host = _hostOverride ?? new LocalMcpServerHost(_workspaceDirectory);
                 _mcpSession = await (_executorRegistry is null
                     ? host.StartAsync(_toolbelt, ct)
                     : host.StartAsync(_toolbelt, _executorRegistry, ct)).ConfigureAwait(false);
                 // Generate a minimal Codex config that points to our shim, which bridges to the named pipe.
                 if (!string.IsNullOrWhiteSpace(_shimExecutablePath) && !string.IsNullOrWhiteSpace(_mcpSession.PipeName))
                 {
-                    WriteCodexConfigForShim(_shimExecutablePath!, _mcpSession.PipeName!);
+                    if (_configWriter is not null)
+                    {
+                        try { _configWriter.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); } catch { }
+                    }
+                    else
+                    {
+                        WriteCodexConfigForShim(_shimExecutablePath!, _mcpSession.PipeName!);
+                    }
                 }
             }
 
-            // Start Codex CLI process (owned by mux later)
-            var psi = new ProcessStartInfo(_codexExecutablePath)
-            {
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                WorkingDirectory = _workspaceDirectory,
-                CreateNoWindow = true
-            };
-            foreach (var kv in env)
-            {
-                if (kv.Value is null) psi.Environment.Remove(kv.Key);
-                else psi.Environment[kv.Key] = kv.Value;
-            }
-
-            using var proc = new Process { StartInfo = psi };
-            if (!proc.Start()) throw new InvalidOperationException("Failed to start Codex CLI process.");
+            var processFactory = _procFactory ?? new DefaultCodexProcessFactory();
+            await using var handle = processFactory.Start(_codexExecutablePath, _workspaceDirectory, env);
+            var proc = handle.Process;
 
             // Determine rollout path for the just-started session
-            var rolloutPath = await ResolveRolloutPathAsync(_codexExecutablePath, _workspaceDirectory, _codexHomeDir, env, TimeSpan.FromSeconds(8), ct)
+            var resolver = _rolloutResolver ?? new DefaultRolloutPathResolver();
+            var rolloutPath = await resolver.ResolveAsync(_codexExecutablePath, _workspaceDirectory, _codexHomeDir, env, TimeSpan.FromSeconds(8), ct)
                 .ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(rolloutPath))
             {
@@ -109,7 +130,8 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
                 rolloutPath = Path.Combine(_workspaceDirectory, "codex.rollout.jsonl");
             }
 
-            await using ITailMux mux = new ProcessDocumentTailMux(rolloutPath, proc);
+            var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
+            await using ITailMux mux = tailFactory.CreateForRollout(rolloutPath, proc);
 
             await mux.TailAsync(async ev =>
             {
@@ -225,101 +247,6 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             if (!existing.EndsWith("\n") && !existing.EndsWith("\r\n")) existing += Environment.NewLine;
             return existing + newSection;
         }
-    }
-
-    private static async Task<string?> ResolveRolloutPathAsync(
-        string codexExecutablePath,
-        string workspaceDirectory,
-        string codexHome,
-        IReadOnlyDictionary<string, string?> env,
-        TimeSpan timeout,
-        CancellationToken ct)
-    {
-        var deadline = DateTime.UtcNow + timeout;
-
-        // Prefer CLI introspection, retrying until timeout
-        while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
-        {
-            var viaCli = TryResolveRolloutPathViaCli(codexExecutablePath, workspaceDirectory, env);
-            if (!string.IsNullOrWhiteSpace(viaCli) && File.Exists(viaCli))
-                return viaCli;
-
-            // Fallback: scan sessions tree for the newest rollout file
-            var viaScan = TryResolveRolloutPathByScan(codexHome);
-            if (!string.IsNullOrWhiteSpace(viaScan) && File.Exists(viaScan))
-                return viaScan;
-
-            try { await Task.Delay(200, ct).ConfigureAwait(false); } catch { break; }
-        }
-
-        return null;
-    }
-
-    private static string? TryResolveRolloutPathViaCli(
-        string codexExecutablePath,
-        string workspaceDirectory,
-        IReadOnlyDictionary<string, string?> env)
-    {
-        foreach (var args in new[] { "sessions list", "session ls" })
-        {
-            try
-            {
-                var psi = new ProcessStartInfo(codexExecutablePath, args)
-                {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    WorkingDirectory = workspaceDirectory
-                };
-                foreach (var kv in env)
-                {
-                    if (kv.Value is null) psi.Environment.Remove(kv.Key);
-                    else psi.Environment[kv.Key] = kv.Value;
-                }
-
-                using var p = Process.Start(psi);
-                if (p is null) continue;
-                string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(3000);
-
-                // Extract last occurrence of a rollout-*.jsonl path
-                var rx = new Regex(@"(?<path>[^\s]+rollout-[^\s]+\.jsonl)", RegexOptions.IgnoreCase);
-                var match = rx.Matches(output).Cast<Match>().Select(m => m.Groups["path"].Value).LastOrDefault();
-                if (!string.IsNullOrWhiteSpace(match))
-                {
-                    var path = ExpandUserHome(match);
-                    return Path.GetFullPath(path);
-                }
-            }
-            catch { }
-        }
-        return null;
-    }
-
-    private static string? TryResolveRolloutPathByScan(string codexHomeDir)
-    {
-        try
-        {
-            var sessionsRoot = Path.Combine(codexHomeDir, "sessions");
-            if (!Directory.Exists(sessionsRoot)) return null;
-            return Directory.EnumerateFiles(sessionsRoot, "rollout-*.jsonl", SearchOption.AllDirectories)
-                .Select(p => new FileInfo(p))
-                .OrderByDescending(fi => fi.LastWriteTimeUtc)
-                .FirstOrDefault()?.FullName;
-        }
-        catch { return null; }
-    }
-
-    private static string ExpandUserHome(string path)
-    {
-        if (string.IsNullOrWhiteSpace(path)) return path;
-        if (path.StartsWith("~"))
-        {
-            var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var rest = path.TrimStart('~').TrimStart('/', '\\');
-            return Path.Combine(home, rest);
-        }
-        return path;
     }
 
 }

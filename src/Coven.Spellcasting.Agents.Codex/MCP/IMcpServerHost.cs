@@ -1,12 +1,13 @@
 namespace Coven.Spellcasting.Agents.Codex.MCP;
 
-internal interface IMcpServerSession : IAsyncDisposable
+public interface IMcpServerSession : IAsyncDisposable
 {
     string ToolbeltPath { get; }
     string? PipeName { get; }
 }
 
-internal interface IMcpServerHost
+public interface IMcpServerHost
 {
     Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default);
+    Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, Exec.IMcpSpellExecutorRegistry registry, CancellationToken ct = default);
 }
