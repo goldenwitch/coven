@@ -12,7 +12,7 @@ public sealed class InMemoryTailMux_ContractTests : TailMuxContract<InMemoryTail
     [Fact]
     public async Task Write_Can_Be_Observed_From_Outgoing_Channel()
     {
-        await using var mux = Fixture.CreateMux(new MuxArgs("unused"));
+        await using var mux = Fixture.CreateMux();
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         var collected = new List<string>();
@@ -33,4 +33,3 @@ public sealed class InMemoryTailMux_ContractTests : TailMuxContract<InMemoryTail
         Assert.Contains("beta", collected);
     }
 }
-

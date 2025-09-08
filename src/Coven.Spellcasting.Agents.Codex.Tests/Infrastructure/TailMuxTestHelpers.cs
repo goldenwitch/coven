@@ -4,12 +4,7 @@ namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
 internal static class TailMuxTestHelpers
 {
-    internal static string NewTempFile()
-    {
-        string path = Path.Combine(Path.GetTempPath(), $"coven_mux_{Guid.NewGuid():N}.log");
-        using (File.Create(path)) { }
-        return path;
-    }
+    // Removed NewTempFile helper; fixtures generate and manage paths directly.
 
     internal static async Task AppendLinesAsync(string path, IEnumerable<string> lines)
     {

@@ -8,18 +8,19 @@ namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
 {
     private readonly IHost _host;
+    private readonly Dictionary<ITestTailMux, string> _paths = new();
 
     public ProcessDocumentTailMuxFixture()
     {
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
-                services.AddTransient<Func<MuxArgs, ITailMux>>(sp => args =>
+                services.AddTransient<Func<string, ITailMux>>(sp => docPath =>
                 {
                     if (OperatingSystem.IsWindows())
                     {
                         return new ProcessDocumentTailMux(
-                            documentPath: args.DocumentPath,
+                            documentPath: docPath,
                             fileName: "cmd.exe",
                             arguments: "/C more",
                             workingDirectory: Path.GetTempPath());
@@ -27,7 +28,7 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
                     else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
                     {
                         return new ProcessDocumentTailMux(
-                            documentPath: args.DocumentPath,
+                            documentPath: docPath,
                             fileName: "/bin/sh",
                             arguments: "-c cat",
                             workingDirectory: Path.GetTempPath());
@@ -38,14 +39,45 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
             .Build();
     }
 
-    public ITestTailMux CreateMux(MuxArgs args)
+    public ITestTailMux CreateMux()
     {
-        var factory = _host.Services.GetRequiredService<Func<MuxArgs, ITailMux>>();
-        return new MuxAdapter(factory(args));
+        string path = Path.Combine(Path.GetTempPath(), $"coven_mux_{Guid.NewGuid():N}.log");
+        // Intentionally do not create the file here; allows tests to assert wait-for-existence behavior.
+        var factory = _host.Services.GetRequiredService<Func<string, ITailMux>>();
+        var adapter = new MuxAdapter(factory(path));
+        _paths[adapter] = path;
+        return adapter;
     }
 
-    public Task StimulateIncomingAsync(ITestTailMux mux, MuxArgs args, IEnumerable<string> lines)
-        => TailMuxTestHelpers.AppendLinesAsync(args.DocumentPath, lines);
+    public async Task StimulateIncomingAsync(ITestTailMux mux, IEnumerable<string> lines)
+    {
+        if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");
+        // Ensure file exists before appending. If created now, give the tailer a brief window to
+        // detect and open the file before we append, to avoid losing lines due to initial seek-to-end.
+        bool createdNow = false;
+        if (!File.Exists(path)) { using (File.Create(path)) { } createdNow = true; }
+        if (createdNow)
+        {
+            // wait deterministically for tail readiness
+            await WaitUntilTailReadyAsync(mux, CancellationToken.None);
+        }
+        await TailMuxTestHelpers.AppendLinesAsync(path, lines);
+    }
+
+    public Task CreateBackingFileAsync(ITestTailMux mux)
+    {
+        if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");
+        if (!File.Exists(path)) using (File.Create(path)) { }
+        return Task.CompletedTask;
+    }
+
+    public Task WaitUntilTailReadyAsync(ITestTailMux mux, CancellationToken ct = default)
+    {
+        var underlying = ((MuxAdapter)mux).Underlying;
+        if (underlying is ProcessDocumentTailMux pd)
+            return pd.WaitUntilReadyAsync(ct);
+        return Task.CompletedTask;
+    }
 
     public void Dispose()
     {

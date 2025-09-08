@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Threading.Channels;
 
@@ -10,7 +11,8 @@ namespace Coven.Spellcasting.Agents.Codex;
 internal sealed class ProcessDocumentTailMux : ITailMux
 {
     // Reading: tail a file to populate a bounded channel.
-    private readonly string _documentPath;
+    private readonly string? _documentPath;
+    private readonly Func<string?>? _documentPathResolver;
     private readonly Channel<TailEvent> _chan =
         Channel.CreateBounded<TailEvent>(new BoundedChannelOptions(1024)
         {
@@ -40,6 +42,9 @@ internal sealed class ProcessDocumentTailMux : ITailMux
 
     private volatile bool _disposed;
 
+    // Signals (for tests) that the file has been opened for reading at least once.
+    private readonly TaskCompletionSource<bool> _fileOpenedTcs = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     internal ProcessDocumentTailMux(
         string documentPath,
         string fileName,
@@ -49,6 +54,22 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         Action<ProcessStartInfo>? configurePsi = null)
     {
         _documentPath = documentPath;
+        _fileName = fileName;
+        _arguments = arguments;
+        _workingDirectory = workingDirectory;
+        _environment = environment;
+        _configurePsi = configurePsi;
+    }
+
+    internal ProcessDocumentTailMux(
+        Func<string?> documentPathResolver,
+        string fileName,
+        string? arguments = null,
+        string? workingDirectory = null,
+        IReadOnlyDictionary<string, string?>? environment = null,
+        Action<ProcessStartInfo>? configurePsi = null)
+    {
+        _documentPathResolver = documentPathResolver;
         _fileName = fileName;
         _arguments = arguments;
         _workingDirectory = workingDirectory;
@@ -224,14 +245,22 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         {
             while (!ct.IsCancellationRequested)
             {
-                if (!File.Exists(_documentPath))
+                // Resolve the path either from the fixed value or a dynamic resolver.
+                var targetPath = _documentPath;
+                if (string.IsNullOrWhiteSpace(targetPath) && _documentPathResolver is not null)
+                {
+                    try { targetPath = _documentPathResolver(); }
+                    catch { targetPath = null; }
+                }
+
+                if (string.IsNullOrWhiteSpace(targetPath) || !File.Exists(targetPath))
                 {
                     await Task.Delay(200, ct).ConfigureAwait(false);
                     continue;
                 }
 
                 using var fs = new FileStream(
-                    _documentPath,
+                    targetPath!,
                     FileMode.Open,
                     FileAccess.Read,
                     FileShare.ReadWrite | FileShare.Delete);
@@ -241,6 +270,9 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                 // Seek to end to emulate tailing newly appended content.
                 // Comment the next line to read from start of file instead.
                 fs.Seek(0, SeekOrigin.End);
+
+                // Signal readiness after the file stream is opened and positioned.
+                try { _fileOpenedTcs.TrySetResult(true); } catch { }
 
                 while (!ct.IsCancellationRequested)
                 {
@@ -270,5 +302,8 @@ internal sealed class ProcessDocumentTailMux : ITailMux
             // transient IO; exit quietly on dispose
         }
     }
-}
 
+    // Internal utility for tests to await until the tailer has opened the file at least once.
+    internal Task WaitUntilReadyAsync(CancellationToken ct = default)
+        => _fileOpenedTcs.Task.WaitAsync(ct);
+}

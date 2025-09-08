@@ -11,8 +11,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     [Fact]
     public async Task TailAsync_Receives_Appended_Lines()
     {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        await using var mux = Fixture.CreateMux(new MuxArgs(doc));
+        await using var mux = Fixture.CreateMux();
 
         var received = new ConcurrentQueue<string>();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
@@ -23,8 +22,9 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
             return ValueTask.CompletedTask;
         }, cts.Token);
 
-        await Task.Delay(150);
-        await Fixture.StimulateIncomingAsync(mux, new MuxArgs(doc), new[] { "one", "two", "three" });
+        await Fixture.CreateBackingFileAsync(mux);
+        await Fixture.WaitUntilTailReadyAsync(mux, cts.Token);
+        await Fixture.StimulateIncomingAsync(mux, new[] { "one", "two", "three" });
 
         var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received.Count >= 3, TimeSpan.FromSeconds(3));
 
@@ -40,8 +40,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     [Fact]
     public async Task TailAsync_Single_Reader_Enforced()
     {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        await using var mux = Fixture.CreateMux(new MuxArgs(doc));
+        await using var mux = Fixture.CreateMux();
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var t1 = mux.TailAsync((line, isError) => ValueTask.CompletedTask, cts.Token);
@@ -55,8 +54,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     [Fact]
     public async Task TailAsync_Can_Restart_After_Cancel()
     {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        await using var mux = Fixture.CreateMux(new MuxArgs(doc));
+        await using var mux = Fixture.CreateMux();
 
         using (var cts = new CancellationTokenSource())
         {
@@ -70,8 +68,9 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
         {
             var received = 0;
             var t = mux.TailAsync((line, isError) => { if (!isError) received++; return ValueTask.CompletedTask; }, cts.Token);
-            await Task.Delay(100);
-            await Fixture.StimulateIncomingAsync(mux, new MuxArgs(doc), new[] { "x" });
+            await Fixture.CreateBackingFileAsync(mux);
+            await Fixture.WaitUntilTailReadyAsync(mux, cts.Token);
+            await Fixture.StimulateIncomingAsync(mux, new[] { "x" });
 
             var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received >= 1, TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(25));
 
@@ -84,8 +83,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     [Fact]
     public async Task Dispose_Cancels_Tail()
     {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        var mux = Fixture.CreateMux(new MuxArgs(doc));
+        var mux = Fixture.CreateMux();
         var t = mux.TailAsync((line, isError) => ValueTask.CompletedTask);
         await Task.Delay(100);
         await mux.DisposeAsync();
@@ -95,8 +93,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     [Fact]
     public async Task Write_After_Dispose_Throws()
     {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        await using var mux = Fixture.CreateMux(new MuxArgs(doc));
+        await using var mux = Fixture.CreateMux();
         await mux.DisposeAsync();
         await Assert.ThrowsAsync<ObjectDisposedException>(() => mux.WriteLineAsync("hello"));
     }
