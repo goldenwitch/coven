@@ -70,8 +70,7 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
         if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");
         // Ensure file exists before appending. If created now, give the tailer a brief window to
         // detect and open the file before we append, to avoid losing lines due to initial seek-to-end.
-        bool createdNow = false;
-        if (!File.Exists(path)) { using (File.Create(path)) { } createdNow = true; }
+        if (!File.Exists(path)) { using (File.Create(path)) { } }
         // No explicit readiness await here; tests can send a sentinel and wait for it.
         await TailMuxTestHelpers.AppendLinesAsync(path, lines);
     }

@@ -154,10 +154,12 @@ public sealed class AgentMcpIntegrationTests
         var sb = new StringBuilder();
         var lastCr = false;
         int capturedLen = -1;
+        var buf = new byte[1];
         while (true)
         {
-            int b = s.ReadByte();
-            if (b < 0) return 0;
+            var n = await s.ReadAsync(buf, 0, 1);
+            if (n <= 0) return 0;
+            int b = buf[0];
             if (b == '\r') { lastCr = true; continue; }
             if (b == '\n')
             {

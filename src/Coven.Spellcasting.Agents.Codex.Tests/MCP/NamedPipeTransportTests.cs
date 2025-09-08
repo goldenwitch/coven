@@ -55,10 +55,16 @@ public sealed class NamedPipeTransportTests
         var sb = new StringBuilder();
         var lastWasCr = false;
         int capturedLen = -1;
+        var buffer = new byte[1];
         while (true)
         {
-            int b = s.ReadByte();
-            if (b < 0) return 0;
+            var n = await s.ReadAsync(buffer, 0, 1);
+            if (n == 0)
+            {
+                // EOF without full header terminator; fall back to any captured length
+                break;
+            }
+            var b = (char)buffer[0];
             if (b == '\r') { lastWasCr = true; continue; }
             if (b == '\n')
             {
@@ -79,10 +85,8 @@ public sealed class NamedPipeTransportTests
                 continue;
             }
             if (lastWasCr) { sb.Append('\r'); lastWasCr = false; }
-            sb.Append((char)b);
+            sb.Append(b);
         }
-        // Shouldn't reach here
-        // Fallback
         return capturedLen > 0 ? capturedLen : 0;
     }
 }
