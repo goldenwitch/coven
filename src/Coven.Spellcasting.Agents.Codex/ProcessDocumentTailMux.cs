@@ -57,6 +57,34 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         _configurePsi = configurePsi;
     }
 
+    /// <summary>
+    /// Alternate constructor that accepts an already-created process. The mux will not start the process, but will
+    /// assume ownership of its lifecycle (e.g., terminate on dispose) and write to its stdin while tailing
+    /// <paramref name="documentPath"/>.
+    /// </summary>
+    internal ProcessDocumentTailMux(
+        string documentPath,
+        Process process)
+    {
+        _documentPath = documentPath;
+        _fileName = process.StartInfo.FileName;
+        _arguments = process.StartInfo.Arguments;
+        _workingDirectory = process.StartInfo.WorkingDirectory;
+        _environment = null;
+        _configurePsi = null;
+
+        _proc = process;
+        _procStarted = true;
+        try
+        {
+            _procExitTask = _proc.WaitForExitAsync(_tailCts.Token);
+        }
+        catch
+        {
+            // ignore; tests or callers may not require exit tracking
+        }
+    }
+
     // Removed dynamic path resolver; callers should provide a concrete document path.
 
     public async Task TailAsync(Func<TailEvent, ValueTask> onMessage, CancellationToken ct = default)
@@ -115,15 +143,7 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                 await p.StandardInput.WriteLineAsync(line).WaitAsync(ct).ConfigureAwait(false);
                 await p.StandardInput.FlushAsync().WaitAsync(ct).ConfigureAwait(false);
             }
-            catch (IOException) when (p.HasExited)
-            {
-                throw new InvalidOperationException("Process exited during write.");
-            }
-            catch (ObjectDisposedException) when (_disposed || p.HasExited)
-            {
-                throw new InvalidOperationException("Process exited during write.");
-            }
-            catch (InvalidOperationException) when (p.HasExited)
+            catch (Exception) when (_disposed || p.HasExited)
             {
                 throw new InvalidOperationException("Process exited during write.");
             }
