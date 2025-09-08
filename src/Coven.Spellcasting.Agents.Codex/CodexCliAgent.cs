@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Coven.Chat;
 using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
+using Coven.Spellcasting.Agents.Codex.MCP;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
@@ -15,6 +16,8 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
     private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
+    private McpToolbelt? _toolbelt;
+    private IMcpServerSession? _mcpSession;
 
     // Removed unused process/task tracking fields from an earlier design.
 
@@ -39,7 +42,7 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         _registeredSpells.AddRange(Spells ?? new List<SpellDefinition>());
 
         // Build MCP tools for each spell.
-
+        _toolbelt = McpToolbeltBuilder.FromSpells(_registeredSpells);
         return Task.CompletedTask;
     }
 
@@ -52,6 +55,17 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             {
                 ["CODEX_HOME"] = _codexHomeDir
             };
+
+            // Start disposable MCP server session for this invocation if we have tools.
+            if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
+            {
+                var host = new LocalMcpServerHost(_workspaceDirectory);
+                _mcpSession = await host.StartAsync(_toolbelt, ct).ConfigureAwait(false);
+                foreach (var kv in _mcpSession.EnvironmentOverrides)
+                {
+                    env[kv.Key] = kv.Value;
+                }
+            }
 
             // Start Codex CLI process (owned by mux later)
             var psi = new ProcessStartInfo(_codexExecutablePath)
@@ -112,9 +126,15 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         }
     }
 
-    public Task CloseAgent()
+    public async Task CloseAgent()
     {
-        throw new NotImplementedException();
+        var s = _mcpSession;
+        _mcpSession = null;
+        if (s is not null)
+        {
+            try { await s.DisposeAsync().ConfigureAwait(false); } catch { }
+        }
+        return;
     }
 
     public Task<TMessageFormat> ReadMessage()
