@@ -3,6 +3,7 @@ using System.Text.RegularExpressions;
 using Coven.Chat;
 using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
+using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 using Coven.Spellcasting.Agents.Codex.MCP;
 
 namespace Coven.Spellcasting.Agents.Codex;
@@ -17,12 +18,13 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
     private readonly string _codexHomeDir;
     private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
     private readonly string? _shimExecutablePath;
+    private readonly IMcpSpellExecutorRegistry? _executorRegistry;
     private McpToolbelt? _toolbelt;
     private IMcpServerSession? _mcpSession;
 
     // Removed unused process/task tracking fields from an earlier design.
 
-    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null)
+    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null, IEnumerable<object>? spells = null)
     {
         _codexExecutablePath = codexExecutablePath;
         _workspaceDirectory = workspaceDirectory;
@@ -35,6 +37,13 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         if (typeof(TMessageFormat) == typeof(string))
         {
             _translator = (ICodexRolloutTranslator<TMessageFormat>) (object) new DefaultStringTranslator();
+        }
+        
+        if (spells is not null)
+        {
+            var registry = new ReflectionMcpSpellExecutorRegistry(spells);
+            _executorRegistry = registry;
+            _toolbelt = new MCP.McpToolbelt(registry.Tools);
         }
     }
 
@@ -62,7 +71,9 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
             {
                 var host = new LocalMcpServerHost(_workspaceDirectory);
-                _mcpSession = await host.StartAsync(_toolbelt, ct).ConfigureAwait(false);
+                _mcpSession = await (_executorRegistry is null
+                    ? host.StartAsync(_toolbelt, ct)
+                    : host.StartAsync(_toolbelt, _executorRegistry, ct)).ConfigureAwait(false);
                 // Generate a minimal Codex config that points to our shim, which bridges to the named pipe.
                 if (!string.IsNullOrWhiteSpace(_shimExecutablePath) && !string.IsNullOrWhiteSpace(_mcpSession.PipeName))
                 {

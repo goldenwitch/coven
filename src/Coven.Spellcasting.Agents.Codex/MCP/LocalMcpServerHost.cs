@@ -4,6 +4,7 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Coven.Spellcasting.Agents.Codex.MCP.Stdio;
+using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 using System.IO.Pipes;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP;
@@ -18,6 +19,9 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
     }
 
     public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default)
+        => await StartAsync(toolbelt, null, ct).ConfigureAwait(false);
+
+    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry, CancellationToken ct = default)
     {
         // For now, model a lightweight, disposable session that:
         // - writes the toolbelt to a temp file under the workspace
@@ -54,7 +58,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
             try
             {
                 await serverStream.WaitForConnectionAsync(ct).ConfigureAwait(false);
-                var server = new McpStdioServer(toolbelt, serverStream);
+                var server = new McpStdioServer(toolbelt, serverStream, registry);
                 server.Start();
             }
             catch { try { serverStream.Dispose(); } catch { } }

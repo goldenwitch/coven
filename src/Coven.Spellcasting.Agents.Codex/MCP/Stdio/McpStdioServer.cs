@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
 
@@ -15,11 +16,14 @@ internal sealed class McpStdioServer : IAsyncDisposable
     private Task? _serverTask;
     private volatile bool _disposed;
     private readonly Stream _transport;
+    private readonly IMcpSpellExecutorRegistry? _registry;
+    private volatile bool _shutdownRequested;
 
-    public McpStdioServer(McpToolbelt toolbelt, Stream transport)
+    public McpStdioServer(McpToolbelt toolbelt, Stream transport, IMcpSpellExecutorRegistry? registry = null)
     {
         _toolbelt = toolbelt;
         _transport = transport;
+        _registry = registry;
     }
 
     public void Start()
@@ -91,7 +95,8 @@ internal sealed class McpStdioServer : IAsyncDisposable
                 break;
 
             case "tools/list":
-                var tools = _toolbelt.Tools.Select(t => new
+                var list = (_registry?.Tools ?? _toolbelt.Tools);
+                var tools = list.Select(t => new
                 {
                     name = t.Name,
                     description = (string?)null,
@@ -105,9 +110,38 @@ internal sealed class McpStdioServer : IAsyncDisposable
                 string? name = null;
                 if (req.Params is JsonElement pe && pe.ValueKind == JsonValueKind.Object && pe.TryGetProperty("name", out var nEl))
                     name = nEl.GetString();
-                // Minimal not-implemented reply
-                var content = new object[] { new { type = "text", text = $"tool '{name ?? "?"}' not implemented" } };
-                await ReplyAsync(req.Id, new { content }, ct).ConfigureAwait(false);
+                if (!string.IsNullOrWhiteSpace(name) && _registry is not null && _registry.TryInvoke(name!, req.Params is JsonElement p2 && p2.TryGetProperty("arguments", out var aEl) ? aEl : (JsonElement?)null, ct, out var resultTask, out var returnsJson))
+                {
+                    var result = await resultTask.ConfigureAwait(false);
+                    object[] content;
+                    if (returnsJson)
+                    {
+                        content = new[] { new { type = "json", json = result } };
+                    }
+                    else
+                    {
+                        var text = result?.ToString() ?? "";
+                        content = new[] { new { type = "text", text } };
+                    }
+                    await ReplyAsync(req.Id, new { content }, ct).ConfigureAwait(false);
+                }
+                else
+                {
+                    var content = new object[] { new { type = "text", text = $"tool '{name ?? "?"}' not implemented" } };
+                    await ReplyAsync(req.Id, new { content }, ct).ConfigureAwait(false);
+                }
+                break;
+
+            case "shutdown":
+                _shutdownRequested = true;
+                await ReplyAsync(req.Id, (object?)null!, ct).ConfigureAwait(false);
+                break;
+
+            case "exit":
+                if (_shutdownRequested)
+                {
+                    try { _cts.Cancel(); } catch { }
+                }
                 break;
 
             default:
