@@ -5,6 +5,15 @@ using System.Runtime.InteropServices;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
+/// <summary>
+/// Fixture that provides a process-backed tail mux which tails a file and writes to a child process.
+/// Responsibilities:
+/// - Creates a unique temp file path per mux instance but does not create the file until requested.
+/// - Builds a platform-appropriate child process that echoes stdin to stdout (Windows: cmd /C more, *nix: sh -c cat).
+/// - Stimulates incoming data by appending to the managed file path; ensures the file exists on first append.
+/// Notes:
+/// - Readiness is managed by tests using a sentinel line; this fixture does not block or poll for readiness.
+/// </summary>
 public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
 {
     private readonly IHost _host;
@@ -39,6 +48,10 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
             .Build();
     }
 
+    /// <summary>
+    /// Create a new process-backed mux bound to a fresh temp file path (not created yet).
+    /// Tracks the path internally for subsequent file creation and appends.
+    /// </summary>
     public ITestTailMux CreateMux()
     {
         string path = Path.Combine(Path.GetTempPath(), $"coven_mux_{Guid.NewGuid():N}.log");
@@ -49,6 +62,9 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
         return adapter;
     }
 
+    /// <summary>
+    /// Append lines to the managed file, creating it if needed.
+    /// </summary>
     public async Task StimulateIncomingAsync(ITestTailMux mux, IEnumerable<string> lines)
     {
         if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");
@@ -60,6 +76,9 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
         await TailMuxTestHelpers.AppendLinesAsync(path, lines);
     }
 
+    /// <summary>
+    /// Create the backing file for the mux if it does not exist. Tests call this when they are ready to begin tailing.
+    /// </summary>
     public Task CreateBackingFileAsync(ITestTailMux mux)
     {
         if (!_paths.TryGetValue(mux, out var path)) throw new InvalidOperationException("Unknown mux instance");

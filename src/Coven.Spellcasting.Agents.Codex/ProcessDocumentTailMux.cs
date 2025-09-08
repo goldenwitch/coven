@@ -11,8 +11,7 @@ namespace Coven.Spellcasting.Agents.Codex;
 internal sealed class ProcessDocumentTailMux : ITailMux
 {
     // Reading: tail a file to populate a bounded channel.
-    private readonly string? _documentPath;
-    private readonly Func<string?>? _documentPathResolver;
+    private readonly string _documentPath;
     private readonly Channel<TailEvent> _chan =
         Channel.CreateBounded<TailEvent>(new BoundedChannelOptions(1024)
         {
@@ -58,21 +57,7 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         _configurePsi = configurePsi;
     }
 
-    internal ProcessDocumentTailMux(
-        Func<string?> documentPathResolver,
-        string fileName,
-        string? arguments = null,
-        string? workingDirectory = null,
-        IReadOnlyDictionary<string, string?>? environment = null,
-        Action<ProcessStartInfo>? configurePsi = null)
-    {
-        _documentPathResolver = documentPathResolver;
-        _fileName = fileName;
-        _arguments = arguments;
-        _workingDirectory = workingDirectory;
-        _environment = environment;
-        _configurePsi = configurePsi;
-    }
+    // Removed dynamic path resolver; callers should provide a concrete document path.
 
     public async Task TailAsync(Func<TailEvent, ValueTask> onMessage, CancellationToken ct = default)
     {
@@ -242,22 +227,14 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         {
             while (!ct.IsCancellationRequested)
             {
-                // Resolve the path either from the fixed value or a dynamic resolver.
-                var targetPath = _documentPath;
-                if (string.IsNullOrWhiteSpace(targetPath) && _documentPathResolver is not null)
-                {
-                    try { targetPath = _documentPathResolver(); }
-                    catch { targetPath = null; }
-                }
-
-                if (string.IsNullOrWhiteSpace(targetPath) || !File.Exists(targetPath))
+                if (!File.Exists(_documentPath))
                 {
                     await Task.Delay(200, ct).ConfigureAwait(false);
                     continue;
                 }
 
                 using var fs = new FileStream(
-                    targetPath!,
+                    _documentPath,
                     FileMode.Open,
                     FileAccess.Read,
                     FileShare.ReadWrite | FileShare.Delete);

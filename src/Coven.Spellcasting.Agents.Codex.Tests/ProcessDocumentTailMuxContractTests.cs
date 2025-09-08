@@ -2,10 +2,17 @@ using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests;
 
+/// <summary>
+/// Contract test runner bound to the process-backed tail mux that tails a file and writes to a child process.
+/// Ensures the shared contract and process/file specific behaviors hold.
+/// </summary>
 public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<ProcessDocumentTailMuxFixture>
 {
     public ProcessDocumentTailMux_ContractTests(ProcessDocumentTailMuxFixture fixture) : base(fixture) { }
 
+    /// <summary>
+    /// Verifies that posting writes to the child process (stdin) does not require an active tail reader.
+    /// </summary>
     [Fact]
     public async Task Write_Does_Not_Require_Tail()
     {
@@ -14,6 +21,10 @@ public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<Proce
         await mux.WriteLineAsync("another line");
     }
 
+    /// <summary>
+    /// Validates that the tailer patiently waits for the target file to be created after tail start,
+    /// then streams newly appended lines from EOF without errors once it appears.
+    /// </summary>
     [Fact]
     public async Task Tail_Waits_For_File_Created_After_Start_And_Then_Streams()
     {
@@ -29,14 +40,10 @@ public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<Proce
             return ValueTask.CompletedTask;
         }, cts.Token);
 
-        // Give the tailer a moment to start its loop
-        await Task.Delay(150);
-
-        // Act: Ensure the file gets created after tail starts, then send a readiness sentinel, then append.
+        // Act: Ensure the file gets created after tail starts, then send a readiness sentinel (retry until seen), then append.
         await Fixture.CreateBackingFileAsync(mux);
         const string sentinel = "__ready_proc__";
-        await Fixture.StimulateIncomingAsync(mux, new[] { sentinel });
-        var ready = await TailMuxTestHelpers.WaitUntilAsync(() => received.Contains(sentinel), TimeSpan.FromSeconds(3));
+        var ready = await TailMuxTestHelpers.EnsureTailReadyAsync(Fixture, mux, received, sentinel, TimeSpan.FromSeconds(3));
         Assert.True(ready, "Timed out waiting for tail readiness sentinel (proc)");
         await Fixture.StimulateIncomingAsync(mux, new[] { "alpha", "beta", "gamma" });
 
