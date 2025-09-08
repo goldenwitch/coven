@@ -12,4 +12,8 @@
     <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Coven.Spellcasting.Agents.Codex.Tests" />
+  </ItemGroup>
+
 </Project>

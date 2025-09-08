@@ -45,6 +45,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Grimoire
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Tests", "Coven.Chat.Tests\Coven.Chat.Tests.csproj", "{2FF76318-6B37-4651-B1CA-074222AB9065}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Agents.Codex.Tests", "Coven.Spellcasting.Agents.Codex.Tests\Coven.Spellcasting.Agents.Codex.Tests.csproj", "{2E964D5D-2EFF-4E81-B694-F98AA608214F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -295,6 +297,18 @@ Global
 		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x64.Build.0 = Release|Any CPU
 		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x86.ActiveCfg = Release|Any CPU
 		{2FF76318-6B37-4651-B1CA-074222AB9065}.Release|x86.Build.0 = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|x64.Build.0 = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Debug|x86.Build.0 = Debug|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|x64.ActiveCfg = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|x64.Build.0 = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|x86.ActiveCfg = Release|Any CPU
+		{2E964D5D-2EFF-4E81-B694-F98AA608214F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

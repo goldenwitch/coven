@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Text.RegularExpressions;
 using Coven.Chat;
 using Coven.Spellcasting.Spells;
@@ -40,7 +41,8 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
     {
         try
         {
-            await using var mux = new ProcessTailMux(
+            await using ITailMux mux = new ProcessDocumentTailMux(
+                documentPath: Path.Combine(_workspaceDirectory, "codex.log"),
                 fileName: _codexExecutablePath,
                 workingDirectory: _workspaceDirectory,
                 configurePsi: psi =>
