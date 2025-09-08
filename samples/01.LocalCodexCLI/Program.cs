@@ -4,6 +4,9 @@ using Coven.Core;
 using Coven.Core.Di;
 using Coven.Sophia;
 using Coven.Durables;
+using Coven.Chat;
+using Coven.Chat.Adapter;
+using Coven.Chat.Adapter.Console.Di;
 
 namespace Coven.Samples.LocalCodexCLI;
 
@@ -21,6 +24,10 @@ internal static class Program
         builder.ConfigureServices(services =>
         {
             services.AddSingleton<IDurableList<string>>(_ => new SimpleFileStorage<string>(_path));
+            // Console chat adapter: wires IConsoleIO, IAdapter<ChatEntry>, IAdapterHost<ChatEntry>, and a default scrivener
+            services.AddConsoleChatAdapter(o => { o.InputSender = "console"; });
+            // Run orchestration via Generic Host
+            services.AddHostedService<SampleOrchestrator>();
             services.BuildCoven(c =>
             {
                 c.AddThurible<string, int>(
@@ -37,14 +44,7 @@ internal static class Program
         });
 
         using var host = builder.Build();
-        var coven = host.Services.GetRequiredService<ICoven>();
-
-        // Start pipeline.
-        // The ritual will progress until it hits an agent
-        // After it hits an agent, the agent will wait until users provide input.
-        // The ritual will complete only when it is exited.
-        var output = await coven.Ritual<string>();
-        Console.WriteLine(output);
+        await host.RunAsync();
         return 0;
     }
 }
