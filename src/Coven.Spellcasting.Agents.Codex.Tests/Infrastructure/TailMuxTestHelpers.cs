@@ -21,5 +21,16 @@ internal static class TailMuxTestHelpers
             await writer.FlushAsync();
         }
     }
-}
 
+    internal static async Task<bool> WaitUntilAsync(Func<bool> condition, TimeSpan timeout, TimeSpan? pollInterval = null)
+    {
+        var poll = pollInterval ?? TimeSpan.FromMilliseconds(50);
+        var sw = Stopwatch.StartNew();
+        while (!condition())
+        {
+            if (sw.Elapsed >= timeout) return false;
+            await Task.Delay(poll);
+        }
+        return true;
+    }
+}

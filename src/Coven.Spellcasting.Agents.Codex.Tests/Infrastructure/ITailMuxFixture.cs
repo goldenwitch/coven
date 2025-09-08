@@ -1,5 +1,3 @@
-using Microsoft.Extensions.DependencyInjection;
-
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
 public sealed record MuxArgs(string DocumentPath);

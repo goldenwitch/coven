@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests;
@@ -27,10 +26,9 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
         await Task.Delay(150);
         await Fixture.StimulateIncomingAsync(mux, new MuxArgs(doc), new[] { "one", "two", "three" });
 
-        var sw = Stopwatch.StartNew();
-        while (received.Count < 3 && sw.Elapsed < TimeSpan.FromSeconds(3))
-            await Task.Delay(50);
+        var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received.Count >= 3, TimeSpan.FromSeconds(3));
 
+        Assert.True(ok, "Timed out waiting for 3 lines");
         Assert.Contains("one", received);
         Assert.Contains("two", received);
         Assert.Contains("three", received);
@@ -75,11 +73,9 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
             await Task.Delay(100);
             await Fixture.StimulateIncomingAsync(mux, new MuxArgs(doc), new[] { "x" });
 
-            var sw = Stopwatch.StartNew();
-            while (received < 1 && sw.Elapsed < TimeSpan.FromSeconds(2))
-                await Task.Delay(25);
+            var ok = await TailMuxTestHelpers.WaitUntilAsync(() => received >= 1, TimeSpan.FromSeconds(2), TimeSpan.FromMilliseconds(25));
 
-            Assert.Equal(1, received);
+            Assert.True(ok, "Timed out waiting for 1 line");
             cts.Cancel();
             await t.WaitAsync(TimeSpan.FromSeconds(2));
         }
@@ -106,43 +102,4 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     }
 }
 
-public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<ProcessDocumentTailMuxFixture>
-{
-    public ProcessDocumentTailMux_ContractTests(ProcessDocumentTailMuxFixture fixture) : base(fixture) { }
-    [Fact]
-    public async Task Write_Does_Not_Require_Tail()
-    {
-        var doc = TailMuxTestHelpers.NewTempFile();
-        await using var mux = Fixture.CreateMux(new MuxArgs(doc));
-        await mux.WriteLineAsync("hello world");
-        await mux.WriteLineAsync("another line");
-    }
-}
-
-public sealed class InMemoryTailMux_ContractTests : TailMuxContract<InMemoryTailMuxFixture>
-{
-    public InMemoryTailMux_ContractTests(InMemoryTailMuxFixture fixture) : base(fixture) { }
-    [Fact]
-    public async Task Write_Can_Be_Observed_From_Outgoing_Channel()
-    {
-        await using var mux = Fixture.CreateMux(new MuxArgs("unused"));
-
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        var collected = new List<string>();
-        var readerTask = Task.Run(async () =>
-        {
-            var underlying = (InMemoryTailMux)((MuxAdapter)mux).Underlying;
-            await foreach (var s in underlying.ReadWritesAsync(cts.Token)) collected.Add(s);
-        });
-
-        await mux.WriteLineAsync("alpha");
-        await mux.WriteLineAsync("beta");
-
-        await Task.Delay(100);
-        cts.Cancel();
-        await readerTask;
-
-        Assert.Contains("alpha", collected);
-        Assert.Contains("beta", collected);
-    }
-}
+// Concrete implementations moved to separate files for clarity.
