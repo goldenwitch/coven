@@ -29,6 +29,4 @@ public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<
         TSpell spellbook,
         TTest testbook
     );
-
-    protected abstract Task RegisterSpells(List<SpellDefinition> spells);
 }

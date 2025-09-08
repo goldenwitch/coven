@@ -7,6 +7,10 @@ using Coven.Durables;
 using Coven.Chat;
 using Coven.Chat.Adapter;
 using Coven.Chat.Adapter.Console.Di;
+using System.Collections.ObjectModel;
+using Coven.Spellcasting.Agents;
+using Coven.Spellcasting.Agents.Codex;
+using Coven.Spellcasting;
 
 namespace Coven.Samples.LocalCodexCLI;
 
@@ -24,21 +28,36 @@ internal static class Program
         builder.ConfigureServices(services =>
         {
             services.AddSingleton<IDurableList<string>>(_ => new SimpleFileStorage<string>(_path));
+
             // Console chat adapter: wires IConsoleIO, IAdapter<ChatEntry>, IAdapterHost<ChatEntry>, and a default scrivener
             services.AddConsoleChatAdapter(o => { o.InputSender = "console"; });
+
+            // Spellbook + books for Wizard
+            var spellbook = new SpellbookBuilder().Build();
+            services.AddSingleton(new Guidebook(
+                "Wizard guide: keep it concise.",
+                new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())));
+            services.AddSingleton(spellbook);
+            services.AddSingleton(new Testbook());
+
+            // Provide a simple scrivener for Codex output lines
+            services.AddSingleton<IScrivener<string>, InMemoryScrivener<string>>();
+
+            // Wire Codex CLI agent (expects 'codex' on PATH). Workspace = current dir.
+            services.AddSingleton<ICovenAgent<string>>(sp =>
+            {
+                var scrivener = sp.GetRequiredService<IScrivener<string>>();
+                var codexPath = "codex"; // or absolute path to executable
+                var workspaceDir = Directory.GetCurrentDirectory();
+                return new CodexCliAgent<string>(codexPath, workspaceDir, scrivener);
+            });
+            
             // Run orchestration via Generic Host
             services.AddHostedService<SampleOrchestrator>();
             services.BuildCoven(c =>
             {
-                c.AddThurible<string, int>(
-                    label: "Sanitize string",
-                    func: async (input, logs) =>
-                    {
-                        await logs.Append($"during-smoke-log : {input}");
-                        return input.Length;
-                    },
-                    storageFactory: sp => sp.GetRequiredService<IDurableList<string>>()
-                );
+                // Entry block for Ritual<string>() that starts our agent
+                c.AddBlock<Empty, string, Wizard>();
                 c.Done();
             });
         });

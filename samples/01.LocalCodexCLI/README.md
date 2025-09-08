@@ -158,8 +158,6 @@ Think of these as the way to shape HOW your agent takes action.
   - `Ask` — Wizard asks user for approval or clarification (non‑destructive).
   - `WebResearch` — Wizard requests Oracle research when it detects knowledge gaps.
   - `ReadFile` — non‑destructive file read in the current repo workspace.
-  - `PatchFile` — applies an approved diff/patch with Codex CLI’s guardrails.
-  - `RunTests` — runs tests in an approved sandbox; feeds results back.
 - **DeltaTestbook** — produces a set of tests that must pass in order to validate the current deltas from main
 
 - **WebSpellbook** (Oracle) — tools for remote retrieval: HTTP GET, site search, content extraction, rate limiting, and safety checks `{placeholder: list the concrete operations your implementation exposes}`  
