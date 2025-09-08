@@ -116,8 +116,25 @@ internal sealed class InMemoryTailMux : ITailMux
 
     private static async IAsyncEnumerable<string> ReadAllAsync(ChannelReader<string> reader, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct)
     {
-        while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
+        while (true)
         {
+            bool canRead;
+            try
+            {
+                canRead = await reader.WaitToReadAsync(ct).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                yield break;
+            }
+            catch (ChannelClosedException)
+            {
+                yield break;
+            }
+
+            if (!canRead)
+                yield break;
+
             while (reader.TryRead(out var item))
             {
                 yield return item;
@@ -125,4 +142,3 @@ internal sealed class InMemoryTailMux : ITailMux
         }
     }
 }
-
