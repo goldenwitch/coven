@@ -6,7 +6,7 @@ namespace Coven.Spellcasting.Agents.Codex.Tests.MCP;
 public sealed class LocalMcpServerHostTests
 {
     [Fact]
-    public async Task StartAsync_Writes_Toolbelt_And_Sets_Env()
+    public async Task StartAsync_Writes_Toolbelt_And_Exposes_Path()
     {
         var workspace = CreateTempDir();
         try
@@ -21,13 +21,12 @@ public sealed class LocalMcpServerHostTests
             var host = new LocalMcpServerHost(workspace);
             await using var session = await host.StartAsync(belt);
 
-            Assert.NotNull(session.EnvironmentOverrides);
-            Assert.True(session.EnvironmentOverrides.TryGetValue("COVEN_MCP_TOOLBELT", out var path));
+            var path = session.ToolbeltPath;
             Assert.False(string.IsNullOrWhiteSpace(path));
-            Assert.True(File.Exists(path!));
-            Assert.StartsWith(Path.Combine(workspace, ".coven-mcp"), Path.GetDirectoryName(path!)!, StringComparison.OrdinalIgnoreCase);
+            Assert.True(File.Exists(path));
+            Assert.StartsWith(Path.Combine(workspace, ".coven-mcp"), Path.GetDirectoryName(path)!, StringComparison.OrdinalIgnoreCase);
 
-            var json = await File.ReadAllTextAsync(path!);
+            var json = await File.ReadAllTextAsync(path);
             using var doc = JsonDocument.Parse(json);
             var toolsArr = doc.RootElement.GetProperty("tools");
             Assert.Equal(2, toolsArr.GetArrayLength());
@@ -49,7 +48,7 @@ public sealed class LocalMcpServerHostTests
             string? path;
             await using (var session = await host.StartAsync(belt))
             {
-                path = session.EnvironmentOverrides["COVEN_MCP_TOOLBELT"];
+                path = session.ToolbeltPath;
                 Assert.NotNull(path);
                 Assert.True(File.Exists(path!));
             }
@@ -74,12 +73,12 @@ public sealed class LocalMcpServerHostTests
             string? p1;
             await using (var s1 = await host.StartAsync(belt))
             {
-                p1 = s1.EnvironmentOverrides["COVEN_MCP_TOOLBELT"];
+                p1 = s1.ToolbeltPath;
                 Assert.True(File.Exists(p1!));
                 string? p2;
                 await using (var s2 = await host.StartAsync(belt))
                 {
-                    p2 = s2.EnvironmentOverrides["COVEN_MCP_TOOLBELT"];
+                    p2 = s2.ToolbeltPath;
                     Assert.True(File.Exists(p2!));
                     Assert.NotEqual(p1, p2);
                 }
@@ -105,4 +104,3 @@ public sealed class LocalMcpServerHostTests
         try { if (Directory.Exists(path)) Directory.Delete(path, true); } catch { }
     }
 }
-

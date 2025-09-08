@@ -28,31 +28,19 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
         var toolFile = Path.Combine(mcpDir, $"toolbelt-{Guid.NewGuid():N}.json");
         await File.WriteAllTextAsync(toolFile, toolbelt.ToJson(), ct).ConfigureAwait(false);
 
-        var env = new Dictionary<string, string?>
-        {
-            // Covenant-specific hint for downstream integration. Codex wiring may map this later.
-            ["COVEN_MCP_TOOLBELT"] = toolFile
-        };
-
-        return new LocalSession(env, toolFile);
+        return new LocalSession(toolFile);
     }
 
     private sealed class LocalSession : IMcpServerSession
     {
-        public IReadOnlyDictionary<string, string?> EnvironmentOverrides { get; }
-        private readonly string _toolFile;
+        public string ToolbeltPath { get; }
 
-        public LocalSession(IReadOnlyDictionary<string, string?> env, string toolFile)
-        {
-            EnvironmentOverrides = env;
-            _toolFile = toolFile;
-        }
+        public LocalSession(string toolFile) => ToolbeltPath = toolFile;
 
         public ValueTask DisposeAsync()
         {
-            try { if (File.Exists(_toolFile)) File.Delete(_toolFile); } catch { }
+            try { if (File.Exists(ToolbeltPath)) File.Delete(ToolbeltPath); } catch { }
             return ValueTask.CompletedTask;
         }
     }
 }
-

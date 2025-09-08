@@ -61,10 +61,7 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             {
                 var host = new LocalMcpServerHost(_workspaceDirectory);
                 _mcpSession = await host.StartAsync(_toolbelt, ct).ConfigureAwait(false);
-                foreach (var kv in _mcpSession.EnvironmentOverrides)
-                {
-                    env[kv.Key] = kv.Value;
-                }
+                // No environment propagation; toolbelt remains accessible via _mcpSession if needed.
             }
 
             // Start Codex CLI process (owned by mux later)
