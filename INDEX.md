@@ -8,15 +8,18 @@ Project overview: see [README](/README.md).
 
 ## Coven with Agents (Coven.Spellcasting)
 - [Coven.Spellcasting](/src/Coven.Spellcasting/)
-- [Coven.Spellcasting.Tests](/src/Coven.Spellcasting.Tests/)
 - [Coven.Spellcasting.Agents](/src/Coven.Spellcasting.Agents/)
-- [Coven.Spellcasting.Agents.Validation](/src/Coven.Spellcasting.Agents.Validation/)
 - [Coven.Spellcasting.Agents.Tests](/src/Coven.Spellcasting.Agents.Tests/)
+- [Coven.Spellcasting.Agents.Validation](/src/Coven.Spellcasting.Agents.Validation/)
 - [Coven.Spellcasting.Grimoire](/src/Coven.Spellcasting.Grimoire/)
+- [Coven.Spellcasting.Tests](/src/Coven.Spellcasting.Tests/)
 
 ### Agent implementations
 - [Coven.Spellcasting.Agents.Codex](/src/Coven.Spellcasting.Agents.Codex/)
 - [Coven.Spellcasting.Agents.Codex.McpShim](/src/Coven.Spellcasting.Agents.Codex.McpShim/)
+
+### Agent implementation tests
+- [Coven.Spellcasting.Agents.Codex.Tests](/src/Coven.Spellcasting.Agents.Codex.Tests/)
 
 ## Coven Infrastructure for Chat
 - [Coven.Chat](/src/Coven.Chat/)
@@ -41,9 +44,6 @@ Project overview: see [README](/README.md).
 
 ## Toys
 - [Coven.Toys.ConsoleEcho](/Toys/Coven.Toys.ConsoleEcho/)
-
-### Agent implementation tests
-- [Coven.Spellcasting.Agents.Codex.Tests](/src/Coven.Spellcasting.Agents.Codex.Tests/)
 
 # Architecture Guide
 

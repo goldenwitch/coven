@@ -135,6 +135,13 @@ jobs:
           path: artifacts/cpm/cpm-report.md
           retention-days: 7
 
+      - name: Update INDEX from solution
+        if: steps.affected.outputs.any == 'true'
+        run: |
+          python3 build/ci/prerelease/update-index.py \
+            --sln src/Coven.sln \
+            --index INDEX.md
+
       # (Changed-detection for commit stays the same)
       - name: Commit & push samples update to PR branch
         if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'

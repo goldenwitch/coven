@@ -9,7 +9,8 @@ dotnet-install.sh
 
 # IDEs / Editors
 .vs/
-.vscode/
+# keep VS Code settings in repo
+!.vscode/
 .idea/
 
 # User-specific
@@ -25,6 +26,10 @@ dotnet-install.sh
 *.temp
 .DS_Store
 Thumbs.db
+
+# Python bytecode
+**/__pycache__/
+*.pyc
 
 # Testing / Coverage
 TestResult*/
