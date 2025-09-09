@@ -41,3 +41,11 @@ Contributing a sample
 4) Place one or more projects under `src/` and reference `../..../../src/*` projects as needed.
 5) Write a `README.md` with quick start and prerequisites.
 6) Open `samples/Coven.Samples.sln` to see your sample side-by-side with others.
+
+VS Code: Run/Debug
+
+- Open the repository root in VS Code (workspace settings wire the main solution).
+- In Run and Debug, choose `.NET Launch (Console) - 01.LocalCodexCLI` to run the sample.
+- Use the Terminal panel (not Debug Console). Select the terminal tab named like the launch config to type input.
+- Prefer a separate console window? Change `console` to `externalTerminal` for that config in `.vscode/launch.json`.
+- If the sample uses Codex CLI, ensure `codex` is on PATH or update the sample to point at your executable.

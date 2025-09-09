@@ -87,6 +87,15 @@ See fuller, two-part end‑to‑end examples in `/Architecture/EndToEndExample.m
 
 Explore runnable examples in `/samples`. Open `samples/Coven.Samples.sln` to browse all samples side-by-side, or use each sample’s individual `.sln` in its folder.
 
+## VS Code: Run/Debug
+
+- Launch configs: Use the Run and Debug panel to select one of the provided startups:
+  - `.NET Launch (Console) - 01.LocalCodexCLI` (under `samples/01.LocalCodexCLI`)
+  - `.NET Launch (Console) - ConsoleEcho` (under `Toys/Coven.Toys.ConsoleEcho`)
+- Input/output: Interact via the Terminal panel, not the Debug Console. Pick the terminal tab that matches the launch name.
+- External console: Prefer a separate window? Change `console` to `externalTerminal` in `.vscode/launch.json` for that configuration.
+- Codex note (01 sample): `01.LocalCodexCLI` expects `codex` on PATH; configure per sample README if needed.
+
 # Appendix 
 
 - [Code Index](/INDEX.md)

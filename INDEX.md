@@ -16,15 +16,11 @@ Project overview: see [README](/README.md).
 
 ### Agent implementations
 - [Coven.Spellcasting.Agents.Codex](/src/Coven.Spellcasting.Agents.Codex/)
+- [Coven.Spellcasting.Agents.Codex.McpShim](/src/Coven.Spellcasting.Agents.Codex.McpShim/)
 
 ## Coven Infrastructure for Chat
 - [Coven.Chat](/src/Coven.Chat/)
-- [Coven.Chat.Journal](/src/Coven.Chat.Journal/)
 - [Coven.Chat.Tests](/src/Coven.Chat.Tests/)
-
-### Chat integration implementations
-- [Coven.Chat.Adapter.Discord](/src/Coven.Chat.Adapter.Discord/)
-- [Coven.Chat.Adapter.Discord.Tests](/src/Coven.Chat.Adapter.Discord.Tests/)
 
 ## Analyzers
 - [Coven.Analyzers](/src/Coven.Analyzers/)
@@ -38,6 +34,16 @@ Project overview: see [README](/README.md).
 ## Sophia
 - [Coven.Sophia](/src/Coven.Sophia/)
 - [Coven.Sophia.Tests](/src/Coven.Sophia.Tests/)
+
+## Samples
+- [01.LocalCodexCLI](/samples/01.LocalCodexCLI/)
+- [01.LocalCodexCLI.Tests](/samples/01.LocalCodexCLI.Tests/)
+
+## Toys
+- [Coven.Toys.ConsoleEcho](/Toys/Coven.Toys.ConsoleEcho/)
+
+### Agent implementation tests
+- [Coven.Spellcasting.Agents.Codex.Tests](/src/Coven.Spellcasting.Agents.Codex.Tests/)
 
 # Architecture Guide
 
