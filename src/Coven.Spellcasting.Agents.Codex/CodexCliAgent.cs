@@ -49,9 +49,11 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         
         if (spells is not null)
         {
+            // Build an executor registry from the provided spell instances for invocation.
+            // Toolbelt (definitions) will be provided via RegisterSpells to ensure the
+            // Codex-visible schemas/names come from the caller's Spellbook, not reflection.
             var registry = new ReflectionMcpSpellExecutorRegistry(spells);
             _executorRegistry = registry;
-            _toolbelt = new MCP.McpToolbelt(registry.Tools);
         }
     }
 
@@ -80,7 +82,7 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         _registeredSpells.Clear();
         _registeredSpells.AddRange(Spells ?? new List<SpellDefinition>());
 
-        // Build MCP tools for each spell.
+        // Build MCP tools from caller-provided spell definitions (preferred over reflection).
         _toolbelt = McpToolbeltBuilder.FromSpells(_registeredSpells);
         return Task.CompletedTask;
     }
@@ -94,6 +96,14 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
             {
                 ["CODEX_HOME"] = _codexHomeDir
             };
+
+            // If spells were provided (executor registry exists) but no toolbelt was registered,
+            // surface a clear configuration error to the developer.
+            if ((_executorRegistry is not null) && (_toolbelt is null || _toolbelt.Tools.Count == 0))
+            {
+                throw new InvalidOperationException(
+                    "No MCP tools registered. Call RegisterSpells with your SpellDefinitions to expose tools for the provided spells.");
+            }
 
             // Start disposable MCP server session for this invocation if we have tools.
             if (_toolbelt is not null && _toolbelt.Tools.Count != 0)

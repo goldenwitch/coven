@@ -49,7 +49,9 @@ internal static class Program
                 var scrivener = sp.GetRequiredService<IScrivener<string>>();
                 var codexPath = "codex"; // or absolute path to executable
                 var workspaceDir = Directory.GetCurrentDirectory();
-                return new CodexCliAgent<string>(codexPath, workspaceDir, scrivener);
+                var sb = sp.GetRequiredService<Spellbook>();
+                // Provide invocation mapping from the spellbook (spell instances)
+                return new CodexCliAgent<string>(codexPath, workspaceDir, scrivener, null, sb.Spells);
             });
             
             // Run orchestration via Generic Host

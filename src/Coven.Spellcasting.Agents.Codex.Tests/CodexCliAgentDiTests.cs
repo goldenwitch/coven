@@ -1,4 +1,5 @@
 using Coven.Chat;
+using Coven.Spellcasting;
 using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 using Coven.Spellcasting.Spells;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,6 +37,12 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
+        // Provide spell definitions explicitly for EchoSpell
+        var defs0 = new List<SpellDefinition>
+        {
+            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
+        };
+        await agent.RegisterSpells(defs0);
         using var cts = new CancellationTokenSource();
 
         // Kick off the agent in the background
@@ -131,6 +138,12 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
+        // Provide spell definitions explicitly
+        var defs2 = new List<SpellDefinition>
+        {
+            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
+        };
+        await agent.RegisterSpells(defs2);
         using var cts = new CancellationTokenSource();
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 
@@ -165,6 +178,12 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
+        // Provide spell definitions explicitly
+        var defs3 = new List<SpellDefinition>
+        {
+            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
+        };
+        await agent.RegisterSpells(defs3);
         using var cts = new CancellationTokenSource();
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
         await Task.Delay(100);

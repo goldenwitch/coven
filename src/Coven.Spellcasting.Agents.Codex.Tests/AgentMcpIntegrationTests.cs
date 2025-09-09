@@ -2,6 +2,7 @@ using System.IO.Pipes;
 using System.Text;
 using System.Text.Json;
 using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
+using Coven.Spellcasting;
 using Coven.Spellcasting.Spells;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests;
@@ -41,6 +42,12 @@ public sealed class AgentMcpIntegrationTests
             .Build();
 
         var agent = testHost.GetAgent();
+        // Provide spell definitions explicitly
+        var defs = new List<Spellcasting.Spells.SpellDefinition>
+        {
+            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
+        };
+        await agent.RegisterSpells(defs);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 
@@ -91,6 +98,11 @@ public sealed class AgentMcpIntegrationTests
             .Build();
 
         var agent = testHost.GetAgent();
+        var defs = new List<Spellcasting.Spells.SpellDefinition>
+        {
+            new(SchemaGen.GetFriendlyName(typeof(SquareIn)), SchemaGen.GenerateSchema(typeof(SquareIn)), SchemaGen.GenerateSchema(typeof(SquareOut)))
+        };
+        await agent.RegisterSpells(defs);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 
