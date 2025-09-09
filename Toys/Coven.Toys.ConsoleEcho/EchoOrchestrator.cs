@@ -5,6 +5,8 @@ using Coven.Chat.Adapter;
 
 namespace Coven.Toys.ConsoleEcho;
 
+// Orchestrator that starts the console adapter host and echoes user input back
+// as ChatResponse entries written to the shared scrivener.
 internal sealed class EchoOrchestrator : BackgroundService
 {
     private readonly IAdapterHost<ChatEntry> _adapterHost;
@@ -29,20 +31,26 @@ internal sealed class EchoOrchestrator : BackgroundService
         _logger.LogInformation("ConsoleEcho started. Type to echo. Ctrl+C to exit.");
 
         // Start the adapter host which pumps console <-> scrivener
-        var pump = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
+        Task pump = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
 
         // Echo loop: mirror ChatThought as ChatResponse
-        var echo = Task.Run(async () =>
+        Task echo = Task.Run(async () =>
         {
             long after = 0;
-            await foreach (var pair in _scrivener.TailAsync(after, stoppingToken).ConfigureAwait(false))
+            await foreach ((long journalPosition, ChatEntry entry) in _scrivener.TailAsync(after, stoppingToken).ConfigureAwait(false))
             {
-                after = pair.journalPosition;
-                if (pair.entry is ChatThought t)
+                after = journalPosition;
+                if (entry is ChatThought t)
                 {
-                    var response = new ChatResponse("echo", t.Text);
-                    try { _ = await _scrivener.WriteAsync(response, stoppingToken).ConfigureAwait(false); }
-                    catch (OperationCanceledException) { break; }
+                    ChatResponse response = new("echo", t.Text);
+                    try
+                    {
+                        _ = await _scrivener.WriteAsync(response, stoppingToken).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
         }, stoppingToken);
@@ -57,4 +65,3 @@ internal sealed class EchoOrchestrator : BackgroundService
         }
     }
 }
-
