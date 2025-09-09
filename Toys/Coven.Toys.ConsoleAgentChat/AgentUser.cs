@@ -5,7 +5,8 @@ using Coven.Spellcasting.Agents;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
-internal sealed class AgentUser : MagikUser<Empty, string, Guidebook, Spellbook, Testbook>
+// Minimal MagikUser that simply starts the agent and returns Empty.
+internal sealed class AgentUser : MagikUser<Empty, Empty, Guidebook, Spellbook, Testbook>
 {
     private readonly ICovenAgent<ChatEntry> _agent;
 
@@ -15,7 +16,7 @@ internal sealed class AgentUser : MagikUser<Empty, string, Guidebook, Spellbook,
         _agent = agent;
     }
 
-    protected override async Task<string> InvokeMagik(
+    protected override async Task<Empty> InvokeMagik(
         Empty input,
         Guidebook guidebook,
         Spellbook spellbook,
@@ -23,6 +24,6 @@ internal sealed class AgentUser : MagikUser<Empty, string, Guidebook, Spellbook,
     {
         // No spells needed; just start the agent
         await _agent.InvokeAgent().ConfigureAwait(false);
-        return "agent-started";
+        return Empty.Value;
     }
 }

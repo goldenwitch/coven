@@ -9,56 +9,42 @@ using Coven.Spellcasting.Agents;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
+// Entry point: wires Console chat adapter, registers the toy agent and books,
+// and composes a single MagikUser pipeline that just starts the agent.
 internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var builder = Host.CreateDefaultBuilder(args);
+        IHostBuilder builder = Host.CreateDefaultBuilder(args);
 
         builder.ConfigureServices(services =>
         {
             // Console adapter stack via convenience method
-            services.AddConsoleChatAdapter(o => { o.InputSender = "console"; });
+            services.AddConsoleChatAdapter(o =>
+            {
+                o.InputSender = "console";
+            });
 
             // Books for the MagikUser (guide carries 8-ball responses)
-            var responses = new[]
-            {
-                "It is certain.",
-                "Without a doubt.",
-                "You may rely on it.",
-                "Yes, definitely.",
-                "As I see it, yes.",
-                "Most likely.",
-                "Outlook good.",
-                "Signs point to yes.",
-                "Reply hazy, try again.",
-                "Ask again later.",
-                "Better not tell you now.",
-                "Cannot predict now.",
-                "Don’t count on it.",
-                "My reply is no.",
-                "Outlook not so good.",
-                "Very doubtful."
-            };
-            var guidebook = new GuidebookBuilder()
-                .AddSections(new Dictionary<string, string>(responses.Length)
+            Guidebook guidebook = new GuidebookBuilder()
+                .AddSections(new Dictionary<string, string>
                 {
-                    ["1"] = responses[0],
-                    ["2"] = responses[1],
-                    ["3"] = responses[2],
-                    ["4"] = responses[3],
-                    ["5"] = responses[4],
-                    ["6"] = responses[5],
-                    ["7"] = responses[6],
-                    ["8"] = responses[7],
-                    ["9"] = responses[8],
-                    ["10"] = responses[9],
-                    ["11"] = responses[10],
-                    ["12"] = responses[11],
-                    ["13"] = responses[12],
-                    ["14"] = responses[13],
-                    ["15"] = responses[14],
-                    ["16"] = responses[15],
+                    ["1"] = "It is certain.",
+                    ["2"] = "Without a doubt.",
+                    ["3"] = "You may rely on it.",
+                    ["4"] = "Yes, definitely.",
+                    ["5"] = "As I see it, yes.",
+                    ["6"] = "Most likely.",
+                    ["7"] = "Outlook good.",
+                    ["8"] = "Signs point to yes.",
+                    ["9"] = "Reply hazy, try again.",
+                    ["10"] = "Ask again later.",
+                    ["11"] = "Better not tell you now.",
+                    ["12"] = "Cannot predict now.",
+                    ["13"] = "Don’t count on it.",
+                    ["14"] = "My reply is no.",
+                    ["15"] = "Outlook not so good.",
+                    ["16"] = "Very doubtful."
                 })
                 .Build();
             services.AddSingleton(guidebook);
@@ -70,10 +56,10 @@ internal static class Program
             services.AddHostedService<ChatOrchestrator>();
 
             // Build a simple Coven with a single MagikUser that runs our agent
-            services.BuildCoven(c => { c.AddBlock<Empty, string, AgentUser>(); c.Done(); });
+            services.BuildCoven(c => { c.AddBlock<Empty, Empty, AgentUser>(); c.Done(); });
         });
 
-        using var host = builder.Build();
+        using IHost host = builder.Build();
         await host.RunAsync();
         return 0;
     }

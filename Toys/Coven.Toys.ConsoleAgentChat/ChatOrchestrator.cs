@@ -6,6 +6,7 @@ using Coven.Chat.Adapter;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
+// Orchestrates adapter I/O and kicks off the Coven ritual that starts the agent.
 internal sealed class ChatOrchestrator : BackgroundService
 {
     private readonly ICoven _coven;
@@ -32,13 +33,12 @@ internal sealed class ChatOrchestrator : BackgroundService
     {
         _logger.LogInformation("ConsoleAgentChat started. Type to chat. Ctrl+C to exit.");
 
-        var adapterTask = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
+        Task adapterTask = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
 
         try
         {
             _logger.LogInformation("Starting ritual to run agent.");
-            var output = await _coven.Ritual<string>();
-            _logger.LogInformation("Ritual output: {Output}", output);
+            _ = await _coven.Ritual<Empty>();
         }
         catch (Exception ex)
         {
@@ -54,4 +54,3 @@ internal sealed class ChatOrchestrator : BackgroundService
         }
     }
 }
-

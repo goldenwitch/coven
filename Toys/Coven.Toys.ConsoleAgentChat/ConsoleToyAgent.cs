@@ -18,6 +18,7 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
     public ConsoleToyAgent(IScrivener<ChatEntry> scrivener, Guidebook guidebook)
     {
         _scrivener = scrivener;
+        // Extract non-empty section bodies from the guidebook to use as canned replies.
         _responses = guidebook.Sections
             .Select(s => (s.Value ?? string.Empty).Trim())
             .Where(v => !string.IsNullOrWhiteSpace(v))
@@ -37,26 +38,38 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
     public async Task InvokeAgent(CancellationToken ct = default)
     {
         _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var token = _cts.Token;
+        CancellationToken token = _cts.Token;
 
         long after = 0;
-        await foreach (var pair in _scrivener.TailAsync(after, token).ConfigureAwait(false))
+        // Tail the chat journal and mirror each user thought with a random response.
+        await foreach ((long journalPosition, ChatEntry entry) in _scrivener.TailAsync(after, token).ConfigureAwait(false))
         {
-            after = pair.journalPosition;
-            if (pair.entry is ChatThought)
+            after = journalPosition;
+            if (entry is ChatThought)
             {
-                var text = _responses[_rng.Next(_responses.Length)];
-                var response = new ChatResponse("agent", text);
-                try { _ = await _scrivener.WriteAsync(response, token).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
+                string text = _responses[_rng.Next(_responses.Length)];
+                ChatResponse response = new("agent", text);
+                try
+                {
+                    _ = await _scrivener.WriteAsync(response, token).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
+                }
             }
         }
     }
 
     public Task CloseAgent()
     {
-        try { _cts?.Cancel(); }
-        catch { }
+        try
+        {
+            _cts?.Cancel();
+        }
+        catch
+        {
+        }
         return Task.CompletedTask;
     }
 
