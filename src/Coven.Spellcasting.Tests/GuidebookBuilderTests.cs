@@ -19,8 +19,9 @@ public sealed class GuidebookBuilderTests
                 .AddUri("Spec", "https://example.com/spec")
                 .Build();
 
-            Assert.Contains("INTRO", gb.Instructions);
-            Assert.Contains("FILETEXT", gb.Instructions);
+            var instructions = gb.BuildInstructions();
+            Assert.Contains("INTRO", instructions);
+            Assert.Contains("FILETEXT", instructions);
 
             Assert.True(gb.UriMap.ContainsKey("LocalFile"));
             Assert.True(gb.UriMap.ContainsKey("Spec"));

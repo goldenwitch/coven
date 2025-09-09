@@ -2,4 +2,7 @@ using System.Collections.ObjectModel;
 
 namespace Coven.Spellcasting;
 
-public record Guidebook(string Instructions, ReadOnlyDictionary<string, string> UriMap) : IBook;
+public record Guidebook(
+    ReadOnlyDictionary<string, string> Sections,
+    ReadOnlyDictionary<string, string> UriMap
+) : IBook;

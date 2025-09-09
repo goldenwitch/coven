@@ -22,7 +22,17 @@
       "cwd": "${workspaceFolder}/Toys/Coven.Toys.ConsoleEcho",
       "console": "integratedTerminal",
       "stopAtEntry": false
+    },
+    {
+      "name": ".NET Launch (Console) - ConsoleAgentChat",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build ConsoleAgentChat",
+      "program": "${workspaceFolder}/Toys/Coven.Toys.ConsoleAgentChat/bin/Debug/net10.0/Coven.Toys.ConsoleAgentChat.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Toys/Coven.Toys.ConsoleAgentChat",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
     }
   ]
 }
-

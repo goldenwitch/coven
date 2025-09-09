@@ -34,9 +34,9 @@ internal static class Program
 
             // Spellbook + books for Wizard
             var spellbook = new SpellbookBuilder().Build();
-            services.AddSingleton(new Guidebook(
-                "Wizard guide: keep it concise.",
-                new ReadOnlyDictionary<string, string>(new Dictionary<string, string>())));
+            services.AddSingleton(new GuidebookBuilder()
+                .AddSection("Guide", new[] { "Wizard guide: keep it concise." })
+                .Build());
             services.AddSingleton(spellbook);
             services.AddSingleton(new Testbook());
 

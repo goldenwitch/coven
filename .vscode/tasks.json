@@ -25,6 +25,18 @@
       ],
       "problemMatcher": ["$msCompile"]
     }
+    ,
+    {
+      "label": "build ConsoleAgentChat",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Toys/Coven.Toys.ConsoleAgentChat/Coven.Toys.ConsoleAgentChat.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": ["$msCompile"]
+    }
   ]
 }
-

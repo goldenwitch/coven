@@ -44,6 +44,7 @@ Project overview: see [README](/README.md).
 
 ## Toys
 - [Coven.Toys.ConsoleEcho](/Toys/Coven.Toys.ConsoleEcho/)
+- [Coven.Toys.ConsoleAgentChat](/Toys/Coven.Toys.ConsoleAgentChat/)
 
 # Architecture Guide
 
@@ -80,4 +81,3 @@ Start with Overview, then explore by topic. All paths below are under `/Architec
 ## Meta
 - [Contributing](/Architecture/Contributing.md)
 - [Licensing](/Architecture/Licensing.md)
-

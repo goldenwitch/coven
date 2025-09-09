@@ -53,6 +53,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleEcho", ".
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Agents.Codex.McpShim", "Coven.Spellcasting.Agents.Codex.McpShim\Coven.Spellcasting.Agents.Codex.McpShim.csproj", "{7FA92DE8-11B2-4AE8-8466-0B3F960CE8E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleAgentChat", "..\Toys\Coven.Toys.ConsoleAgentChat\Coven.Toys.ConsoleAgentChat.csproj", "{602C8C1E-1980-46D6-854D-53496E6F895E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -339,6 +341,18 @@ Global
 		{7FA92DE8-11B2-4AE8-8466-0B3F960CE8E3}.Release|x64.Build.0 = Release|Any CPU
 		{7FA92DE8-11B2-4AE8-8466-0B3F960CE8E3}.Release|x86.ActiveCfg = Release|Any CPU
 		{7FA92DE8-11B2-4AE8-8466-0B3F960CE8E3}.Release|x86.Build.0 = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|x64.Build.0 = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Debug|x86.Build.0 = Debug|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x64.ActiveCfg = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x64.Build.0 = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x86.ActiveCfg = Release|Any CPU
+		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -347,5 +361,6 @@ Global
 		{6399E061-9775-4B0F-B0D9-13DE2C24A1C5} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{277696AD-6C7D-4881-8AA9-77AE0C6CF541} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{8F6928CE-5D5E-456F-A902-6F5896D1E020} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
+		{602C8C1E-1980-46D6-854D-53496E6F895E} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 	EndGlobalSection
 EndGlobal
