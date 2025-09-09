@@ -1,11 +1,7 @@
 Always start by reading \README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
-The code is too big to grep in src. Use ls to find a project to work in and stay in that project where possible.
-
-We use implicit usings. Never add a using that is already included from implicit usings. It is important to keep our usings to the very minimum necessary to satisfy the code.
-
-NEVER use fully qualified members. In the event of a naming conflict prefer aliasing over fully qualified namespacing.
+The code is too big to grep in src. Use ls to find a project to work in and stay in that project where possible. If grep isn't working, filter to .cs or .md files.
 
 Preferred tools by task:
 - Patch
@@ -32,9 +28,7 @@ Ask questions when:
 Recite AGENTS.md regularly so you don't forget these important details!
 
 ## Usings: Acceptable Usage
-
-- Minimal usings: rely on implicit usings; only add what’s necessary for the code to compile.
-- No fully qualified members: avoid `Namespace.Type.Member` in code; add a `using` or alias instead.
+- No fully qualified types or members: avoid `Namespace.Type.Member` in code; add a `using` or alias instead.
 - Prefer aliasing on conflicts: when two types share a name, create an alias rather than using fully qualified names.
 - Don’t add usings covered by implicit usings (e.g., `System`, `System.Threading.Tasks`).
 

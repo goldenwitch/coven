@@ -89,21 +89,46 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
     /// <summary>
     /// Build the provider and register the agent using the configured options and services.
     /// </summary>
-    public CodexAgentTestHost<TMessageFormat> Build()
-    {
-        if (_provider is not null) return this; // idempotent
-
-        _services.AddCodexCliAgent<TMessageFormat>(o =>
+        public CodexAgentTestHost<TMessageFormat> Build()
         {
-            o.ExecutablePath = _options.ExecutablePath;
-            o.WorkspaceDirectory = _options.WorkspaceDirectory;
-            o.ShimExecutablePath = _options.ShimExecutablePath;
-            o.Spells = _options.Spells;
-        });
+            if (_provider is not null) return this; // idempotent
 
-        _provider = _services.BuildServiceProvider();
-        return this;
-    }
+            if (typeof(TMessageFormat) == typeof(string))
+            {
+                _services.AddCodexCliAgent(o =>
+                {
+                    o.ExecutablePath = _options.ExecutablePath;
+                    o.WorkspaceDirectory = _options.WorkspaceDirectory;
+                    o.ShimExecutablePath = _options.ShimExecutablePath;
+                    o.Spells = _options.Spells;
+                });
+            }
+            else
+            {
+                // For non-string message formats, require a translator to be registered in services.
+                // Tests can register ICodexRolloutTranslator<TMessageFormat> before Build().
+                _services.AddCodexCliAgent<TMessageFormat, DummyTranslator>(o =>
+                {
+                    o.ExecutablePath = _options.ExecutablePath;
+                    o.WorkspaceDirectory = _options.WorkspaceDirectory;
+                    o.ShimExecutablePath = _options.ShimExecutablePath;
+                    o.Spells = _options.Spells;
+                });
+            }
+
+            _provider = _services.BuildServiceProvider();
+            return this;
+        }
+
+        // Placeholder translator to satisfy the generic constraint when TMessageFormat != string.
+        // Real translator should be provided via DI; this one will never be resolved because
+        // AddCodexCliAgent<TMessage, TTranslator> first tries to resolve ICodexRolloutTranslator<TMessage>
+        // from the service provider before creating TTranslator.
+        private sealed class DummyTranslator : Coven.Spellcasting.Agents.Codex.Rollout.ICodexRolloutTranslator<TMessageFormat>
+        {
+            public TMessageFormat Translate(Coven.Spellcasting.Agents.Codex.Rollout.CodexRolloutLine line)
+                => throw new NotImplementedException("Register a real ICodexRolloutTranslator<T> in tests before Build().");
+        }
 
     public IServiceProvider Services
         => _provider ?? throw new InvalidOperationException("Call Build() before accessing Services.");

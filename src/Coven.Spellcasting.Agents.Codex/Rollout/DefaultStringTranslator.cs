@@ -4,45 +4,44 @@ namespace Coven.Spellcasting.Agents.Codex.Rollout;
 
 internal sealed class DefaultStringTranslator : ICodexRolloutTranslator<string>
 {
-    public string Translate(CodexRolloutEvent ev)
+    public string Translate(CodexRolloutLine line)
     {
         string entry = "";
 
-        switch (ev)
+        switch (line.Kind)
         {
-            case MetadataEvent m:
-                entry = $"session start: {m.SessionId ?? "?"} @ {m.Created?.ToString("u") ?? "?"}";
+            case CodexRolloutLineKind.Metadata:
+                entry = $"session start: {line.SessionId ?? "?"} @ {line.Timestamp?.ToString("u") ?? "?"}";
                 break;
 
-            case CommandEvent c:
-                entry = $"$ {c.Command ?? "?"}{(string.IsNullOrWhiteSpace(c.Cwd) ? string.Empty : $" (cwd={c.Cwd})")}";
+            case CodexRolloutLineKind.Command:
+                entry = $"$ {line.Command ?? "?"}{(string.IsNullOrWhiteSpace(line.Cwd) ? string.Empty : $" (cwd={line.Cwd})")}";
                 break;
 
-            case CommandOutputEvent o:
+            case CodexRolloutLineKind.CommandOutput:
                 // Avoid flooding; prefix stream name if present
-                entry = string.IsNullOrEmpty(o.Stream) ? (o.Text ?? string.Empty) : $"[{o.Stream}] {o.Text}";
+                entry = string.IsNullOrEmpty(line.Stream) ? (line.Text ?? string.Empty) : $"[{line.Stream}] {line.Text}";
                 break;
 
-            case FileEditEvent fe:
-                entry = $"PATCH: {fe.Path ?? "?"}";
+            case CodexRolloutLineKind.FileEdit:
+                entry = $"PATCH: {line.Path ?? "?"}";
                 break;
 
-            case ErrorEvent er:
-                entry = $"ERROR{(string.IsNullOrWhiteSpace(er.Code) ? string.Empty : $"[{er.Code}]")}: {er.Message}";
+            case CodexRolloutLineKind.Error:
+                entry = $"ERROR{(string.IsNullOrWhiteSpace(line.Code) ? string.Empty : $"[{line.Code}]")}: {line.Message}";
                 break;
 
-            case MessageEvent me:
-                var preview = (me.Content ?? string.Empty);
+            case CodexRolloutLineKind.Message:
+                var preview = (line.Content ?? string.Empty);
                 if (preview.Length > 160) preview = preview.Substring(0, 160) + "…";
-                entry = $"{me.Role ?? "msg"}: {preview}";
+                entry = $"{line.Role ?? "msg"}: {preview}";
                 break;
 
-            case UnknownEvent u:
-                entry = u.Raw;
+            case CodexRolloutLineKind.Unknown:
+                entry = line.Raw ?? string.Empty;
                 break;
         }
 
         return entry;
     }
 }
-

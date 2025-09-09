@@ -5,7 +5,7 @@ using Coven.Spellcasting.Spells;
 
 namespace Coven.Samples.LocalCodexCLI;
 
-internal sealed class Wizard : MagikUser<Empty, string, Guidebook, Spellbook, Testbook>
+internal sealed class Wizard : MagikUser<Empty, Empty, Guidebook, Spellbook, Testbook>
 {
     private readonly ICovenAgent<string> _agent;
     private readonly Spellbook _spellbook;
@@ -17,7 +17,7 @@ internal sealed class Wizard : MagikUser<Empty, string, Guidebook, Spellbook, Te
         _spellbook = spellbook;
     }
 
-    protected override async Task<string> InvokeMagik(
+    protected override async Task<Empty> InvokeMagik(
         Empty input,
         Guidebook guidebook,
         Spellbook spellbook,
@@ -30,7 +30,7 @@ internal sealed class Wizard : MagikUser<Empty, string, Guidebook, Spellbook, Te
         }
 
         await _agent.InvokeAgent().ConfigureAwait(false);
-        return "wizard-started";
+        return Empty.Value;
     }
 
 }

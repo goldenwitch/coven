@@ -34,23 +34,20 @@ internal sealed class SampleOrchestrator : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Start console adapter pump (runs until stoppingToken is cancelled)
-        var adapterTask = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
+        _logger.LogInformation("LocalCodexCLI started. Chat via ConsoleAdapter. Ctrl+C to exit.");
 
-        // Start the ritual. In a real agent pipeline this will remain active
-        // and progress using messages pumped by the adapter host.
+        Task adapterTask = _adapterHost.RunAsync(_scrivener, _adapter, stoppingToken);
+
         try
         {
-            _logger.LogInformation("Starting ritual; chat I/O via ConsoleAdapter.");
-            var output = await _coven.Ritual<string>();
-            _logger.LogInformation("Ritual completed with output: {Output}", output);
+            _logger.LogInformation("Starting ritual to run agent.");
+            _ = await _coven.Ritual<Empty>();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ritual failed");
         }
 
-        // Keep service alive until cancellation; observe adapter task
         try
         {
             await Task.WhenAny(adapterTask, Task.Delay(Timeout.Infinite, stoppingToken));

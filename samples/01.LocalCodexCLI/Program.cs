@@ -10,6 +10,7 @@ using Coven.Chat.Adapter.Console.Di;
 using System.Collections.ObjectModel;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex;
+using Coven.Spellcasting.Agents.Codex.Di;
 using Coven.Spellcasting;
 
 namespace Coven.Samples.LocalCodexCLI;
@@ -44,22 +45,23 @@ internal static class Program
             services.AddSingleton<IScrivener<string>, InMemoryScrivener<string>>();
 
             // Wire Codex CLI agent (expects 'codex' on PATH). Workspace = current dir.
-            services.AddSingleton<ICovenAgent<string>>(sp =>
+            services.AddCodexCliAgent(o =>
             {
-                var scrivener = sp.GetRequiredService<IScrivener<string>>();
-                var codexPath = "codex"; // or absolute path to executable
-                var workspaceDir = Directory.GetCurrentDirectory();
-                var sb = sp.GetRequiredService<Spellbook>();
-                // Provide invocation mapping from the spellbook (spell instances)
-                return new CodexCliAgent<string>(codexPath, workspaceDir, scrivener, null, sb.Spells);
+                o.ExecutablePath = "codex"; // or absolute path
+                o.WorkspaceDirectory = Directory.GetCurrentDirectory();
+                o.ShimExecutablePath = null;
+                // Spells will be resolved from DI Spellbook if present.
             });
             
+            // Bridge Codex string output -> ChatResponse on the chat journal
+            services.AddHostedService<CodexOutputBridge>();
+
             // Run orchestration via Generic Host
             services.AddHostedService<SampleOrchestrator>();
             services.BuildCoven(c =>
             {
                 // Entry block for Ritual<string>() that starts our agent
-                c.AddBlock<Empty, string, Wizard>();
+                c.AddBlock<Empty, Empty, Wizard>();
                 c.Done();
             });
         });

@@ -11,7 +11,7 @@ using Coven.Spellcasting.Agents.Codex.Config;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
-public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> where TMessageFormat : notnull
+    public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> where TMessageFormat : notnull
 {
     public string Id => "codex";
     private readonly string _codexExecutablePath;
@@ -32,7 +32,7 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
 
     // Removed unused process/task tracking fields from an earlier design.
 
-    public CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null, IEnumerable<object>? spells = null)
+    internal CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null, IEnumerable<object>? spells = null)
     {
         _codexExecutablePath = codexExecutablePath;
         _workspaceDirectory = workspaceDirectory;
@@ -57,7 +57,30 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
         }
     }
 
-    public CodexCliAgent(
+    // Constructor that allows specifying a translator for non-string message formats
+    internal CodexCliAgent(
+        string codexExecutablePath,
+        string workspaceDirectory,
+        IScrivener<TMessageFormat> scrivener,
+        ICodexRolloutTranslator<TMessageFormat> translator,
+        string? shimExecutablePath,
+        IEnumerable<object>? spells,
+        IMcpServerHost? host,
+        ICodexProcessFactory? processFactory,
+        ITailMuxFactory? tailFactory,
+        ICodexConfigWriter? configWriter,
+        IRolloutPathResolver? rolloutResolver)
+        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath, spells)
+    {
+        _hostOverride = host;
+        _procFactory = processFactory;
+        _tailFactory = tailFactory;
+        _configWriter = configWriter;
+        _rolloutResolver = rolloutResolver;
+        _translator = translator;
+    }
+
+    internal CodexCliAgent(
         string codexExecutablePath,
         string workspaceDirectory,
         IScrivener<TMessageFormat> scrivener,
@@ -151,7 +174,8 @@ public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> 
                         var parsed = CodexRolloutParser.Parse(o.Line);
                         if (_translator is not null)
                         {
-                            var entry = _translator.Translate(parsed);
+                            var publicLine = Rollout.CodexRolloutEventConverter.ToPublic(parsed);
+                            var entry = _translator.Translate(publicLine);
                             try { await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false); } catch { }
                         }
                         else if (_translator is null && typeof(TMessageFormat) == typeof(string))
