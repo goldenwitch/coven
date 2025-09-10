@@ -6,6 +6,7 @@ namespace Coven.Core;
 internal interface IBlockActivator
 {
     object GetInstance(IServiceProvider? sp, Dictionary<int, object> cache, Routing.RegisteredBlock meta);
+    string? DisplayName { get; }
 }
 
 internal sealed class ConstantInstanceActivator : IBlockActivator
@@ -13,6 +14,7 @@ internal sealed class ConstantInstanceActivator : IBlockActivator
     private readonly object instance;
     internal ConstantInstanceActivator(object instance) { this.instance = instance; }
     public object GetInstance(IServiceProvider? sp, Dictionary<int, object> cache, Routing.RegisteredBlock meta) => instance;
+    public string? DisplayName => instance?.GetType().Name;
 }
 
 internal sealed class DiTypeActivator : IBlockActivator
@@ -28,6 +30,7 @@ internal sealed class DiTypeActivator : IBlockActivator
         cache[meta.RegistryIndex] = inst;
         return inst;
     }
+    public string? DisplayName => blockType.Name;
 }
 
 internal sealed class FactoryActivator : IBlockActivator
@@ -42,4 +45,5 @@ internal sealed class FactoryActivator : IBlockActivator
         cache[meta.RegistryIndex] = inst;
         return inst;
     }
+    public string? DisplayName => null; // unknown until factory executes
 }

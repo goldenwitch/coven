@@ -59,7 +59,9 @@ public class Board : IBoard
                 var sp = Di.CovenExecutionScope.CurrentProvider;
                 var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
                 logger = lf?.CreateLogger("Coven.Ritual.Pull");
-                logger?.LogInformation("Pull begin: input={InputType} branch={Branch}", input.GetType().Name, bid);
+                var rid = Guid.NewGuid().ToString("N");
+                using var scope = logger?.BeginScope($"ritual:{rid}");
+                logger?.LogInformation("Pull begin rid={RitualId}: input={InputType} branch={Branch}", rid, input.GetType().Name, bid);
             }
             catch { }
 
@@ -88,7 +90,8 @@ public class Board : IBoard
         {
             var d = registry[idx];
             var block = d.BlockInstance;
-            var name = d.DisplayBlockTypeName ?? block.GetType().Name;
+            var activator = d.Activator;
+            var name = d.DisplayBlockTypeName ?? activator?.DisplayName ?? block.GetType().Name;
 
             var caps = (block as ITagCapabilities)?.SupportedTags ?? Array.Empty<string>();
             IEnumerable<string> merged = caps;
@@ -100,7 +103,6 @@ public class Board : IBoard
             // Soft self-capability to enable forward-motion hints via next:<BlockTypeName>
             set.Add($"next:{name}");
 
-            var activator = d.Activator;
             if (activator is null)
             {
                 var implementsMagik = block.GetType().GetInterfaces()
