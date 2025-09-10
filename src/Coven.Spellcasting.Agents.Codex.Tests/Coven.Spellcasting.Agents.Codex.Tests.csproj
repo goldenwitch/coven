@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Coven.Spellcasting.Agents.Codex\Coven.Spellcasting.Agents.Codex.csproj" />
+    <ProjectReference Include="..\Coven.Spellcasting.Agents\Coven.Spellcasting.Agents.csproj" />
+    <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
   </ItemGroup>
 
 </Project>
