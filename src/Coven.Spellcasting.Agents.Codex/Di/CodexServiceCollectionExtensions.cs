@@ -6,6 +6,7 @@ using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.Tail;
 using Coven.Spellcasting;
+using Coven.Spellcasting.Agents.Validation;
 using Coven.Core;
 using Coven.Spellcasting.Agents;
 
@@ -81,6 +82,41 @@ public sealed class CodexCliAgentRegistrationOptions
                     resolver);
             });
 
+            // Register validator using the same options and auto-discovery resolver
+            services.AddSingleton<IAgentValidation>(sp =>
+            {
+                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
+                var spellbook = sp.GetService<Spellbook>();
+                string? shimPath = opts.ShimExecutablePath;
+                if (string.IsNullOrWhiteSpace(shimPath))
+                {
+                    try
+                    {
+                        var baseDir = AppContext.BaseDirectory;
+                        var shimDir = Path.Combine(baseDir, "mcp-shim");
+                        if (Directory.Exists(shimDir))
+                        {
+                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
+                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
+                            if (File.Exists(exe)) shimPath = exe;
+                            else if (File.Exists(dll)) shimPath = dll;
+                            else
+                            {
+                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
+                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                return new CodexCliValidation(
+                    opts.ExecutablePath,
+                    opts.WorkspaceDirectory,
+                    shimPath,
+                    spellbook,
+                    configWriter);
+            });
+
             return services;
         }
 
@@ -145,6 +181,41 @@ public sealed class CodexCliAgentRegistrationOptions
                     tailFactory,
                     configWriter,
                     resolver);
+            });
+
+            // Register validator using the same options and auto-discovery resolver
+            services.AddSingleton<IAgentValidation>(sp =>
+            {
+                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
+                var spellbook = sp.GetService<Spellbook>();
+                string? shimPath = opts.ShimExecutablePath;
+                if (string.IsNullOrWhiteSpace(shimPath))
+                {
+                    try
+                    {
+                        var baseDir = AppContext.BaseDirectory;
+                        var shimDir = Path.Combine(baseDir, "mcp-shim");
+                        if (Directory.Exists(shimDir))
+                        {
+                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
+                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
+                            if (File.Exists(exe)) shimPath = exe;
+                            else if (File.Exists(dll)) shimPath = dll;
+                            else
+                            {
+                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
+                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                return new CodexCliValidation(
+                    opts.ExecutablePath,
+                    opts.WorkspaceDirectory,
+                    shimPath,
+                    spellbook,
+                    configWriter);
             });
 
             return services;
