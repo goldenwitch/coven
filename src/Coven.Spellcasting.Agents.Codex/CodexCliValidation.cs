@@ -49,11 +49,33 @@ public sealed class CodexCliValidation : IAgentValidation
 
         // 1) Version probe
         EnsureNotCancelled(ct);
-        var ver = _ops.RunProcess(plan.VersionProbe.FileName, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
+        string codexExec = plan.VersionProbe.FileName;
+        var ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
         if (!ver.Ok)
         {
-            var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-            throw new InvalidOperationException($"Codex CLI not found or not runnable. Looked for '{_executablePath}'. PATH begins: '" + Truncate(pathEnv, 240) + "'. Set CODEX_EXE or ExecutablePath to an absolute path.");
+            // Attempt discovery via Windows PATH resolution (prefers .cmd)
+            var winPath = ExecutableDiscovery.TryLocateCodexOnWindowsPath();
+            if (!string.IsNullOrWhiteSpace(winPath))
+            {
+                codexExec = winPath!;
+                ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
+            }
+            // Attempt discovery via npm global bin
+            if (!ver.Ok)
+            {
+                var npmPath = ExecutableDiscovery.TryLocateCodexViaNpm();
+                if (!string.IsNullOrWhiteSpace(npmPath))
+                {
+                    codexExec = npmPath!;
+                    ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
+                }
+            }
+
+            if (!ver.Ok)
+            {
+                var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+                throw new InvalidOperationException($"Codex CLI not found or not runnable. Looked for '{_executablePath}'. PATH begins: '" + Truncate(pathEnv, 2000) + "'. Set CODEX_EXE or ExecutablePath to an absolute path.");
+            }
         }
         notes.Add(!string.IsNullOrWhiteSpace(ver.StdOut) ? $"codex ok: {ver.StdOut.Trim()}" : "codex ok: version probe succeeded");
 
@@ -103,7 +125,7 @@ public sealed class CodexCliValidation : IAgentValidation
 
         // 7) Sessions probe
         EnsureNotCancelled(ct);
-        _ = _ops.RunProcess(plan.SessionsListProbe.FileName, plan.SessionsListProbe.Arguments, plan.SessionsListProbe.WorkingDirectory, plan.SessionsListProbe.Environment);
+        _ = _ops.RunProcess(codexExec, plan.SessionsListProbe.Arguments, plan.SessionsListProbe.WorkingDirectory, plan.SessionsListProbe.Environment);
         notes.Add("codex sessions probe: attempted");
 
         var msg = string.Join("; ", notes);

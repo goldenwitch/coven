@@ -261,9 +261,8 @@ internal sealed class ProcessDocumentTailMux : ITailMux
 
                 using var reader = new StreamReader(fs);
 
-                // Seek to end to emulate tailing newly appended content.
-                // Comment the next line to read from start of file instead.
-                fs.Seek(0, SeekOrigin.End);
+                // Read from the start of the rollout file on first attachment so the console
+                // sees the full session history, then continue tailing new content.
 
                 // At this point the file stream is open and positioned at EOF for tailing.
 

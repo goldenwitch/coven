@@ -1,3 +1,0 @@
-[mcp_servers.coven]
-command = "shim-not-required"
-args = ["coven_probe_2b6b59fab0ce4bd999cfeaf4b681ce22"]

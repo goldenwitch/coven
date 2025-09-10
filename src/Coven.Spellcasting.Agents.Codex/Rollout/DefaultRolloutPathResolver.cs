@@ -54,27 +54,46 @@ internal sealed class DefaultRolloutPathResolver : IRolloutPathResolver
         {
             try
             {
-                var psi = new ProcessStartInfo(codexExecutablePath, args)
+                // Try direct
+                var output = TryRunCapture(codexExecutablePath, args, workspaceDirectory, env);
+                // Windows fallback via cmd.exe for .cmd shims
+                if (output is null && OperatingSystem.IsWindows())
                 {
-                    UseShellExecute = false,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    WorkingDirectory = workspaceDirectory
-                };
-                foreach (var kv in env)
-                {
-                    if (kv.Value is null) psi.Environment.Remove(kv.Key);
-                    else psi.Environment[kv.Key] = kv.Value;
+                    var cmdArgs = "/c " + BuildCommandLine(codexExecutablePath, args);
+                    output = TryRunCapture("cmd.exe", cmdArgs, workspaceDirectory, env);
                 }
-                // Ensure PATH is explicitly carried from current process
-                var pathEnv = Environment.GetEnvironmentVariable("PATH");
-                if (!string.IsNullOrWhiteSpace(pathEnv))
-                    psi.Environment["PATH"] = pathEnv;
 
-                using var p = Process.Start(psi);
-                if (p is null) continue;
-                string output = p.StandardOutput.ReadToEnd();
-                p.WaitForExit(3000);
+                // npm discovery fallback
+                if (output is null)
+                {
+                    var npmCodex = ExecutableDiscovery.TryLocateCodexViaNpm();
+                    if (!string.IsNullOrWhiteSpace(npmCodex))
+                    {
+                        output = TryRunCapture(npmCodex!, args, workspaceDirectory, env);
+                        if (output is null && OperatingSystem.IsWindows())
+                        {
+                            var cmdArgs2 = "/c " + BuildCommandLine(npmCodex!, args);
+                            output = TryRunCapture("cmd.exe", cmdArgs2, workspaceDirectory, env);
+                        }
+                    }
+                }
+
+                // Windows PATH discovery via 'where' (prefer .cmd)
+                if (output is null)
+                {
+                    var winCodex = ExecutableDiscovery.TryLocateCodexOnWindowsPath();
+                    if (!string.IsNullOrWhiteSpace(winCodex))
+                    {
+                        output = TryRunCapture(winCodex!, args, workspaceDirectory, env);
+                        if (output is null && OperatingSystem.IsWindows())
+                        {
+                            var cmdArgs3 = "/c " + BuildCommandLine(winCodex!, args);
+                            output = TryRunCapture("cmd.exe", cmdArgs3, workspaceDirectory, env);
+                        }
+                    }
+                }
+
+                if (string.IsNullOrWhiteSpace(output)) continue;
 
                 var rx = new Regex(@"(?<path>[^\s]+rollout-[^\s]+\.jsonl)", RegexOptions.IgnoreCase);
                 var match = rx.Matches(output).Cast<Match>().Select(m => m.Groups["path"].Value).LastOrDefault();
@@ -87,6 +106,47 @@ internal sealed class DefaultRolloutPathResolver : IRolloutPathResolver
             catch { }
         }
         return null;
+    }
+
+    private static string? TryRunCapture(
+        string fileName,
+        string? arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string?> env)
+    {
+        try
+        {
+            var psi = new ProcessStartInfo(fileName, arguments ?? string.Empty)
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                WorkingDirectory = workingDirectory,
+                CreateNoWindow = true
+            };
+            foreach (var kv in env)
+            {
+                if (kv.Value is null) psi.Environment.Remove(kv.Key);
+                else psi.Environment[kv.Key] = kv.Value;
+            }
+            var pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (!string.IsNullOrWhiteSpace(pathEnv))
+                psi.Environment["PATH"] = pathEnv;
+
+            using var p = Process.Start(psi);
+            if (p is null) return null;
+            string output = p.StandardOutput.ReadToEnd();
+            p.WaitForExit(3000);
+            return p.ExitCode == 0 ? output : null;
+        }
+        catch { return null; }
+    }
+
+    private static string BuildCommandLine(string fileName, string? arguments)
+    {
+        var needsQuotes = fileName.Contains(' ') && !fileName.StartsWith('"') && !fileName.EndsWith('"');
+        var quoted = needsQuotes ? $"\"{fileName}\"" : fileName;
+        return string.IsNullOrWhiteSpace(arguments) ? quoted : $"{quoted} {arguments}";
     }
 
     private static string ExpandUserHome(string path)

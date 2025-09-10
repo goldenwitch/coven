@@ -21,6 +21,37 @@ internal sealed class DefaultValidationOps : IValidationOps
 {
     public ProcessRunResult RunProcess(string fileName, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?>? environment)
     {
+        // Try direct start first (works for real executables)
+        ProcessRunResult? direct = null;
+        if (TryStart(fileName, arguments, workingDirectory, environment, out var tmp))
+        {
+            direct = tmp;
+            if (direct is { Ok: true }) return direct;
+        }
+
+        // Windows fallback: many installs expose npm shims as .cmd which require cmd.exe
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                var cmdArgs = "/c " + BuildCommandLine(fileName, arguments);
+                if (TryStart("cmd.exe", cmdArgs, workingDirectory, environment, out var viaCmd))
+                    return viaCmd!;
+            }
+        }
+        catch { }
+
+        // Fall back to the direct attempt (even if failed) or a generic failure
+        return direct ?? new ProcessRunResult(false, null);
+    }
+
+    private static bool TryStart(
+        string fileName,
+        string? arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string?>? environment,
+        out ProcessRunResult? result)
+    {
         try
         {
             var psi = new ProcessStartInfo(fileName, arguments ?? string.Empty)
@@ -42,12 +73,24 @@ internal sealed class DefaultValidationOps : IValidationOps
             var pathEnv = Environment.GetEnvironmentVariable("PATH");
             if (!string.IsNullOrWhiteSpace(pathEnv)) psi.Environment["PATH"] = pathEnv;
             using var p = Process.Start(psi);
-            if (p is null) return new ProcessRunResult(false, null);
+            if (p is null) { result = new ProcessRunResult(false, null); return true; }
             var stdOut = p.StandardOutput.ReadToEnd();
             p.WaitForExit(4000);
-            return new ProcessRunResult(p.ExitCode == 0, stdOut);
+            result = new ProcessRunResult(p.ExitCode == 0, stdOut);
+            return true;
         }
-        catch { return new ProcessRunResult(false, null); }
+        catch
+        {
+            result = null;
+            return false;
+        }
+    }
+
+    private static string BuildCommandLine(string fileName, string? arguments)
+    {
+        var needsQuotes = fileName.Contains(' ') && !fileName.StartsWith('"') && !fileName.EndsWith('"');
+        var quoted = needsQuotes ? $"\"{fileName}\"" : fileName;
+        return string.IsNullOrWhiteSpace(arguments) ? quoted : $"{quoted} {arguments}";
     }
 
     public bool FileExists(string path) => File.Exists(path);

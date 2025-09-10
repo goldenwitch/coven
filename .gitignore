@@ -57,3 +57,6 @@ _ReSharper.*/
 *.orig
 *.rej
 scratch.txt
+
+# Codex CLI generated state
+**/.codex/
