@@ -14,5 +14,6 @@
     <ProjectReference Include="..\..\src\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting\Coven.Spellcasting.csproj" />
     <ProjectReference Include="..\..\src\Coven.Spellcasting.Agents\Coven.Spellcasting.Agents.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Spellcasting.Grimoire\Coven.Spellcasting.Grimoire.csproj" />
   </ItemGroup>
 </Project>

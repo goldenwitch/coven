@@ -5,6 +5,7 @@
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
     <IsTestProject>true</IsTestProject>
+    <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +28,7 @@
     <ProjectReference Include="../Coven.Spellcasting.Agents.Validation/Coven.Spellcasting.Agents.Validation.csproj" />
     <ProjectReference Include="../Coven.Spellcasting/Coven.Spellcasting.csproj" />
     <ProjectReference Include="../Coven.Core/Coven.Core.csproj" />
+    <ProjectReference Include="../Coven.Spellcasting.Grimoire/Coven.Spellcasting.Grimoire.csproj" />
   </ItemGroup>
 
 </Project>

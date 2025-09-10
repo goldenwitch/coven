@@ -6,6 +6,8 @@ using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.Tail;
 using Coven.Spellcasting;
+using Coven.Core;
+using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Di;
 
@@ -32,10 +34,9 @@ public sealed class CodexCliAgentRegistrationOptions
             if (string.IsNullOrWhiteSpace(opts.ExecutablePath)) throw new ArgumentException("ExecutablePath must be provided.");
             if (string.IsNullOrWhiteSpace(opts.WorkspaceDirectory)) throw new ArgumentException("WorkspaceDirectory must be provided.");
 
-            services.AddSingleton<ICovenAgent<string>>(sp =>
+            services.AddCovenAgent(sp =>
             {
                 var scrivener = sp.GetRequiredService<IScrivener<string>>();
-
                 var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
                 var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
                 var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
@@ -73,17 +74,15 @@ public sealed class CodexCliAgentRegistrationOptions
             if (string.IsNullOrWhiteSpace(opts.ExecutablePath)) throw new ArgumentException("ExecutablePath must be provided.");
             if (string.IsNullOrWhiteSpace(opts.WorkspaceDirectory)) throw new ArgumentException("WorkspaceDirectory must be provided.");
 
-            services.AddSingleton<ICovenAgent<TMessage>>(sp =>
+            services.AddCovenAgent(sp =>
             {
                 var scrivener = sp.GetRequiredService<IScrivener<TMessage>>();
                 var translator = sp.GetService<ICodexRolloutTranslator<TMessage>>() ?? new TTranslator();
-
                 var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
                 var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
                 var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
                 var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
                 var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
-
                 return CodexCliAgentBuilder.Create(
                     opts.ExecutablePath,
                     opts.WorkspaceDirectory,

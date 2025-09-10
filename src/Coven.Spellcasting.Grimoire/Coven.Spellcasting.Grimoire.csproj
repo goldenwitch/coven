@@ -9,6 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Coven.Spellcasting\Coven.Spellcasting.csproj" />
     <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
   </ItemGroup>
 
 </Project>

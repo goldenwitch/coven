@@ -22,7 +22,10 @@ internal sealed class AgentUser : MagikUser<Empty, Empty, Guidebook, Spellbook, 
         Spellbook spellbook,
         Testbook testbook)
     {
-        // No spells needed; just start the agent
+        if (spellbook.Definitions is not null)
+        {
+            await _agent.RegisterSpells(spellbook.Definitions.ToList()).ConfigureAwait(false);
+        }
         await _agent.InvokeAgent().ConfigureAwait(false);
         return Empty.Value;
     }

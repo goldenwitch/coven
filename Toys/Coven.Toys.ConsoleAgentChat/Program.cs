@@ -48,11 +48,14 @@ internal static class Program
                 })
                 .Build();
             services.AddSingleton(guidebook);
-            services.AddSingleton(new SpellbookBuilder().Build());
+            var spellbook = new SpellbookBuilder()
+                .AddSpell(new Coven.Spellcasting.Grimoire.CancelAgent())
+                .Build();
+            services.AddSingleton(spellbook);
             services.AddSingleton(new Testbook());
 
-            // Agent + User
-            services.AddSingleton<ICovenAgent<ChatEntry>, ConsoleToyAgent>();
+            // Agent + User (register agent with ambient control mapping)
+            services.AddCovenAgent<ChatEntry, ConsoleToyAgent>();
             services.AddHostedService<ChatOrchestrator>();
 
             // Build a simple Coven with a single MagikUser that runs our agent

@@ -2,6 +2,8 @@ using Coven.Chat;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Spells;
+using Coven.Spellcasting.Grimoire;
+using Coven.Core;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
@@ -12,12 +14,14 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
 {
     private readonly IScrivener<ChatEntry> _scrivener;
     private readonly string[] _responses;
+    private readonly Spellbook _spellbook;
     private readonly Random _rng = new();
     private CancellationTokenSource? _cts;
 
-    public ConsoleToyAgent(IScrivener<ChatEntry> scrivener, Guidebook guidebook)
+    public ConsoleToyAgent(IScrivener<ChatEntry> scrivener, Guidebook guidebook, Spellbook spellbook)
     {
         _scrivener = scrivener;
+        _spellbook = spellbook;
         // Extract non-empty section bodies from the guidebook to use as canned replies.
         _responses = guidebook.Sections
             .Select(s => (s.Value ?? string.Empty).Trim())
@@ -45,8 +49,27 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
         await foreach ((long journalPosition, ChatEntry entry) in _scrivener.TailAsync(after, token).ConfigureAwait(false))
         {
             after = journalPosition;
-            if (entry is ChatThought)
+            if (entry is ChatThought thought)
             {
+                var userText = (thought.Text ?? string.Empty).Trim();
+                if (string.Equals(userText, "exit", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(userText, "cancel", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        _ = await _scrivener.WriteAsync(new ChatResponse("agent", "Exiting. Bye!"), token).ConfigureAwait(false);
+                    }
+                    catch { }
+                    try
+                    {
+                        var cancel = _spellbook.Spells.OfType<CancelAgent>().FirstOrDefault();
+                        if (cancel is not null) await cancel.CastSpell().ConfigureAwait(false);
+                        else await AmbientAgent.CancelAsync().ConfigureAwait(false);
+                    }
+                    catch { }
+                    break;
+                }
+
                 string text = _responses[_rng.Next(_responses.Length)];
                 ChatResponse response = new("agent", text);
                 try

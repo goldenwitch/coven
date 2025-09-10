@@ -10,14 +10,12 @@ public interface ICovenAgent<TIn, TMessageFormat, TOut> : ICovenAgent<TMessageFo
     public Task<TOut> CloseAgentWithResult();
 }
 
-public interface ICovenAgent<TMessageFormat>
+public interface ICovenAgent<TMessageFormat> : IAgentControl
 {
-    protected Task<TMessageFormat> ReadMessage();
-    protected Task SendMessage(TMessageFormat message);
+    Task<TMessageFormat> ReadMessage();
+    Task SendMessage(TMessageFormat message);
 
     public Task RegisterSpells(List<SpellDefinition> spells);
 
     public Task InvokeAgent(CancellationToken ct = default);
-    public Task CloseAgent();
 }
-

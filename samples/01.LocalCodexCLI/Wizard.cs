@@ -33,5 +33,4 @@ internal sealed class Wizard : MagikUser<Empty, Empty, Guidebook, Spellbook, Tes
         await _agent.InvokeAgent().ConfigureAwait(false);
         return Empty.Value;
     }
-
 }
