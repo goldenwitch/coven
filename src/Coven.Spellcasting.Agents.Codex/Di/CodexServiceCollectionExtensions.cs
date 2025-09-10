@@ -4,11 +4,12 @@ using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
+using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex.Tail;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents.Validation;
 using Coven.Core;
-using Coven.Spellcasting.Agents;
+// duplicate using removed
 
 namespace Coven.Spellcasting.Agents.Codex.Di;
 

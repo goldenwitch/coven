@@ -5,14 +5,14 @@ namespace Coven.Spellcasting.Agents.Codex.Rollout;
 
 internal static class CodexRolloutParser
 {
-    public static CodexRolloutEvent Parse(string line)
+    public static CodexRolloutLine Parse(string line)
     {
         if (string.IsNullOrWhiteSpace(line))
-            return new UnknownEvent("empty", null, line, null);
+            return new CodexRolloutLine(CodexRolloutLineKind.Unknown, Raw: line);
 
         try
         {
-            var doc = JsonDocument.Parse(line);
+            using var doc = JsonDocument.Parse(line);
             var root = doc.RootElement;
 
             string? type = TryGetString(root, "type");
@@ -21,64 +21,64 @@ internal static class CodexRolloutParser
             switch (type?.ToLowerInvariant())
             {
                 case "metadata":
-                    return new MetadataEvent(
-                        SessionId: TryGetString(root, "session_id") ?? TryGetString(root, "sessionId"),
-                        Created: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.Metadata,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        SessionId: TryGetString(root, "session_id") ?? TryGetString(root, "sessionId"));
 
                 case "message":
-                    return new MessageEvent(
-                        Role: TryGetString(root, "role"),
-                        Content: TryGetString(root, "content"),
-                        Timestamp: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.Message,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        Role: TryGetString(root, "role"),
+                        Content: TryGetString(root, "content"));
 
                 case "command":
-                    return new CommandEvent(
-                        Command: TryGetString(root, "command") ?? TryGetString(root, "cmd"),
-                        Cwd: TryGetString(root, "cwd"),
-                        Timestamp: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.Command,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        Command: TryGetString(root, "command") ?? TryGetString(root, "cmd"),
+                        Cwd: TryGetString(root, "cwd"));
 
                 case "command_output":
                 case "command-output":
                 case "cmd_output":
-                    return new CommandOutputEvent(
-                        Stream: TryGetString(root, "stream"),
-                        Text: TryGetString(root, "text") ?? TryGetString(root, "data"),
-                        Timestamp: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.CommandOutput,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        Stream: TryGetString(root, "stream"),
+                        Text: TryGetString(root, "text") ?? TryGetString(root, "data"));
 
                 case "file_edit":
                 case "file-edit":
                 case "patch":
-                    return new FileEditEvent(
-                        Path: TryGetString(root, "path"),
-                        Patch: TryGetString(root, "patch") ?? TryGetString(root, "diff"),
-                        Timestamp: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.FileEdit,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        Path: TryGetString(root, "path"),
+                        Patch: TryGetString(root, "patch") ?? TryGetString(root, "diff"));
 
                 case "error":
-                    return new ErrorEvent(
-                        Message: TryGetString(root, "message"),
-                        Code: TryGetString(root, "code"),
-                        Timestamp: created,
+                    return new CodexRolloutLine(
+                        CodexRolloutLineKind.Error,
+                        created,
                         Raw: line,
-                        Document: doc);
+                        Message: TryGetString(root, "message"),
+                        Code: TryGetString(root, "code"));
             }
 
             // Unknown type but valid JSON
-            return new UnknownEvent(type, created, line, doc);
+            return new CodexRolloutLine(CodexRolloutLineKind.Unknown, created, Raw: line);
         }
         catch
         {
             // Not JSON; treat as opaque text
-            return new UnknownEvent("text", null, line, null);
+            return new CodexRolloutLine(CodexRolloutLineKind.Unknown, Raw: line);
         }
     }
 
@@ -101,4 +101,3 @@ internal static class CodexRolloutParser
         return null;
     }
 }
-

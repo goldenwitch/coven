@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Tail;
 
@@ -14,4 +15,3 @@ internal sealed class DefaultTailMuxFactory : ITailMuxFactory
         return new ProcessDocumentTailMux(rolloutPath, process);
     }
 }
-

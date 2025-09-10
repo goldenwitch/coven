@@ -2,7 +2,7 @@ using Coven.Spellcasting.Agents;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
-namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
+namespace Coven.Spellcasting.Agents.Tests.Infrastructure;
 
 /// <summary>
 /// Fixture that provides an in-memory ITailMux. It does not use a filesystem-backed source;

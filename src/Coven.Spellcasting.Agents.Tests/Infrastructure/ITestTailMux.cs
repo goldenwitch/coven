@@ -1,6 +1,6 @@
 using Coven.Spellcasting.Agents;
 
-namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
+namespace Coven.Spellcasting.Agents.Tests.Infrastructure;
 
 public interface ITestTailMux : IAsyncDisposable
 {
@@ -20,3 +20,4 @@ internal sealed class MuxAdapter : ITestTailMux
     public object Underlying => _inner;
     public ValueTask DisposeAsync() => _inner.DisposeAsync();
 }
+

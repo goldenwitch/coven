@@ -1,3 +1,4 @@
+using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

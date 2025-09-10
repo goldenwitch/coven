@@ -3,7 +3,7 @@ using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
-using Coven.Spellcasting.Agents.Codex.Tail;
+using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex;
 

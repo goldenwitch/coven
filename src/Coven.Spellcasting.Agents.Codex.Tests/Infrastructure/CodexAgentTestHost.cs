@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Di;
 using Coven.Spellcasting.Agents.Codex.MCP;
+using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
@@ -59,7 +60,7 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
         return this;
     }
 
-    public CodexAgentTestHost<TMessageFormat> WithTailFactory(Tail.ITailMuxFactory factory)
+    public CodexAgentTestHost<TMessageFormat> WithTailFactory(ITailMuxFactory factory)
     {
         if (factory is null) throw new ArgumentNullException(nameof(factory));
         _services.AddSingleton(factory);

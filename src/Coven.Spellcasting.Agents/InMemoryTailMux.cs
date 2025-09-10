@@ -1,15 +1,15 @@
 using System.Threading.Channels;
 
-namespace Coven.Spellcasting.Agents.Codex;
+namespace Coven.Spellcasting.Agents;
 
 /// <summary>
 /// In-memory ITailMux implementation.
 /// - TailAsync consumes TailEvents from an internal channel.
 /// - WriteLineAsync posts lines to an outgoing sink (in-memory), not to Tail events.
-/// - Tests (or callers) can feed incoming events via <see cref="FeedAsync"/>.
+/// - Callers can feed incoming events via <see cref="FeedAsync"/>.
 /// This models the asymmetric read/write pattern in-memory.
 /// </summary>
-internal sealed class InMemoryTailMux : ITailMux
+public sealed class InMemoryTailMux : ITailMux
 {
     // Incoming events for TailAsync
     private readonly Channel<TailEvent> _incoming =
@@ -20,7 +20,7 @@ internal sealed class InMemoryTailMux : ITailMux
             FullMode = BoundedChannelFullMode.Wait
         });
 
-    // Outgoing sink for posted writes (useful for validation in tests)
+    // Outgoing sink for posted writes (useful for validation)
     private readonly Channel<string> _writes =
         Channel.CreateBounded<string>(new BoundedChannelOptions(1024)
         {
@@ -105,11 +105,11 @@ internal sealed class InMemoryTailMux : ITailMux
         if (_disposed) throw new ObjectDisposedException(nameof(InMemoryTailMux));
     }
 
-    // ---- Internal hooks for tests/consumers ----
-    internal ValueTask FeedAsync(TailEvent ev, CancellationToken ct = default)
+    // ---- Public hooks ----
+    public ValueTask FeedAsync(TailEvent ev, CancellationToken ct = default)
         => _incoming.Writer.WriteAsync(ev, ct);
 
-    internal IAsyncEnumerable<string> ReadWritesAsync(CancellationToken ct = default)
+    public IAsyncEnumerable<string> ReadWritesAsync(CancellationToken ct = default)
     {
         return ReadAllAsync(_writes.Reader, ct);
     }
@@ -142,3 +142,4 @@ internal sealed class InMemoryTailMux : ITailMux
         }
     }
 }
+

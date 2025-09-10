@@ -2,7 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Coven.Spellcasting.Agents.Codex;
+namespace Coven.Spellcasting.Agents;
 
 /// <summary>
 /// Abstraction for a tail multiplexer that can emit tail events and accept posted input.
@@ -22,3 +22,4 @@ public interface ITailMux : IAsyncDisposable
     /// </summary>
     Task WriteLineAsync(string line, CancellationToken ct = default);
 }
+

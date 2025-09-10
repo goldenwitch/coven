@@ -1,11 +1,11 @@
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 using Coven.Chat;
 using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
+using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex.Tail;
 using Coven.Spellcasting.Agents.Codex.Config;
 
@@ -171,28 +171,48 @@ namespace Coven.Spellcasting.Agents.Codex;
                 switch (ev)
                 {
                     case Line o:
+                    {
                         var parsed = CodexRolloutParser.Parse(o.Line);
                         if (_translator is not null)
                         {
-                            var publicLine = Rollout.CodexRolloutEventConverter.ToPublic(parsed);
-                            var entry = _translator.Translate(publicLine);
-                            try { await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false); } catch { }
+                            var entry = _translator.Translate(parsed);
+                            await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
                         }
-                        else if (_translator is null && typeof(TMessageFormat) == typeof(string))
+                        else if (typeof(TMessageFormat) == typeof(string))
                         {
-                            try { await _scrivener.WriteAsync((TMessageFormat)(object)o.Line, ct).ConfigureAwait(false); } catch { }
+                            await _scrivener.WriteAsync((TMessageFormat)(object)o.Line, ct).ConfigureAwait(false);
                         }
                         break;
+                    }
 
                     case ErrorLine e:
-                        // _ = _scrivener.Error(e.Line);
+                    {
+                        // Surface process/tail errors as error lines to the scrivener via the translator if available
+                        var errorLine = new CodexRolloutLine(
+                            CodexRolloutLineKind.Error,
+                            DateTimeOffset.UtcNow,
+                            Raw: e.Line,
+                            Message: e.Line,
+                            Code: "tail_error");
+
+                        if (_translator is not null)
+                        {
+                            var entry = _translator.Translate(errorLine);
+                            await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
+                        }
+                        else if (typeof(TMessageFormat) == typeof(string))
+                        {
+                            await _scrivener.WriteAsync((TMessageFormat)(object)($"ERROR: {e.Line}"), ct).ConfigureAwait(false);
+                        }
                         break;
+                    }
                 }
             }, ct);
         }
-        catch
+        catch (Exception ex)
         {
-
+            await ReportErrorAsync(ex, ct).ConfigureAwait(false);
+            throw;
         }
     }
 
@@ -202,7 +222,11 @@ namespace Coven.Spellcasting.Agents.Codex;
         _mcpSession = null;
         if (s is not null)
         {
-            try { await s.DisposeAsync().ConfigureAwait(false); } catch { }
+            try { await s.DisposeAsync().ConfigureAwait(false); }
+            catch
+            {
+                // best-effort; disposal issues are non-fatal
+            }
         }
         return;
     }
@@ -218,6 +242,33 @@ namespace Coven.Spellcasting.Agents.Codex;
     }
 
     // ---------- helpers ----------
+    private async Task ReportErrorAsync(Exception ex, CancellationToken ct)
+    {
+        try
+        {
+            var line = new CodexRolloutLine(
+                CodexRolloutLineKind.Error,
+                DateTimeOffset.UtcNow,
+                Raw: ex.ToString(),
+                Message: ex.Message,
+                Code: ex.GetType().Name);
+
+            if (_translator is not null)
+            {
+                var entry = _translator.Translate(line);
+                await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
+            }
+            else if (typeof(TMessageFormat) == typeof(string))
+            {
+                var msg = $"ERROR[{ex.GetType().Name}]: {ex.Message}\n{ex}";
+                await _scrivener.WriteAsync((TMessageFormat)(object)msg, ct).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            // As a last resort, swallow to avoid masking the original exception
+        }
+    }
     private void WriteCodexConfigForShim(string shimPath, string pipeName)
     {
         try

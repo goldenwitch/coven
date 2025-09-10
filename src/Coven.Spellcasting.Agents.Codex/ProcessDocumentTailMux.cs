@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Channels;
+using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
