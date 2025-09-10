@@ -37,7 +37,17 @@ internal sealed class SophiaLogger : ILogger
         var label = string.IsNullOrWhiteSpace(options.Label) ? "sophia" : options.Label;
         var message = formatter is not null ? formatter(state, exception) : state?.ToString() ?? string.Empty;
 
-        var entry = $"[{now:o}] {label} {logLevel} {category} ({eventId.Id}) :: {message}";
+        // Compact breadcrumb formatting for specific categories
+        bool isBreadcrumb = options.CompactBreadcrumbs && options.BreadcrumbCategories.Any(p => category.StartsWith(p, StringComparison.Ordinal));
+        string entry;
+        if (isBreadcrumb)
+        {
+            entry = message ?? string.Empty;
+        }
+        else
+        {
+            entry = $"[{now:o}] {label} {logLevel} {category} ({eventId.Id}) :: {message}";
+        }
         if (exception is not null)
         {
             entry += $" | Exception: {exception}";
@@ -51,7 +61,9 @@ internal sealed class SophiaLogger : ILogger
                 scopeProvider.ForEachScope((s, acc) => acc.Add(s?.ToString() ?? string.Empty), scopes);
                 if (scopes.Count > 0)
                 {
-                    entry += $" | Scopes=[{string.Join(", ", scopes)}]";
+                    entry += isBreadcrumb
+                        ? $" | Scopes=[{string.Join(", ", scopes)}]"
+                        : $" | Scopes=[{string.Join(", ", scopes)}]";
                 }
             }
             catch

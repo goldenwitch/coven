@@ -11,5 +11,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Coven.Chat\Coven.Chat.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Sophia\Coven.Sophia.csproj" />
+    <ProjectReference Include="..\..\src\Coven.Durables\Coven.Durables.csproj" />
   </ItemGroup>
 </Project>

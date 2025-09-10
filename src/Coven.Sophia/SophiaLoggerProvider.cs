@@ -10,7 +10,7 @@ public sealed class SophiaLoggerProvider : ILoggerProvider, ISupportExternalScop
     private readonly IDurableList<string> storage;
     private readonly SophiaLoggerOptions options;
     private IExternalScopeProvider? scopeProvider;
-    private readonly Dictionary<string, SophiaLogger> cache = new(StringComparer.Ordinal);
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, SophiaLogger> cache = new(StringComparer.Ordinal);
     private bool disposed;
     private readonly ConcurrentQueue<string> queue = new();
     private readonly SemaphoreSlim signal = new(0);
@@ -27,33 +27,21 @@ public sealed class SophiaLoggerProvider : ILoggerProvider, ISupportExternalScop
     public ILogger CreateLogger(string categoryName)
     {
         if (disposed) throw new ObjectDisposedException(nameof(SophiaLoggerProvider));
-        lock (cache)
-        {
-            if (!cache.TryGetValue(categoryName, out var logger))
-            {
-                logger = new SophiaLogger(categoryName, options, scopeProvider, this);
-                cache[categoryName] = logger;
-            }
-            return logger;
-        }
+        return cache.GetOrAdd(categoryName, name => new SophiaLogger(name, options, scopeProvider, this));
     }
 
     public void SetScopeProvider(IExternalScopeProvider scopeProvider)
     {
         this.scopeProvider = scopeProvider;
-        lock (cache)
+        foreach (var kvp in cache)
         {
-            foreach (var kvp in cache)
-            {
-                kvp.Value.SetScopeProvider(scopeProvider);
-            }
+            kvp.Value.SetScopeProvider(scopeProvider);
         }
     }
 
     public void Dispose()
     {
         disposed = true;
-        lock (cache) cache.Clear();
         try { cts.Cancel(); } catch { }
         try { signal.Release(); } catch { }
         try { background.Wait(1000); } catch { }

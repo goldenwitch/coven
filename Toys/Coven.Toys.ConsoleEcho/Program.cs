@@ -1,6 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using Coven.Chat.Adapter.Console.Di;
+using Coven.Sophia;
+using Coven.Durables;
 
 namespace Coven.Toys.ConsoleEcho;
 
@@ -14,6 +18,16 @@ internal static class Program
 
         builder.ConfigureServices(services =>
         {
+            // Sophia logging: durable storage + provider
+            // SophiaLogging will default to ConsoleList if no IDurableList<string> is registered
+            services.AddSophiaLogging(new SophiaLoggerOptions
+            {
+                Label = "toy",
+                IncludeScopes = true,
+                MinimumLevel = LogLevel.Information,
+                CompactBreadcrumbs = true
+            });
+
             // Console adapter stack via convenience method
             services.AddConsoleChatAdapter(o =>
             {
