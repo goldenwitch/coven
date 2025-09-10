@@ -22,6 +22,7 @@ internal static class Program
     public static async Task<int> Main(string[] args)
     {
         var builder = Host.CreateDefaultBuilder(args);
+        builder.ConfigureLogging(lb => lb.ClearProviders());
 
         builder.ConfigureServices(services =>
         {
@@ -31,8 +32,7 @@ internal static class Program
             {
                 Label = "toy",
                 IncludeScopes = true,
-                MinimumLevel = LogLevel.Information,
-                CompactBreadcrumbs = true
+                MinimumLevel = LogLevel.Information
             });
 
             // Console adapter stack

@@ -40,7 +40,7 @@ public sealed class ConsoleAdapter : IAdapter<ChatEntry>
             _log.LogDebug("chat:console read line bytes={Len}", line.Length);
             if (_options.EchoUserInput)
             {
-                try { await _io.WriteLineAsync(line, ct).ConfigureAwait(false); } catch { }
+                await _io.WriteLineAsync(line, ct).ConfigureAwait(false);
             }
         }
     }

@@ -10,6 +10,7 @@ using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Sophia;
 using Coven.Durables;
+using Coven.Spellcasting.Grimoire;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
@@ -20,6 +21,7 @@ internal static class Program
     public static async Task<int> Main(string[] args)
     {
         IHostBuilder builder = Host.CreateDefaultBuilder(args);
+        builder.ConfigureLogging(lb => lb.ClearProviders());
 
         builder.ConfigureServices(services =>
         {
@@ -29,8 +31,7 @@ internal static class Program
             {
                 Label = "toy",
                 IncludeScopes = true,
-                MinimumLevel = LogLevel.Information,
-                CompactBreadcrumbs = true
+                MinimumLevel = LogLevel.Information
             });
 
             // Console adapter stack via convenience method
@@ -63,7 +64,7 @@ internal static class Program
                 .Build();
             services.AddSingleton(guidebook);
             var spellbook = new SpellbookBuilder()
-                .AddSpell(new Coven.Spellcasting.Grimoire.CancelAgent())
+                .AddSpell(new CancelAgent())
                 .Build();
             services.AddSingleton(spellbook);
             services.AddSingleton(new Testbook());

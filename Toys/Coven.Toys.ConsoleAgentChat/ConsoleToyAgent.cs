@@ -55,18 +55,10 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
                 if (string.Equals(userText, "exit", StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(userText, "cancel", StringComparison.OrdinalIgnoreCase))
                 {
-                    try
-                    {
-                        _ = await _scrivener.WriteAsync(new ChatResponse("agent", "Exiting. Bye!"), token).ConfigureAwait(false);
-                    }
-                    catch { }
-                    try
-                    {
-                        var cancel = _spellbook.Spells.OfType<CancelAgent>().FirstOrDefault();
-                        if (cancel is not null) await cancel.CastSpell().ConfigureAwait(false);
-                        else await AmbientAgent.CancelAsync().ConfigureAwait(false);
-                    }
-                    catch { }
+
+                    _ = await _scrivener.WriteAsync(new ChatResponse("agent", "Exiting. Bye!"), token).ConfigureAwait(false);
+                    var cancel = _spellbook.Spells.OfType<CancelAgent>().FirstOrDefault();
+                    if (cancel is not null) await cancel.CastSpell().ConfigureAwait(false);
                     break;
                 }
 

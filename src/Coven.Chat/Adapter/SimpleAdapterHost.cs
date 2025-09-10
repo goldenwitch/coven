@@ -37,7 +37,7 @@ using Microsoft.Extensions.Logging.Abstractions;
                 try
                 {
                     var pos = await scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
-                    try { _log.LogInformation("Ingress append pos={Pos} type={Type} cid={ConversationId}", pos, entry?.GetType().Name, cid); } catch { }
+                    _log.LogInformation("Ingress append pos={Pos} type={Type} cid={ConversationId}", pos, entry.GetType().Name, cid);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { _log.LogWarning(ex, "Ingress error cid={ConversationId}", cid); }
@@ -54,8 +54,9 @@ using Microsoft.Extensions.Logging.Abstractions;
                 after = pair.journalPosition;
                 try
                 {
-                    _log.LogInformation("Egress deliver pos={Pos} type={Type} next={Next} cid={ConversationId}", after, pair.entry?.GetType().Name, after + 1, cid);
-                    await adapter.DeliverAsync(pair.entry, ct).ConfigureAwait(false);
+                    var entry = pair.entry; // T is constrained notnull
+                    _log.LogInformation("Egress deliver pos={Pos} type={Type} next={Next} cid={ConversationId}", after, entry.GetType().Name, after + 1, cid);
+                    await adapter.DeliverAsync(entry, ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { _log.LogWarning(ex, "Egress error cid={ConversationId}", cid); }
