@@ -3,6 +3,7 @@ using System.IO.Pipes;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents.Validation;
 using Coven.Spellcasting.Agents.Codex.Config;
+using Coven.Spellcasting.Agents.Codex.Validation;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
@@ -15,19 +16,22 @@ public sealed class CodexCliValidation : IAgentValidation
     private readonly string? _shimExecutablePath;
     private readonly Spellbook? _spellbook;
     private readonly ICodexConfigWriter _configWriter;
+    private readonly IValidationOps _ops;
 
-    public CodexCliValidation(
+    internal CodexCliValidation(
         string executablePath,
         string workspaceDirectory,
         string? shimExecutablePath,
         Spellbook? spellbook,
-        ICodexConfigWriter configWriter)
+        ICodexConfigWriter configWriter,
+        IValidationOps? ops = null)
     {
         _executablePath = string.IsNullOrWhiteSpace(executablePath) ? "codex" : executablePath;
         _workspaceDirectory = string.IsNullOrWhiteSpace(workspaceDirectory) ? Directory.GetCurrentDirectory() : workspaceDirectory;
         _shimExecutablePath = shimExecutablePath;
         _spellbook = spellbook;
         _configWriter = configWriter ?? throw new ArgumentNullException(nameof(configWriter));
+        _ops = ops ?? new DefaultValidationOps();
     }
 
     public async Task<AgentValidationResult> ValidateAsync(CancellationToken ct = default)
@@ -35,69 +39,71 @@ public sealed class CodexCliValidation : IAgentValidation
         var notes = new List<string>();
         bool performed = false;
 
-        EnsureNotCancelled(ct);
-        var versionOk = TryRunProcess(_executablePath, "--version", _workspaceDirectory, null, out string? codexVersionOut);
-        if (!versionOk)
-            throw new InvalidOperationException("Codex CLI not found or not runnable. Ensure 'codex' is on PATH or set ExecutablePath to an absolute path.");
-        if (!string.IsNullOrWhiteSpace(codexVersionOut)) notes.Add($"codex ok: {codexVersionOut.Trim()}"); else notes.Add("codex ok: version probe succeeded");
-
-        EnsureNotCancelled(ct);
-        if (!Directory.Exists(_workspaceDirectory)) { Directory.CreateDirectory(_workspaceDirectory); performed = true; notes.Add($"workspace created: {_workspaceDirectory}"); }
-        var probePath = Path.Combine(_workspaceDirectory, $".coven_probe_{Guid.NewGuid():N}");
-        try { await File.WriteAllTextAsync(probePath, "ok", ct).ConfigureAwait(false); File.Delete(probePath); notes.Add("workspace writable: ok"); }
-        catch { throw new InvalidOperationException($"Workspace '{_workspaceDirectory}' is not writable."); }
-
-        EnsureNotCancelled(ct);
-        var codexHome = Path.Combine(_workspaceDirectory, ".codex");
-        if (!Directory.Exists(codexHome)) { Directory.CreateDirectory(codexHome); performed = true; notes.Add($"codex home created: {codexHome}"); }
-        var homeProbe = Path.Combine(codexHome, $"probe_{Guid.NewGuid():N}.tmp");
-        try { await File.WriteAllTextAsync(homeProbe, "ok", ct).ConfigureAwait(false); File.Delete(homeProbe); notes.Add("codex home writable: ok"); }
-        catch { throw new InvalidOperationException($"Codex home '{codexHome}' is not writable."); }
-
         bool shimRequired = _spellbook?.Spells?.Count > 0;
+        var plannerInputs = new CodexValidationPlanner.Inputs(
+            _executablePath,
+            _workspaceDirectory,
+            _shimExecutablePath,
+            shimRequired);
+        var plan = CodexValidationPlanner.Create(plannerInputs);
 
+        // 1) Version probe
+        EnsureNotCancelled(ct);
+        var ver = _ops.RunProcess(plan.VersionProbe.FileName, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
+        if (!ver.Ok)
+        {
+            var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            throw new InvalidOperationException($"Codex CLI not found or not runnable. Looked for '{_executablePath}'. PATH begins: '" + Truncate(pathEnv, 240) + "'. Set CODEX_EXE or ExecutablePath to an absolute path.");
+        }
+        notes.Add(!string.IsNullOrWhiteSpace(ver.StdOut) ? $"codex ok: {ver.StdOut.Trim()}" : "codex ok: version probe succeeded");
+
+        // 2) Workspace ensure + write probe
+        EnsureNotCancelled(ct);
+        if (!Directory.Exists(plan.WorkspaceEnsure.Path)) { _ops.EnsureDirectory(plan.WorkspaceEnsure.Path); performed = true; notes.Add($"workspace created: {plan.WorkspaceEnsure.Path}"); }
+        try { await _ops.WriteFileAsync(plan.WorkspaceWriteProbe.Path, plan.WorkspaceWriteProbe.Contents, ct).ConfigureAwait(false); if (plan.WorkspaceWriteProbe.DeleteAfter) _ops.DeleteFile(plan.WorkspaceWriteProbe.Path); notes.Add("workspace writable: ok"); }
+        catch { throw new InvalidOperationException($"Workspace '{plan.WorkspaceEnsure.Path}' is not writable."); }
+
+        // 3) Codex home ensure + write probe
+        EnsureNotCancelled(ct);
+        if (!Directory.Exists(plan.CodexHomeEnsure.Path)) { _ops.EnsureDirectory(plan.CodexHomeEnsure.Path); performed = true; notes.Add($"codex home created: {plan.CodexHomeEnsure.Path}"); }
+        try { await _ops.WriteFileAsync(plan.CodexHomeWriteProbe.Path, plan.CodexHomeWriteProbe.Contents, ct).ConfigureAwait(false); if (plan.CodexHomeWriteProbe.DeleteAfter) _ops.DeleteFile(plan.CodexHomeWriteProbe.Path); notes.Add("codex home writable: ok"); }
+        catch { throw new InvalidOperationException($"Codex home '{plan.CodexHomeEnsure.Path}' is not writable."); }
+
+        // 4) Pipes handshake
         EnsureNotCancelled(ct);
         try
         {
-            var pipeName = $"coven_probe_{Guid.NewGuid():N}";
-            using var server = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous);
-            var clientTask = Task.Run(async () =>
-            {
-                using var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-                await client.ConnectAsync(1000, ct).ConfigureAwait(false);
-                await client.WriteAsync(new byte[] { (byte)'P' }, ct).ConfigureAwait(false);
-                await client.FlushAsync(ct).ConfigureAwait(false);
-            }, ct);
-            server.WaitForConnection();
-            var buf = new byte[1];
-            _ = server.Read(buf, 0, 1);
+            _ops.PipeHandshake(plan.PipeProbe.PipeName, ct);
             notes.Add("named pipes: ok");
         }
         catch { throw new InvalidOperationException("Named pipes are unavailable; MCP shim cannot connect."); }
 
+        // 5) Shim probe (if planned)
         EnsureNotCancelled(ct);
-        string? shimPath = ResolveShimPath(_shimExecutablePath);
         if (shimRequired)
         {
-            if (string.IsNullOrWhiteSpace(shimPath) || !File.Exists(shimPath))
+            if (string.IsNullOrWhiteSpace(plan.ShimPath) || !_ops.FileExists(plan.ShimPath))
                 throw new InvalidOperationException("MCP shim not found. Build output should include mcp-shim/ with the shim executable.");
-            var shimOk = TryRunProcess(shimPath, "--help", _workspaceDirectory, null, out _);
-            if (!shimOk) throw new InvalidOperationException("MCP shim is not runnable.");
-            notes.Add($"shim ok: {shimPath}");
+            if (plan.ShimHelpProbe is not null)
+            {
+                var shimRun = _ops.RunProcess(plan.ShimHelpProbe.FileName, plan.ShimHelpProbe.Arguments, plan.ShimHelpProbe.WorkingDirectory, plan.ShimHelpProbe.Environment);
+                if (!shimRun.Ok) throw new InvalidOperationException("MCP shim is not runnable.");
+            }
+            notes.Add($"shim ok: {plan.ShimPath}");
         }
 
+        // 6) Config merge
         EnsureNotCancelled(ct);
         try
         {
-            var dummyPipe = $"coven_probe_{Guid.NewGuid():N}";
-            _configWriter.WriteOrMerge(codexHome, shimPath ?? "shim-not-required", dummyPipe, "coven");
+            _ops.MergeConfig(_configWriter, plan.ConfigMerge.CodexHomeDir, plan.ConfigMerge.ShimPath, plan.ConfigMerge.PipeName, plan.ConfigMerge.ServerKey);
             notes.Add("codex config merge: ok");
         }
         catch { throw new InvalidOperationException("Failed to write or merge Codex config.toml."); }
 
+        // 7) Sessions probe
         EnsureNotCancelled(ct);
-        var env = new Dictionary<string, string?> { ["CODEX_HOME"] = codexHome };
-        _ = TryRunProcess(_executablePath, "sessions list", _workspaceDirectory, env, out _);
+        _ = _ops.RunProcess(plan.SessionsListProbe.FileName, plan.SessionsListProbe.Arguments, plan.SessionsListProbe.WorkingDirectory, plan.SessionsListProbe.Environment);
         notes.Add("codex sessions probe: attempted");
 
         var msg = string.Join("; ", notes);
@@ -109,40 +115,10 @@ public sealed class CodexCliValidation : IAgentValidation
         if (ct.IsCancellationRequested) throw new OperationCanceledException(ct);
     }
 
-    private static bool TryRunProcess(
-        string fileName,
-        string? arguments,
-        string workingDirectory,
-        IReadOnlyDictionary<string, string?>? environment,
-        out string? stdOut)
-    {
-        stdOut = null;
-        try
-        {
-            var psi = new ProcessStartInfo(fileName, arguments ?? string.Empty)
-            {
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = false,
-                WorkingDirectory = workingDirectory,
-                CreateNoWindow = true
-            };
-            if (environment is not null)
-            {
-                foreach (var kv in environment)
-                {
-                    if (kv.Value is null) psi.Environment.Remove(kv.Key);
-                    else psi.Environment[kv.Key] = kv.Value;
-                }
-            }
-            using var p = Process.Start(psi);
-            if (p is null) return false;
-            stdOut = p.StandardOutput.ReadToEnd();
-            p.WaitForExit(4000);
-            return p.ExitCode == 0;
-        }
-        catch { return false; }
-    }
+    // Note: process execution is abstracted via IValidationOps; no direct process calls here.
+
+    private static string Truncate(string s, int max)
+        => s.Length <= max ? s : s.Substring(0, max) + "...";
 
     private static string? ResolveShimPath(string? provided)
     {

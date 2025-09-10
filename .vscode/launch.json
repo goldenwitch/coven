@@ -33,6 +33,17 @@
       "cwd": "${workspaceFolder}/Toys/Coven.Toys.ConsoleAgentChat",
       "console": "integratedTerminal",
       "stopAtEntry": false
+    },
+    {
+      "name": ".NET Launch (Console) - CodexConsole",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build CodexConsole",
+      "program": "${workspaceFolder}/Toys/Coven.Toys.CodexConsole/bin/Debug/net10.0/Coven.Toys.CodexConsole.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Toys/Coven.Toys.CodexConsole",
+      "console": "integratedTerminal",
+      "stopAtEntry": false
     }
   ]
 }

@@ -55,6 +55,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Spellcasting.Agents.C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleAgentChat", "..\Toys\Coven.Toys.ConsoleAgentChat\Coven.Toys.ConsoleAgentChat.csproj", "{602C8C1E-1980-46D6-854D-53496E6F895E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.CodexConsole", "..\Toys\Coven.Toys.CodexConsole\Coven.Toys.CodexConsole.csproj", "{BAADCD4B-C327-4810-A4E3-551A234752CC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -353,6 +355,18 @@ Global
 		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x64.Build.0 = Release|Any CPU
 		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x86.ActiveCfg = Release|Any CPU
 		{602C8C1E-1980-46D6-854D-53496E6F895E}.Release|x86.Build.0 = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|x64.Build.0 = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Debug|x86.Build.0 = Debug|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|x64.ActiveCfg = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|x64.Build.0 = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|x86.ActiveCfg = Release|Any CPU
+		{BAADCD4B-C327-4810-A4E3-551A234752CC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -362,5 +376,6 @@ Global
 		{277696AD-6C7D-4881-8AA9-77AE0C6CF541} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{8F6928CE-5D5E-456F-A902-6F5896D1E020} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 		{602C8C1E-1980-46D6-854D-53496E6F895E} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
+		{BAADCD4B-C327-4810-A4E3-551A234752CC} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 	EndGlobalSection
 EndGlobal

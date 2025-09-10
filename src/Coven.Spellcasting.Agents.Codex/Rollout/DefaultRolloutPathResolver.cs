@@ -66,6 +66,10 @@ internal sealed class DefaultRolloutPathResolver : IRolloutPathResolver
                     if (kv.Value is null) psi.Environment.Remove(kv.Key);
                     else psi.Environment[kv.Key] = kv.Value;
                 }
+                // Ensure PATH is explicitly carried from current process
+                var pathEnv = Environment.GetEnvironmentVariable("PATH");
+                if (!string.IsNullOrWhiteSpace(pathEnv))
+                    psi.Environment["PATH"] = pathEnv;
 
                 using var p = Process.Start(psi);
                 if (p is null) continue;
@@ -97,4 +101,3 @@ internal sealed class DefaultRolloutPathResolver : IRolloutPathResolver
         return path;
     }
 }
-

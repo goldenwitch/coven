@@ -16,25 +16,28 @@ internal sealed class DefaultCodexProcessFactory : ICodexProcessFactory
         }
     }
 
-    public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
-    {
-        var psi = new ProcessStartInfo(executablePath)
+        public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
         {
-            UseShellExecute = false,
-            RedirectStandardInput = true,
-            RedirectStandardOutput = false,
-            RedirectStandardError = false,
-            WorkingDirectory = workingDirectory,
-            CreateNoWindow = true
-        };
-        foreach (var kv in environment)
-        {
-            if (kv.Value is null) psi.Environment.Remove(kv.Key);
-            else psi.Environment[kv.Key] = kv.Value;
+            var psi = new ProcessStartInfo(executablePath)
+            {
+                UseShellExecute = false,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = false,
+                RedirectStandardError = false,
+                WorkingDirectory = workingDirectory,
+                CreateNoWindow = true
+            };
+            foreach (var kv in environment)
+            {
+                if (kv.Value is null) psi.Environment.Remove(kv.Key);
+                else psi.Environment[kv.Key] = kv.Value;
+            }
+            // Ensure PATH is explicitly carried from current process
+            var pathEnv = Environment.GetEnvironmentVariable("PATH");
+            if (!string.IsNullOrWhiteSpace(pathEnv))
+                psi.Environment["PATH"] = pathEnv;
+            var p = new Process { StartInfo = psi };
+            if (!p.Start()) throw new InvalidOperationException("Failed to start Codex CLI process.");
+            return new Handle(p);
         }
-        var p = new Process { StartInfo = psi };
-        if (!p.Start()) throw new InvalidOperationException("Failed to start Codex CLI process.");
-        return new Handle(p);
-    }
 }
-
