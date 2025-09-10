@@ -1,5 +1,7 @@
 using System.Collections.Concurrent; // lock-free container for concurrent producers/consumers
 using System.Runtime.CompilerServices; // [EnumeratorCancellation] for IAsyncEnumerable cancellation
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Coven.Chat;
 
@@ -17,6 +19,16 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
     // Notification gate used to wake tailers and waiters when a new entry is appended.
     private TaskCompletionSource<bool> _signal = NewSignal();
 
+    private readonly ILogger<InMemoryScrivener<TJournalEntryType>> _log;
+
+    public InMemoryScrivener()
+        : this(NullLogger<InMemoryScrivener<TJournalEntryType>>.Instance) { }
+
+    public InMemoryScrivener(ILogger<InMemoryScrivener<TJournalEntryType>> logger)
+    {
+        _log = logger ?? NullLogger<InMemoryScrivener<TJournalEntryType>>.Instance;
+    }
+
     public Task<long> WriteAsync(TJournalEntryType entry, CancellationToken ct = default)
     {
         // Respect cancellation for symmetry with other async operations.
@@ -27,6 +39,7 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
         var assigned = Interlocked.Increment(ref _nextPos);
         // Append to the concurrent queue (non-blocking for multiple writers).
         _entries.Enqueue((assigned, entry));
+        _log.LogDebug("chat:mem write pos={Pos} type={Type}", assigned, entry.GetType().Name);
         // Wake waiters: complete the current signal and rotate to a fresh one.
         var toComplete = Interlocked.Exchange(ref _signal, NewSignal());
         toComplete.TrySetResult(true);
@@ -43,6 +56,7 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
         long next = afterPosition + 1;
         // Buffer for out-of-order items until their turn arrives.
         var pending = new Dictionary<long, TJournalEntryType>();
+        _log.LogTrace("chat:mem tail start after={After}", afterPosition);
 
         while (true)
         {
@@ -65,6 +79,7 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
                 ct.ThrowIfCancellationRequested();
 
                 yield return (next, entry);
+                _log.LogTrace("chat:mem tail yield pos={Pos}", next);
                 pending.Remove(next);
                 next++;
                 progressed = true;
@@ -73,6 +88,7 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
             if (progressed)
                 continue;
 
+            _log.LogTrace("chat:mem tail wait pos={Next}", next);
             await waiter.Task.WaitAsync(ct).ConfigureAwait(false);
         }
     }
@@ -90,7 +106,10 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
         {
             ct.ThrowIfCancellationRequested();
             if (pos < beforePosition)
+            {
                 yield return (pos, entry);
+                _log.LogTrace("chat:mem back yield pos={Pos}", pos);
+            }
         }
     }
 
@@ -106,6 +125,7 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
 
         long next = afterPosition + 1;
 
+        _log.LogTrace("chat:mem wait start after={After}", afterPosition);
         while (true)
         {
             var waiter = Volatile.Read(ref _signal);
@@ -122,14 +142,20 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
                 ct.ThrowIfCancellationRequested();
 
                 if (match(entry))
+                {
+                    _log.LogDebug("chat:mem wait match pos={Pos} type={Type}", next, entry?.GetType().Name);
                     return (next, entry);
+                }
 
                 next++;      // advance only when we've actually seen 'next'
                 progressed = true;
             }
 
             if (!progressed)
+            {
+                _log.LogTrace("chat:mem wait sleeping next={Next}", next);
                 await waiter.Task.WaitAsync(ct).ConfigureAwait(false);
+            }
         }
     }
 
@@ -145,4 +171,3 @@ public sealed class InMemoryScrivener<TJournalEntryType> : IScrivener<TJournalEn
     private static TaskCompletionSource<bool> NewSignal()
         => new(TaskCreationOptions.RunContinuationsAsynchronously);
 }
-

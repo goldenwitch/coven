@@ -2,6 +2,8 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Coven.Chat;
 
@@ -18,6 +20,7 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
     private readonly string _lockPath;
     private readonly string _headPath;
     private readonly JsonSerializerOptions _json;
+    private readonly ILogger<FileScrivener<TJournalEntryType>> _log;
 
     private const string Extension = ".json";
     private const int NameDigits = 20; // supports up to 9,223,372,036,854,775,807
@@ -30,6 +33,10 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
     private FileSystemWatcher? _watcher;
 
     public FileScrivener(string rootDirectory, JsonSerializerOptions? json = null)
+        : this(rootDirectory, json, NullLogger<FileScrivener<TJournalEntryType>>.Instance)
+    { }
+
+    public FileScrivener(string rootDirectory, JsonSerializerOptions? json, ILogger<FileScrivener<TJournalEntryType>> logger)
     {
         if (string.IsNullOrWhiteSpace(rootDirectory)) throw new ArgumentException("Required", nameof(rootDirectory));
         _root = rootDirectory;
@@ -43,6 +50,7 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
             WriteIndented = false,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
+        _log = logger ?? NullLogger<FileScrivener<TJournalEntryType>>.Instance;
 
         // Bootstrap: try head.txt; if missing, compute max from filenames once.
         _lastAssigned = TryReadHead(_headPath);
@@ -110,12 +118,14 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
                 _lastAssigned = candidate;
                 PersistHead(_headPath, candidate); // best-effort
                 TryFlushDirectory(_root);          // best-effort
+                _log.LogDebug("chat:file write pos={Pos} path={Path}", candidate, finalPath);
                 return candidate;
             }
             catch (IOException)
             {
                 try { File.Delete(tmpPath); } catch { /* ignore */ }
                 checked { candidate++; }
+                _log.LogTrace("chat:file collision advance next={Pos}", candidate);
             }
         }
     }
@@ -128,6 +138,7 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
             yield break; // nothing is after MaxValue
 
         long next = afterPosition + 1;
+        _log.LogTrace("chat:file tail start after={After}", afterPosition);
 
         while (true)
         {
@@ -140,16 +151,19 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
                 if (entry is not null)
                 {
                     yield return (next, entry);
+                    _log.LogTrace("chat:file tail yield pos={Pos}", next);
                     next++;
                     continue;
                 }
 
                 // File exists but is unreadable: enforce contiguity (do not skip)
+                _log.LogTrace("chat:file tail unreadable wait pos={Pos}", next);
                 await WaitForNewFileAsync(ct).ConfigureAwait(false);
                 continue;
             }
 
             // Next file not present yet; wait for filesystem activity
+            _log.LogTrace("chat:file tail wait pos={Pos}", next);
             await WaitForNewFileAsync(ct).ConfigureAwait(false);
         }
     }
@@ -168,13 +182,14 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
                              .ToList();
 
         await Task.Yield();
-
+        
         foreach (var (pos, path) in files)
         {
             ct.ThrowIfCancellationRequested();
             var entry = TryRead(path);
             if (entry is null) continue; // backward read may skip unreadable (policy)
             yield return (pos, entry);
+            _log.LogTrace("chat:file back yield pos={Pos}", pos);
         }
     }
 
@@ -187,6 +202,7 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
         if (afterPosition == long.MaxValue) throw new ArgumentOutOfRangeException(nameof(afterPosition));
 
         long next = afterPosition + 1;
+        _log.LogTrace("chat:file wait start after={After}", afterPosition);
 
         while (true)
         {
@@ -199,17 +215,22 @@ public sealed class FileScrivener<TJournalEntryType> : IScrivener<TJournalEntryT
                 if (entry is not null)
                 {
                     if (match(entry))
+                    {
+                        _log.LogDebug("chat:file wait match pos={Pos}", next);
                         return (next, entry);
+                    }
 
                     next++;
                     continue;
                 }
 
                 // Exists but unreadable => enforce contiguity
+                _log.LogTrace("chat:file wait unreadable pos={Pos}", next);
                 await WaitForNewFileAsync(ct).ConfigureAwait(false);
                 continue;
             }
 
+            _log.LogTrace("chat:file wait sleeping next={Next}", next);
             await WaitForNewFileAsync(ct).ConfigureAwait(false);
         }
     }
