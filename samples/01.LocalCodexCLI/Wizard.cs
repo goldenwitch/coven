@@ -2,15 +2,16 @@ using Coven.Core;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Spells;
+using Coven.Chat;
 
 namespace Coven.Samples.LocalCodexCLI;
 
 internal sealed class Wizard : MagikUser<Empty, Empty, Guidebook, Spellbook, Testbook>
 {
-    private readonly ICovenAgent<string> _agent;
+    private readonly ICovenAgent<ChatEntry> _agent;
     private readonly Spellbook _spellbook;
 
-    public Wizard(Guidebook guidebook, Spellbook spellbook, Testbook testbook, ICovenAgent<string> agent)
+    public Wizard(Guidebook guidebook, Spellbook spellbook, Testbook testbook, ICovenAgent<ChatEntry> agent)
         : base(guidebook, spellbook, testbook)
     {
         _agent = agent;

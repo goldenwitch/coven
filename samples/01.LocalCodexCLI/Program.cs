@@ -11,6 +11,7 @@ using System.Collections.ObjectModel;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex;
 using Coven.Spellcasting.Agents.Codex.Di;
+using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting;
 
 namespace Coven.Samples.LocalCodexCLI;
@@ -41,20 +42,14 @@ internal static class Program
             services.AddSingleton(spellbook);
             services.AddSingleton(new Testbook());
 
-            // Provide a simple scrivener for Codex output lines
-            services.AddSingleton<IScrivener<string>, InMemoryScrivener<string>>();
-
             // Wire Codex CLI agent (expects 'codex' on PATH). Workspace = current dir.
-            services.AddCodexCliAgent(o =>
+            services.AddCodexCliAgent<ChatEntry, DefaultChatEntryTranslator>(o =>
             {
                 o.ExecutablePath = "codex"; // or absolute path
                 o.WorkspaceDirectory = Directory.GetCurrentDirectory();
                 o.ShimExecutablePath = null;
                 // Spells will be resolved from DI Spellbook if present.
             });
-            
-            // Bridge Codex string output -> ChatResponse on the chat journal
-            services.AddHostedService<CodexOutputBridge>();
 
             // Run orchestration via Generic Host
             services.AddHostedService<SampleOrchestrator>();
