@@ -27,6 +27,7 @@ public class SophiaLoggingTests : IDisposable
         _host = Host.CreateDefaultBuilder()
             .ConfigureServices(services =>
             {
+                services.AddLogging();
                 services.AddSingleton<IDurableList<string>>(_ => new TestLogStorage(_path));
                 services.AddSophiaLogging(new SophiaLoggerOptions { MinimumLevel = LogLevel.Warning, Label = "test", IncludeScopes = true });
             })
@@ -97,6 +98,5 @@ public class SophiaLoggingTests : IDisposable
     {
         try { _host.Dispose(); } catch { /* ignore */ }
         try { if (File.Exists(_path)) File.Delete(_path); } catch { /* ignore */ }
-        try { var dir = Path.GetDirectoryName(_path); if (!string.IsNullOrEmpty(dir) && Directory.Exists(dir)) Directory.Delete(dir, recursive: true); } catch { /* ignore */ }
     }
 }

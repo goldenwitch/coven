@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Reflection;
+using Microsoft.Extensions.Logging;
 using Coven.Core.Routing;
 using Coven.Core.Tags;
 
@@ -52,15 +53,27 @@ public class Board : IBoard
         var scopePrev = Tag.BeginScope(Tag.NewScope(merged));
         try
         {
+            ILogger? logger = null;
+            try
+            {
+                var sp = Di.CovenExecutionScope.CurrentProvider;
+                var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+                logger = lf?.CreateLogger("Coven.Ritual.Pull");
+                logger?.LogInformation("Pull begin: input={InputType} branch={Branch}", input.GetType().Name, bid);
+            }
+            catch { }
+
             var selector = selectionStrategy ?? new DefaultSelectionStrategy();
             var engine = new SelectionEngine(registeredBlocks, selector);
             var fence = Tag.GetFenceForCurrentEpoch();
             var chosen = engine.SelectNext(input, fence, lastIndex: -1, forwardOnly: false)
                 ?? throw new InvalidOperationException($"No next step available from type {input.GetType().Name}.");
 
+            logger?.LogInformation("Pull select {Block} idx={Idx}", chosen.BlockTypeName, chosen.RegistryIndex);
             Tag.IncrementEpoch();
             // Invoke wrapped pull delegate which will finalize via Board.FinalizePullStep<T>
             await chosen.InvokePull(this, sink, bid, input).ConfigureAwait(false);
+            logger?.LogInformation("Pull dispatched {Block}", chosen.BlockTypeName);
         }
         finally
         {
@@ -244,6 +257,14 @@ public class Board : IBoard
             foreach (var t in forwardNextTags) persisted.Add(t);
         }
         pullBranchTags[bid] = persisted;
+        try
+        {
+            var sp = Di.CovenExecutionScope.CurrentProvider;
+            var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            var logger = lf?.CreateLogger("Coven.Ritual.Pull");
+            logger?.LogInformation("Pull complete {Block} => {OutputType} branch={Branch}", blockTypeName, output?.GetType().Name ?? "null", bid);
+        }
+        catch { }
         sink.Complete<TOut>(output, branchId);
     }
 }

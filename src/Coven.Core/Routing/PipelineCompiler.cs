@@ -1,5 +1,6 @@
 using Coven.Core.Tags;
 using Coven.Core.Di;
+using Microsoft.Extensions.Logging;
 
 namespace Coven.Core.Routing;
 
@@ -35,8 +36,22 @@ internal sealed class PipelineCompiler
 
             var cache = new Dictionary<int, object>();
             var sp = CovenExecutionScope.CurrentProvider;
+            ILogger? logger = null;
+            try
+            {
+                var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+                logger = lf?.CreateLogger("Coven.Ritual");
+            }
+            catch { /* ignore if logging not configured */ }
+
+            logger?.LogInformation("Ritual begin: {Start}->{Target}", startType.Name, targetType.Name);
             for (int step = 0; step < maxSteps; step++)
             {
+                if (current is null)
+                {
+                    logger?.LogError("Ritual aborted: current value is null before selection at step {Step}", step);
+                    throw new InvalidOperationException("Pipeline received a null value; cannot select next step.");
+                }
                 var fence = Tag.GetFenceForCurrentEpoch();
                 Tag.Log($"building forward; fence={(fence?.Count ?? 0)} epochTags=[{string.Join(',', Tag.CurrentEpochTags())}]");
                 var chosen = engine.SelectNext(current, fence, lastIndex, forwardOnly: true);
@@ -45,16 +60,29 @@ internal sealed class PipelineCompiler
                 {
                     if (targetType.IsInstanceOfType(current))
                     {
+                        logger?.LogInformation("Ritual end: satisfied target {Target} after {StepCount} steps", targetType.Name, step);
                         return (TOut)current;
                     }
+                    logger?.LogWarning("Ritual blocked: no next from {Type} after index {Index} to reach {Target}", current.GetType().Name, lastIndex, targetType.Name);
                     throw new InvalidOperationException($"No next step available from type {current.GetType().Name} after index {lastIndex} to reach {targetType.Name}.");
                 }
                 Tag.Log($"selected {chosen.BlockTypeName} at idx={chosen.RegistryIndex}");
+                logger?.LogInformation("Select {Block} idx={Idx} input={InputType}", chosen.BlockTypeName, chosen.RegistryIndex, current.GetType().Name);
 
                 // Bump epoch so tags added by this block apply to the next selection.
                 Tag.IncrementEpoch();
                 var instance = chosen.Activator.GetInstance(sp, cache, chosen);
-                current = await chosen.Invoke(instance, current).ConfigureAwait(false);
+                try
+                {
+                    logger?.LogDebug("Invoke {Block}", chosen.BlockTypeName);
+                    current = await chosen.Invoke(instance, current).ConfigureAwait(false);
+                    logger?.LogInformation("Complete {Block} => {OutputType}", chosen.BlockTypeName, current?.GetType().Name ?? "null");
+                }
+                catch (Exception ex)
+                {
+                    logger?.LogError(ex, "Block {Block} failed", chosen.BlockTypeName);
+                    throw;
+                }
                 Tag.Add($"by:{chosen.BlockTypeName}");
                 // Emit forward-hint tags for downstream candidates of this block to bias next selection
                 if (chosen.ForwardNextTags is { Count: > 0 })
@@ -66,6 +94,7 @@ internal sealed class PipelineCompiler
 
             // After exhausting forward-compatible steps (or step cap), validate final assignability.
             if (targetType.IsInstanceOfType(current)) return (TOut)current;
+            logger?.LogWarning("Ritual exhausted steps without producing {Target}", targetType.Name);
             throw new InvalidOperationException($"Reached step limit without producing {targetType.Name}.");
         };
     }
