@@ -15,19 +15,22 @@ internal sealed class CodexOrchestrator : BackgroundService
     private readonly IAdapter<ChatEntry> _adapter;
     private readonly IScrivener<ChatEntry> _scrivener;
     private readonly ILogger<CodexOrchestrator> _logger;
+    private readonly IHostApplicationLifetime _appLifetime;
 
     public CodexOrchestrator(
         ICoven coven,
         IAdapterHost<ChatEntry> adapterHost,
         IAdapter<ChatEntry> adapter,
         IScrivener<ChatEntry> scrivener,
-        ILogger<CodexOrchestrator> logger)
+        ILogger<CodexOrchestrator> logger,
+        IHostApplicationLifetime appLifetime)
     {
         _coven = coven;
         _adapterHost = adapterHost;
         _adapter = adapter;
         _scrivener = scrivener;
         _logger = logger;
+        _appLifetime = appLifetime;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,16 +46,24 @@ internal sealed class CodexOrchestrator : BackgroundService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Ritual failed");
+            _logger.LogError(ex, "Ritual failed; requesting shutdown and rethrowing");
+            throw;
         }
-
-        try
+        finally
         {
-            await Task.WhenAny(adapterTask, Task.Delay(Timeout.Infinite, stoppingToken));
-        }
-        catch (OperationCanceledException)
-        {
-            // normal shutdown
+            try
+            {
+                await Task.WhenAny(adapterTask, Task.Delay(Timeout.Infinite, stoppingToken));
+            }
+            catch (OperationCanceledException)
+            {
+                // normal shutdown
+                _appLifetime.StopApplication();
+            }
+            catch (Exception waitEx)
+            {
+                _logger.LogDebug(waitEx, "Error while waiting for adapter shutdown");
+            }
         }
     }
 }

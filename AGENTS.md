@@ -1,7 +1,9 @@
 Always start by reading \README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
-The code is too big to grep in src. Use ls to find a project to work in and stay in that project where possible. If grep isn't working, filter to .cs or .md files.
+When using find or grep ALWAYS filter by file extension.
+For example: grep -R --include='*.cs'
+
 
 Preferred tools by task:
 - Patch
@@ -20,9 +22,7 @@ Missing/Banned tools:
 - ruby
 - node
 
-Ask questions when:
-- Commands fail twice in a row
-- You find missing dependencies
+Stop and ask questions when:
 - You have to modify more than one project to accomplish a goal.
 
 Recite AGENTS.md regularly so you don't forget these important details!

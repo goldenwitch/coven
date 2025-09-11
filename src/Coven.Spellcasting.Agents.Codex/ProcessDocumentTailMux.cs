@@ -85,9 +85,10 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         {
             _procExitTask = _proc.WaitForExitAsync(_tailCts.Token);
         }
-        catch
+        catch (Exception ex)
         {
-            // ignore; tests or callers may not require exit tracking
+            // Non-fatal: exit tracking may not be required in some scenarios
+            _log.LogDebug(ex, "Failed to register process exit tracking; continuing");
         }
     }
 
@@ -116,12 +117,14 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                     var item = await _chan.Reader.ReadAsync(token).AsTask().ConfigureAwait(false);
                     await onMessage(item).ConfigureAwait(false);
                 }
-                catch (OperationCanceledException)
+                catch (OperationCanceledException oce)
                 {
+                    _log.LogDebug(oce, "TailAsync canceled by token");
                     break;
                 }
-                catch (ChannelClosedException)
+                catch (ChannelClosedException cce)
                 {
+                    _log.LogDebug(cce, "TailAsync channel closed");
                     break;
                 }
             }
@@ -152,7 +155,12 @@ internal sealed class ProcessDocumentTailMux : ITailMux
             catch (Exception ex) when (_disposed || p.HasExited)
             {
                 _log.LogWarning(ex, "Process exited during write");
-                throw new InvalidOperationException("Process exited during write.");
+                throw new InvalidOperationException("Process exited during write.", ex);
+            }
+            catch (Exception ex)
+            {
+                _log.LogError(ex, "Failed while attempting to write to the process");
+                throw;
             }
         }
         finally
@@ -166,13 +174,13 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         if (_disposed) return;
         _disposed = true;
 
-        try { _tailCts.Cancel(); } catch { }
-        try { if (_proc is { HasExited: false }) _proc.Kill(entireProcessTree: true); } catch { }
+        try { _tailCts.Cancel(); } catch (Exception ex) { _log.LogDebug(ex, "Dispose: cancel tail CTS failed"); }
+        try { if (_proc is { HasExited: false }) _proc.Kill(entireProcessTree: true); } catch (Exception ex) { _log.LogDebug(ex, "Dispose: process kill failed"); }
 
-        try { if (_tailProducer is not null) await _tailProducer.ConfigureAwait(false); } catch { }
-        try { if (_procExitTask is not null) await _procExitTask.ConfigureAwait(false); } catch { }
+        try { if (_tailProducer is not null) await _tailProducer.ConfigureAwait(false); } catch (Exception ex) { _log.LogDebug(ex, "Dispose: awaiting tail producer failed"); }
+        try { if (_procExitTask is not null) await _procExitTask.ConfigureAwait(false); } catch (Exception ex) { _log.LogDebug(ex, "Dispose: awaiting process exit failed"); }
 
-        try { _chan.Writer.TryComplete(); } catch { }
+        try { _chan.Writer.TryComplete(); } catch (Exception ex) { _log.LogDebug(ex, "Dispose: channel completion failed"); }
         _writeLock.Dispose();
         _writeStartGate.Dispose();
         _tailStartGate.Dispose();
@@ -292,13 +300,15 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                 }
             }
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException oce)
         {
             // normal shutdown
+            _log.LogDebug(oce, "Tailer cancellation requested");
         }
-        catch (ChannelClosedException)
+        catch (ChannelClosedException cce)
         {
             // disposal
+            _log.LogDebug(cce, "Tailer channel closed during production");
         }
         catch (IOException ioEx)
         {
@@ -323,12 +333,13 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                     }
                     _log.LogError(terminalError, "Tailer encountered an error for document path: {Path}", _documentPath);
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // ignore secondary errors while reporting
+                    // Log but don't mask original terminal error
+                    _log.LogDebug(ex, "Failed while reporting tailer error");
                 }
 
-                try { _chan.Writer.TryComplete(); } catch { }
+                try { _chan.Writer.TryComplete(); } catch (Exception ex) { _log.LogDebug(ex, "Tailer: channel completion failed"); }
             }
         }
     }

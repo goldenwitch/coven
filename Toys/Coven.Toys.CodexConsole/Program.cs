@@ -34,7 +34,7 @@ internal static class Program
             {
                 Label = "toy",
                 IncludeScopes = true,
-                MinimumLevel = LogLevel.Information
+                MinimumLevel = 0
             });
 
             // Console adapter stack
