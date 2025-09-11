@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Chat.Tests.Adapter;
 
 using Coven.Chat;
@@ -54,4 +56,3 @@ public abstract class AdapterContractTests : IDisposable
         _cts.Dispose();
     }
 }
-

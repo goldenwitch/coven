@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Core;
 
 // A request to advance one unit of work in Pull mode.

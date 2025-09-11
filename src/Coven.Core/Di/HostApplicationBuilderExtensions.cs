@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,4 +22,3 @@ public static class HostApplicationBuilderExtensions
         return new CovenServiceBuilder(builder.Services);
     }
 }
-

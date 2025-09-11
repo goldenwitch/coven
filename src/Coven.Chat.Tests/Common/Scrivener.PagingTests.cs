@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
@@ -39,4 +41,3 @@ public class ScrivenerPagingTests
         }
     }
 }
-

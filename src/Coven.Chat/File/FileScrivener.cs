@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Text.Json;

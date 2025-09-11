@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Spells;
 
 namespace Coven.Spellcasting.Agents;
@@ -12,9 +14,6 @@ public interface ICovenAgent<TIn, TMessageFormat, TOut> : ICovenAgent<TMessageFo
 
 public interface ICovenAgent<TMessageFormat> : IAgentControl
 {
-    Task<TMessageFormat> ReadMessage();
-    Task SendMessage(TMessageFormat message);
-
     public Task RegisterSpells(List<SpellDefinition> spells);
 
     public Task InvokeAgent(CancellationToken ct = default);

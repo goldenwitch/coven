@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Chat.Tests.TestTooling;
 
 /// <summary>
@@ -15,4 +17,3 @@ public abstract class FileScrivenerTestBase : System.IDisposable
 
     public void Dispose() => _dir.Dispose();
 }
-

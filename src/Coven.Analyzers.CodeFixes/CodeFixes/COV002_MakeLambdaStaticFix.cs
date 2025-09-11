@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Composition;
 using System.Collections.Immutable;
 using System.Threading.Tasks;
@@ -20,4 +22,3 @@ public sealed class COV002_MakeLambdaStaticFix : CodeFixProvider
         return Task.CompletedTask;
     }
 }
-

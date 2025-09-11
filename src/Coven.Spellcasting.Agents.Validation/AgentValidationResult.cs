@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Validation;
 
 public enum AgentValidationOutcome
@@ -31,4 +33,3 @@ public sealed record AgentValidationResult(
     public static AgentValidationResult Skipped(string? message = null)
         => new(AgentValidationOutcome.Skipped, message);
 }
-

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Threading.Channels;
 
 namespace Coven.Spellcasting.Agents;
@@ -142,4 +144,3 @@ public sealed class InMemoryTailMux : ITailMux
         }
     }
 }
-

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;

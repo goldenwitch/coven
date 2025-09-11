@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 
 namespace Coven.Core.Tags;
@@ -11,4 +13,3 @@ internal sealed class TagCapabilitiesAttribute : Attribute
         Tags = tags ?? Array.Empty<string>();
     }
 }
-

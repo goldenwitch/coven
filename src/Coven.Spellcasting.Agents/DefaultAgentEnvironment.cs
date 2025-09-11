@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Core;
 
 namespace Coven.Spellcasting.Agents;
@@ -13,4 +15,3 @@ internal sealed class DefaultAgentEnvironment : AmbientAgent.IAgentEnvironment
         try { await ctrl.CloseAgent().ConfigureAwait(false); } catch { }
     }
 }
-

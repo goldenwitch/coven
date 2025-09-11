@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Tests.Infrastructure;
 
 /// <summary>
@@ -30,4 +32,3 @@ public interface ITailMuxFixture
     /// </summary>
     Task CreateBackingFileAsync(ITestTailMux mux);
 }
-

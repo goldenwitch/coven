@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Diagnostics;
 using Coven.Chat;
 using Coven.Spellcasting.Spells;
@@ -229,16 +231,6 @@ namespace Coven.Spellcasting.Agents.Codex;
             }
         }
         return;
-    }
-
-    public Task<TMessageFormat> ReadMessage()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task SendMessage(TMessageFormat message)
-    {
-        throw new NotImplementedException();
     }
 
     // ---------- helpers ----------

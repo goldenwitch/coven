@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Concurrent;
 using System.Reflection;
 using Xunit;
@@ -146,4 +148,3 @@ public class ScrivenerInMemoryConcurrencyTests
         Assert.Equal(new long[] { 1, 2, 3, 4, 5, 6, 7 }, result);
     }
 }
-

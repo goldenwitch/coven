@@ -11,4 +11,11 @@
     <ProjectReference Include="../Coven.Spellcasting.Agents/Coven.Spellcasting.Agents.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

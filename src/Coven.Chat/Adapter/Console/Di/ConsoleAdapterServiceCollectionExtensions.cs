@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Chat.Adapter.Console.Di;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -46,4 +48,3 @@ public static class ConsoleAdapterServiceCollectionExtensions
         return services;
     }
 }
-

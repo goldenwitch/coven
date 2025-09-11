@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents;
 
 using System;
@@ -21,4 +23,3 @@ public sealed class AgentPermissions
     public static AgentPermissions AutoEdit() => new AgentPermissions().Grant<WriteFile>();
     public static AgentPermissions FullAuto() => new AgentPermissions().Grant<WriteFile>().Grant<RunCommand>();
 }
-

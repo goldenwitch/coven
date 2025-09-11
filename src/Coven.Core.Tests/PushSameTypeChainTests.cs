@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Threading.Tasks;
 using Coven.Core.Builder;
 using Xunit;
@@ -23,4 +25,3 @@ public class PushSameTypeChainTests
         Assert.Equal("hi|1|2|3", result);
     }
 }
-

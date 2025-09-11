@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;

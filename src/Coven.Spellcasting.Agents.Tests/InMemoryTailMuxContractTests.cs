@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Agents.Tests.Infrastructure;
 using Xunit;
 
@@ -36,4 +38,3 @@ public sealed class InMemoryTailMux_ContractTests : TailMuxContract<InMemoryTail
         Assert.Contains("beta", collected);
     }
 }
-

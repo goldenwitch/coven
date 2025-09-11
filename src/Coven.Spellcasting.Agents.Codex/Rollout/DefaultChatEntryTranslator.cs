@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Chat;
 
 namespace Coven.Spellcasting.Agents.Codex.Rollout;
@@ -45,4 +47,3 @@ public sealed class DefaultChatEntryTranslator : ICodexRolloutTranslator<ChatEnt
         return new ChatResponse(sender, text);
     }
 }
-

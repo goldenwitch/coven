@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Linq.Expressions;
 using System.Text.Json;
 using Coven.Spellcasting.Spells;

@@ -12,4 +12,11 @@
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="LICENSE" Pack="true" PackagePath="" />
+  </ItemGroup>
+
 </Project>

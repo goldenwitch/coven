@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Generic;
 using System.IO;
 using Xunit;
@@ -78,4 +80,3 @@ public sealed class ValidationPlannerTests
         Assert.False(string.IsNullOrWhiteSpace(plan.ConfigMerge.PipeName));
     }
 }
-

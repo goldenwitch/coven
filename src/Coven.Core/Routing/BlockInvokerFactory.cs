@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;

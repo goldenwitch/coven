@@ -102,10 +102,17 @@ Explore runnable examples in `/samples`. Open `samples/Coven.Samples.sln` to bro
 - [Architecture Guide](/Architecture/README.md)
 - [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md)
 
-**License.** Dual‑license: MIT for individuals, nonprofits, and orgs under USD \$100M revenue; commercial license required at ≥ \$100M. Contact: Autumn Wyborny.
+## License
+
+Dual licensing:
+
+- Community: Business Source License 1.1 (BUSL‑1.1) with an Additional Use Grant permitting Production Use if you and your affiliates made < US $100,000,000 in combined gross revenue in the prior fiscal year. See `LICENSE` for the precise terms and definitions.
+- Commercial/Enterprise: Available only under a separate, mutually executed agreement with Licensor. See `COMMERCIAL-TERMS.md`.
+
+SPDX: `BUSL-1.1`
 
 - [Notice](/NOTICE)
 - [License](/LICENSE)
-- [Commercial Licensing](/LICENSE-COMMERCIAL.md)
+- [Commercial Terms](/COMMERCIAL-TERMS.md)
 
 [![Support on Patreon](https://img.shields.io/badge/Support-Patreon-e85b46?logo=patreon)](https://www.patreon.com/c/Goldenwitch)

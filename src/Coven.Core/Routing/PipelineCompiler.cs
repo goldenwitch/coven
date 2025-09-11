@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Core.Tags;
 using Coven.Core.Di;
 using Microsoft.Extensions.Logging;

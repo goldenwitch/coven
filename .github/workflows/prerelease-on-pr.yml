@@ -142,6 +142,13 @@ jobs:
             --sln src/Coven.sln \
             --index INDEX.md
 
+      - name: Inject SPDX headers (BUSL-1.1)
+        if: steps.affected.outputs.any == 'true'
+        run: |
+          python3 build/tools/spdx_inject.py .
+          echo "SPDX injection complete. Previewing changes:"
+          git status --porcelain
+
       # (Changed-detection for commit stays the same)
       - name: Commit & push samples update to PR branch
         if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'

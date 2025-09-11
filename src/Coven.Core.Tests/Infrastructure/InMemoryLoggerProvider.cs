@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
@@ -57,4 +59,3 @@ internal sealed class InMemoryLoggerProvider : ILoggerProvider, ISupportExternal
         }
     }
 }
-

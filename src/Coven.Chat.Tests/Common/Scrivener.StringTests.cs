@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;

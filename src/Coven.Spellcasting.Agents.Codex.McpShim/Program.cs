@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.IO.Pipes;
 
 internal static class Program
@@ -68,4 +70,3 @@ internal static class Program
         try { await t.ConfigureAwait(false); } catch { }
     }
 }
-

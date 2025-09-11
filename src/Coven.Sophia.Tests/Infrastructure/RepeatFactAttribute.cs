@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 using Xunit;
 
@@ -12,4 +14,3 @@ public sealed class RepeatFactAttribute : FactAttribute
     public int Count { get; }
     public RepeatFactAttribute(int count) => Count = count;
 }
-

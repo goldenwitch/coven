@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Microsoft.CodeAnalysis;
 
 namespace Coven.Analyzers.Helpers;
@@ -22,4 +24,3 @@ internal static class SymbolHelpers
         return false;
     }
 }
-

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Codex.Validation;
 
 // Pure, testable planning for Codex validation. Produces specs with no side effects.
@@ -61,4 +63,3 @@ internal static class CodexValidationPlanner
         return p;
     }
 }
-

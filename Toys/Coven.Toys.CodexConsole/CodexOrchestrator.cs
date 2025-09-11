@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Coven.Core;
@@ -54,4 +56,3 @@ internal sealed class CodexOrchestrator : BackgroundService
         }
     }
 }
-

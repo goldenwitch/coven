@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Agents;
 using Xunit;
 
@@ -32,4 +34,3 @@ public class AgentPermissionsTests
         Assert.True(full.Allows<RunCommand>());
     }
 }
-

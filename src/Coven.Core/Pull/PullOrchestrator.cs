@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Core;
 
 // Concrete orchestrator for Pull mode that advances work step-by-step by

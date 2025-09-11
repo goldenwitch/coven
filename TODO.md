@@ -1,8 +1,5 @@
 # Unimplemented Features
-- Fix licensing scheme to ensure reasonable compliance.
-  - Update projects with busl1.1 licensing
-  - Replace MIT with busl1.1
-  - MIT in 4 years.
+- Licensing: Updated to BUSL‑1.1 with revenue gate and SPDX headers. Change License is MIT on 2029‑09‑11. NuGet packaging uses `<PackageLicenseFile>` and includes the root `LICENSE`.
 
 - No input support
   - Need to overload magikblock so it has a no input version canonically.
@@ -41,3 +38,11 @@
 - Observability and dashboards
 
 - Sandboxing for custom agents
+
+# Answer these questions
+
+- Canonical API surface: Spellcasting docs vs code mismatch (e.g., `DefaultGuide/DefaultSpell/DefaultTest` and DI-based `MagikUser` vs current `Guidebook/Spellbook/Testbook` and `MagikUser<TIn,TOut,TGuide,TSpell,TTest>`). Which is canonical and what’s the migration plan?
+- Codex CLI agent I/O: Are `ReadMessage`/`SendMessage` intended to be implemented (bidirectional), or is the agent strictly a rollout-to-`IScrivener` bridge? What’s the interaction model and lifecycle for `RegisterSpells` and MCP tool exposure?
+- MCP shim/config: Who owns merging into `CODEX_HOME/config.toml` and how do we avoid server-name collisions and handle multiple concurrent sessions? When should callers pass `shimExecutablePath`, and how is cleanup handled?
+- Pull mode contract: What are the guarantees for `GetWork`, branch IDs, tag persistence rules, timeouts/retries, and selection strategy overrides? How does this map to the promised “timeout/retry control” in docs?
+- Licensing plan: README states MIT for < $100M and commercial at ≥ $100M, while TODO suggests BUSL 1.1 with delayed MIT. What’s the authoritative license, migration steps (packages, headers), and timeline for adopters?

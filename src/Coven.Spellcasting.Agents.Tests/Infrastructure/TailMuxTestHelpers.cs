@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Diagnostics;
 
 namespace Coven.Spellcasting.Agents.Tests.Infrastructure;
@@ -36,4 +38,3 @@ internal static class TailMuxTestHelpers
         return true;
     }
 }
-

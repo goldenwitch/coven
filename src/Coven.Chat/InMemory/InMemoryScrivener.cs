@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Concurrent; // lock-free container for concurrent producers/consumers
 using System.Runtime.CompilerServices; // [EnumeratorCancellation] for IAsyncEnumerable cancellation
 using Microsoft.Extensions.Logging;

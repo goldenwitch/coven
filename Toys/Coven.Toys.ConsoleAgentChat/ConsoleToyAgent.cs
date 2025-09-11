@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Chat;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
@@ -88,13 +90,5 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
         return Task.CompletedTask;
     }
 
-    Task<ChatEntry> ICovenAgent<ChatEntry>.ReadMessage()
-    {
-        throw new NotImplementedException();
-    }
-
-    Task ICovenAgent<ChatEntry>.SendMessage(ChatEntry message)
-    {
-        throw new NotImplementedException();
-    }
+    // No message I/O on the agent interface; interaction happens via the journal.
 }

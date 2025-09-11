@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,4 +32,3 @@ public sealed class HostBuilderSugarTests
         Assert.Equal(5, result);
     }
 }
-

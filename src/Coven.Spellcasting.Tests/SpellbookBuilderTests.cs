@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting;
 using Coven.Spellcasting.Spells;
 using Xunit;

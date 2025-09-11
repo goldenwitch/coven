@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Generic;
 using Xunit.Abstractions;
 using Xunit.Sdk;
@@ -31,4 +33,3 @@ public sealed class RepeatFactDiscoverer : IXunitTestCaseDiscoverer
         }
     }
 }
-

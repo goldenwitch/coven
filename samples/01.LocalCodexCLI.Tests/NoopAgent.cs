@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Spells;
 
@@ -24,7 +26,4 @@ internal sealed class NoopAgent : ICovenAgent<string>
         return Task.CompletedTask;
     }
 
-    Task<string> ICovenAgent<string>.ReadMessage() => Task.FromResult(string.Empty);
-    Task ICovenAgent<string>.SendMessage(string message) => Task.CompletedTask;
 }
-

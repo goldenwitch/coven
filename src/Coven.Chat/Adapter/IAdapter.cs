@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Chat.Adapter;
 
 using System.Collections.Generic;
@@ -24,4 +26,3 @@ public interface IAdapter<T> where T : notnull
     /// </summary>
     Task DeliverAsync(T entry, CancellationToken ct = default);
 }
-

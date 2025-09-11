@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Tests.Infrastructure;
@@ -20,4 +22,3 @@ internal sealed class MuxAdapter : ITestTailMux
     public object Underlying => _inner;
     public ValueTask DisposeAsync() => _inner.DisposeAsync();
 }
-

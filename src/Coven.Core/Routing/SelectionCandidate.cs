@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 using System.Collections.Generic;
 
@@ -23,4 +25,3 @@ public sealed class SelectionCandidate
         IsTrick = isTrick;
     }
 }
-

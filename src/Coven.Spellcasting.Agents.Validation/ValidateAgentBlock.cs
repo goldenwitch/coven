@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Validation;
 
 using System.Threading;
@@ -22,4 +24,3 @@ public sealed class ValidateAgentBlock : IMagikBlock<Empty, Empty>
         return input;
     }
 }
-

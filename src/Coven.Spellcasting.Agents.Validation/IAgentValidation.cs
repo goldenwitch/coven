@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Validation;
 
 using System.Threading;
@@ -21,4 +23,3 @@ public interface IAgentValidation
     Task<AgentValidationResult> ValidateAsync(
         CancellationToken ct = default);
 }
-

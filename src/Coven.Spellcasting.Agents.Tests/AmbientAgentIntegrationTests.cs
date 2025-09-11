@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core;
 using Coven.Core.Di;
@@ -17,9 +19,6 @@ public sealed class AmbientAgentIntegrationTests
         public Task InvokeAgent(CancellationToken ct = default) => Task.CompletedTask;
         public Task CloseAgent() { Closed = true; return Task.CompletedTask; }
 
-        // Explicit interface implementations for unused members
-        Task<string> ICovenAgent<string>.ReadMessage() => throw new NotImplementedException();
-        Task ICovenAgent<string>.SendMessage(string message) => throw new NotImplementedException();
     }
 
     private sealed class CancelBlock : IMagikBlock<Empty, Empty>
@@ -49,4 +48,3 @@ public sealed class AmbientAgentIntegrationTests
         Assert.Same(agent, control);
     }
 }
-

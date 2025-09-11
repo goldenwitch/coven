@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Chat.Tests.Adapter.TestTooling;
 
 using Coven.Chat;

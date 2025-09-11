@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Concurrent;
 using Coven.Spellcasting.Agents.Tests.Infrastructure;
 using Xunit;
@@ -111,4 +113,3 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
         await Assert.ThrowsAsync<ObjectDisposedException>(() => mux.WriteLineAsync("hello"));
     }
 }
-

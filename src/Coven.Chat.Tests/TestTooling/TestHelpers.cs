@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -58,4 +60,3 @@ public static class OS
 {
     public static bool IsWindows => RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 }
-

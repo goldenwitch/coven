@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Threading.Tasks;
 using Coven.Core.Builder;
 using Xunit;
@@ -26,4 +28,3 @@ public class PushNoShortCircuitMixedTypesTests
         Assert.Equal("len:4|final", result);
     }
 }
-

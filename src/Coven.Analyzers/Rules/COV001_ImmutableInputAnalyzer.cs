@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Immutable;
 using System.Linq;
 using Microsoft.CodeAnalysis;
@@ -136,4 +138,3 @@ public sealed class COV001_ImmutableInputAnalyzer : DiagnosticAnalyzer
         return false;
     }
 }
-

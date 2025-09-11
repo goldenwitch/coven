@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Text.Json;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP.Exec;

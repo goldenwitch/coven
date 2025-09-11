@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting;
 
 using Coven.Spellcasting.Spells;
@@ -36,4 +38,3 @@ public sealed class SpellbookBuilder
         return new Spellbook(_definitions.AsReadOnly(), _spells.AsReadOnly());
     }
 }
-

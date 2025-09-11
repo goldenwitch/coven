@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Core.Routing;
 
 // Public strategy interface to allow callers to override routing behavior

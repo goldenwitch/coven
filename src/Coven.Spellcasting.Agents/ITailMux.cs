@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,4 +24,3 @@ public interface ITailMux : IAsyncDisposable
     /// </summary>
     Task WriteLineAsync(string line, CancellationToken ct = default);
 }
-

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using Coven.Chat;

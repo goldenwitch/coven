@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core;
 
@@ -32,4 +34,3 @@ public static class AgentServiceCollectionExtensions
         return services;
     }
 }
-

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Spellcasting.Agents.Codex.Config;
 
 internal sealed class DefaultCodexConfigWriter : ICodexConfigWriter
@@ -67,4 +69,3 @@ internal sealed class DefaultCodexConfigWriter : ICodexConfigWriter
         }
     }
 }
-

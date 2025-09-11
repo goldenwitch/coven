@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Text.Json;
 using Coven.Spellcasting.Spells;
 
@@ -43,4 +45,3 @@ public sealed class McpToolbeltBuilderTests
         Assert.Equal("{}", t0.GetProperty("OutputSchema").GetString());
     }
 }
-

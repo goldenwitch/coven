@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 using System.Collections.Generic;
 using System.Linq;
 using Coven.Spellcasting.Spells;
@@ -16,4 +18,3 @@ internal static class McpToolbeltBuilder
         return new McpToolbelt(tools);
     }
 }
-
