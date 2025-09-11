@@ -2,6 +2,8 @@
 
 using System.Diagnostics;
 using Coven.Chat;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
@@ -14,7 +16,7 @@ using Coven.Spellcasting.Agents.Codex.Config;
 namespace Coven.Spellcasting.Agents.Codex;
 
     public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> where TMessageFormat : notnull
-{
+    {
     public string Id => "codex";
     private readonly string _codexExecutablePath;
     private readonly string _workspaceDirectory;
@@ -30,7 +32,8 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly ICodexConfigWriter? _configWriter;
     private readonly IRolloutPathResolver? _rolloutResolver;
     private McpToolbelt? _toolbelt;
-    private IMcpServerSession? _mcpSession;
+        private IMcpServerSession? _mcpSession;
+        private readonly ILogger<CodexCliAgent<TMessageFormat>> _log = NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
 
     // Removed unused process/task tracking fields from an earlier design.
 
@@ -57,6 +60,7 @@ namespace Coven.Spellcasting.Agents.Codex;
             var registry = new ReflectionMcpSpellExecutorRegistry(spells);
             _executorRegistry = registry;
         }
+        _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
     // Constructor that allows specifying a translator for non-string message formats
@@ -117,6 +121,7 @@ namespace Coven.Spellcasting.Agents.Codex;
     {
         try
         {
+            _log.LogInformation("Starting Codex CLI agent invocation...");
             var env = new Dictionary<string, string?>
             {
                 ["CODEX_HOME"] = _codexHomeDir
@@ -142,7 +147,8 @@ namespace Coven.Spellcasting.Agents.Codex;
                 {
                     if (_configWriter is not null)
                     {
-                        try { _configWriter.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); } catch { }
+                        try { _configWriter.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); }
+                        catch (Exception ex) { _log.LogWarning(ex, "Failed to write Codex config for shim"); }
                     }
                     else
                     {
@@ -164,11 +170,47 @@ namespace Coven.Spellcasting.Agents.Codex;
                 // Fallback to a local log; mux will wait if/when it appears
                 rolloutPath = Path.Combine(_workspaceDirectory, "codex.rollout.jsonl");
             }
+            _log.LogDebug("Using rollout path: {RolloutPath}", rolloutPath);
 
             var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
             await using ITailMux mux = tailFactory.CreateForRollout(rolloutPath, proc);
 
-            await mux.TailAsync(async ev =>
+            // Ingress: begin reading from scrivener and forward user thoughts to Codex stdin.
+            // Only supported for ChatEntry journals to avoid echo/feedback loops for plain string journals.
+            var ingressTask = Task.CompletedTask;
+            if (typeof(TMessageFormat) == typeof(ChatEntry))
+            {
+                ingressTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        long after = 0;
+                        await foreach (var pair in _scrivener.TailAsync(after, ct).ConfigureAwait(false))
+                        {
+                            ct.ThrowIfCancellationRequested();
+                            var entry = (ChatEntry)(object)pair.entry;
+                            if (entry is ChatThought thought)
+                            {
+                                try { await mux.WriteLineAsync(thought.Text, ct).ConfigureAwait(false); }
+                                catch (OperationCanceledException) { throw; }
+                                catch (Exception ex)
+                                {
+                                    _log.LogWarning(ex, "Ingress write failed");
+                                    await ReportErrorAsync(ex, ct).ConfigureAwait(false);
+                                }
+                            }
+                        }
+                    }
+                    catch (OperationCanceledException) { /* normal shutdown */ }
+                    catch (Exception ex)
+                    {
+                        _log.LogWarning(ex, "Ingress loop error");
+                        await ReportErrorAsync(ex, ct).ConfigureAwait(false);
+                    }
+                }, ct);
+            }
+
+            var rolloutTask = mux.TailAsync(async ev =>
             {
                 switch (ev)
                 {
@@ -210,9 +252,13 @@ namespace Coven.Spellcasting.Agents.Codex;
                     }
                 }
             }, ct);
+
+            await Task.WhenAll(rolloutTask, ingressTask).ConfigureAwait(false);
+            _log.LogInformation("Codex CLI agent invocation completed");
         }
         catch (Exception ex)
         {
+            _log.LogError(ex, "CodexCliAgent.InvokeAgent failed");
             await ReportErrorAsync(ex, ct).ConfigureAwait(false);
             throw;
         }
@@ -238,6 +284,7 @@ namespace Coven.Spellcasting.Agents.Codex;
     {
         try
         {
+            _log.LogError(ex, "Agent error: {Message}", ex.Message);
             var line = new CodexRolloutLine(
                 CodexRolloutLineKind.Error,
                 DateTimeOffset.UtcNow,

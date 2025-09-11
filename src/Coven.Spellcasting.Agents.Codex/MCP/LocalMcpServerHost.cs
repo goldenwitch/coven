@@ -8,12 +8,15 @@ using System.Threading.Tasks;
 using Coven.Spellcasting.Agents.Codex.MCP.Stdio;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
 using System.IO.Pipes;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP;
 
 internal sealed class LocalMcpServerHost : IMcpServerHost
 {
     private readonly string _workspaceDirectory;
+    private readonly ILogger<LocalMcpServerHost> _log = NullLogger<LocalMcpServerHost>.Instance;
 
     public LocalMcpServerHost(string workspaceDirectory)
     {
@@ -49,7 +52,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
                 await handshakeServer.WaitForConnectionAsync(ct).ConfigureAwait(false);
                 await PerformHandshakeAsync(handshakeServer, ct).ConfigureAwait(false);
             }
-            catch { }
+            catch (Exception ex) { _log.LogDebug(ex, "Handshake server failed before main session"); }
             finally
             {
                 try { handshakeServer.Dispose(); } catch { }
@@ -63,7 +66,11 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
                 var server = new McpStdioServer(toolbelt, serverStream, registry);
                 server.Start();
             }
-            catch { try { serverStream.Dispose(); } catch { } }
+            catch (Exception ex)
+            {
+                _log.LogWarning(ex, "MCP server stream failed to accept connection");
+                try { serverStream.Dispose(); } catch { }
+            }
         }, ct);
 
         // Proactively perform client-side handshake to ensure readiness before returning
@@ -101,7 +108,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
         }
     }
 
-    private static async Task TryClientHandshakeAsync(string pipeName, CancellationToken ct)
+    private async Task TryClientHandshakeAsync(string pipeName, CancellationToken ct)
     {
         var deadline = DateTime.UtcNow.AddSeconds(3);
         while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
@@ -119,7 +126,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
                     return;
                 }
             }
-            catch { }
+            catch (Exception ex) { _log.LogDebug(ex, "Client handshake attempt failed; retrying"); }
             try { await Task.Delay(100, ct).ConfigureAwait(false); } catch { break; }
         }
     }

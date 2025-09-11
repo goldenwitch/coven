@@ -3,6 +3,8 @@
 using System.Text;
 using System.Text.Json;
 using Coven.Spellcasting.Agents.Codex.MCP.Exec;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
 
@@ -11,15 +13,16 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
 /// keeps a background task alive until disposed, and could be extended to speak
 /// JSON-RPC per MCP. It retains access to the toolbelt payload for future use.
 /// </summary>
-internal sealed class McpStdioServer : IAsyncDisposable
-{
-    private readonly McpToolbelt _toolbelt;
-    private readonly CancellationTokenSource _cts = new();
-    private Task? _serverTask;
-    private volatile bool _disposed;
-    private readonly Stream _transport;
-    private readonly IMcpSpellExecutorRegistry? _registry;
-    private volatile bool _shutdownRequested;
+    internal sealed class McpStdioServer : IAsyncDisposable
+    {
+        private readonly McpToolbelt _toolbelt;
+        private readonly CancellationTokenSource _cts = new();
+        private Task? _serverTask;
+        private volatile bool _disposed;
+        private readonly Stream _transport;
+        private readonly IMcpSpellExecutorRegistry? _registry;
+        private volatile bool _shutdownRequested;
+        private readonly ILogger<McpStdioServer> _log = NullLogger<McpStdioServer>.Instance;
 
     public McpStdioServer(McpToolbelt toolbelt, Stream transport, IMcpSpellExecutorRegistry? registry = null)
     {
@@ -50,6 +53,7 @@ internal sealed class McpStdioServer : IAsyncDisposable
                 }
                 catch (Exception ex)
                 {
+                    _log.LogError(ex, "MCP request failed for method: {Method}", req.Value.Method);
                     if (req.Value.Id is not null)
                     {
                         var err = new { jsonrpc = "2.0", id = req.Value.Id, error = new { code = -32603, message = ex.Message } };

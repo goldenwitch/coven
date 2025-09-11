@@ -4,6 +4,8 @@ using System;
 using System.Diagnostics;
 using System.Threading.Channels;
 using Coven.Spellcasting.Agents;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
@@ -43,6 +45,7 @@ internal sealed class ProcessDocumentTailMux : ITailMux
     private volatile bool _procStarted;
 
     private volatile bool _disposed;
+    private readonly ILogger<ProcessDocumentTailMux> _log = NullLogger<ProcessDocumentTailMux>.Instance;
 
     internal ProcessDocumentTailMux(
         string documentPath,
@@ -146,8 +149,9 @@ internal sealed class ProcessDocumentTailMux : ITailMux
                 await p.StandardInput.WriteLineAsync(line).WaitAsync(ct).ConfigureAwait(false);
                 await p.StandardInput.FlushAsync().WaitAsync(ct).ConfigureAwait(false);
             }
-            catch (Exception) when (_disposed || p.HasExited)
+            catch (Exception ex) when (_disposed || p.HasExited)
             {
+                _log.LogWarning(ex, "Process exited during write");
                 throw new InvalidOperationException("Process exited during write.");
             }
         }
@@ -231,7 +235,10 @@ internal sealed class ProcessDocumentTailMux : ITailMux
 
             _proc = new Process { StartInfo = psi };
             if (!_proc.Start())
+            {
+                _log.LogError("Failed to start process: {File} {Args}", _fileName, _arguments);
                 throw new InvalidOperationException("Failed to start process.");
+            }
 
             _procExitTask = _proc.WaitForExitAsync(_tailCts.Token);
             _procStarted = true;
@@ -246,6 +253,7 @@ internal sealed class ProcessDocumentTailMux : ITailMux
     {
         // Basic tail -f implementation with polling. Starts at current end-of-file to emulate tail behavior.
         // If the file doesn't exist yet, waits until it appears.
+        Exception? terminalError = null;
         try
         {
             while (!ct.IsCancellationRequested)
@@ -292,9 +300,36 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         {
             // disposal
         }
-        catch (IOException)
+        catch (IOException ioEx)
         {
-            // transient IO; exit quietly on dispose
+            terminalError = ioEx;
+        }
+        catch (Exception ex)
+        {
+            terminalError = ex;
+        }
+        finally
+        {
+            if (terminalError is not null)
+            {
+                try
+                {
+                    var ev = new ErrorLine(terminalError.ToString(), DateTimeOffset.UtcNow);
+                    // Best-effort: surface the error before closing
+                    if (!_chan.Writer.TryWrite(ev))
+                    {
+                        // Fall back to async path if needed
+                        await _chan.Writer.WriteAsync(ev, ct).ConfigureAwait(false);
+                    }
+                    _log.LogError(terminalError, "Tailer encountered an error for document path: {Path}", _documentPath);
+                }
+                catch
+                {
+                    // ignore secondary errors while reporting
+                }
+
+                try { _chan.Writer.TryComplete(); } catch { }
+            }
         }
     }
 

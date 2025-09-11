@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace Coven.Spellcasting.Agents.Codex.Config;
 
 internal sealed class DefaultCodexConfigWriter : ICodexConfigWriter
 {
+    private readonly ILogger<DefaultCodexConfigWriter> _log = NullLogger<DefaultCodexConfigWriter>.Instance;
     public void WriteOrMerge(string codexHomeDir, string shimPath, string pipeName, string serverKey = "coven")
     {
         try
@@ -23,7 +27,7 @@ internal sealed class DefaultCodexConfigWriter : ICodexConfigWriter
                 File.WriteAllText(cfgPath, toml);
             }
         }
-        catch { }
+        catch (Exception ex) { _log.LogWarning(ex, "Failed to write or merge config.toml at {Dir}", codexHomeDir); }
     }
 
     private static string EscapeToml(string s)
