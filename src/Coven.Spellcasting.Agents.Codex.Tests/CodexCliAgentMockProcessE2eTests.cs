@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Diagnostics;
+using System.Collections.Concurrent;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Di;
 using Coven.Spellcasting.Agents.Codex.Processes;
@@ -8,11 +9,46 @@ using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
+using Xunit.Abstractions;
+using Microsoft.Extensions.Logging;
+using Coven.Sophia;
+using Coven.Durables;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests;
 
-public sealed class CodexCliAgentMockProcessE2eTests
-{
+    public sealed class CodexCliAgentMockProcessE2eTests : IDisposable
+    {
+        private readonly ITestOutputHelper _output;
+        public CodexCliAgentMockProcessE2eTests(ITestOutputHelper output) { _output = output; }
+        private static readonly ConcurrentBag<Process> s_startedProcesses = new();
+        private readonly List<string> _tempDirs = new();
+
+        // Durable sink that mirrors Sophia log entries to xUnit output as they are appended
+        private sealed class XUnitOutputLogList : IDurableList<string>
+        {
+            private readonly ITestOutputHelper _out;
+            private readonly List<string> _items = new();
+            public XUnitOutputLogList(ITestOutputHelper output) { _out = output; }
+            public Task Append(string item)
+            {
+                var line = item ?? string.Empty;
+                try { _out.WriteLine(line); } catch { /* best-effort for background writes */ }
+                _items.Add(line);
+                return Task.CompletedTask;
+            }
+            public Task<List<string>> Load() => Task.FromResult(new List<string>(_items));
+            public Task Save(List<string> input)
+            {
+                _items.Clear();
+                if (input is not null) _items.AddRange(input);
+                return Task.CompletedTask;
+            }
+        }
+
+    private static void TrackProcess(Process p)
+    {
+        try { s_startedProcesses.Add(p); } catch { }
+    }
     private sealed class MockProcessFactory : ICodexProcessFactory
     {
         private sealed class Handle : IProcessHandle
@@ -77,6 +113,20 @@ public sealed class CodexCliAgentMockProcessE2eTests
 
         var services = new ServiceCollection();
         services.AddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
+
+        // Sophia logging: mirror Toy DI pattern, but route entries to xUnit output
+        services.AddSingleton<IDurableList<string>>(_ => new XUnitOutputLogList(_output));
+        services.AddSophiaLogging(new SophiaLoggerOptions
+        {
+            Label = "test",
+            IncludeScopes = true,
+            MinimumLevel = LogLevel.Debug
+        });
+        services.AddLogging(lb =>
+        {
+            lb.ClearProviders();
+            lb.SetMinimumLevel(LogLevel.Debug);
+        });
 
         // Override process + rollout resolution so we exercise real mux + process
         services.AddSingleton<ICodexProcessFactory>(new MockProcessFactory(mockExe, rolloutPath, logPath));
@@ -158,5 +208,23 @@ public sealed class CodexCliAgentMockProcessE2eTests
 
         var iMsg = FindAfter(iStdin, "message written: ping");
         Assert.True(iMsg > iStdin, "Missing or out-of-order message log");
+    }
+
+    public void Dispose()
+    {
+        // Best-effort: ensure any mock processes are torn down
+        while (s_startedProcesses.TryTake(out var proc))
+        {
+            try { if (!proc.HasExited) proc.Kill(entireProcessTree: true); } catch { }
+            try { proc.WaitForExit(2000); } catch { }
+            try { proc.Dispose(); } catch { }
+        }
+
+        // Cleanup temp directories created by the tests
+        foreach (var dir in _tempDirs)
+        {
+            try { if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true); } catch { }
+        }
+        _tempDirs.Clear();
     }
 }
