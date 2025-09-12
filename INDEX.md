@@ -72,6 +72,7 @@ Start with Overview, then explore by topic. All paths below are under `/Architec
 - [Spellcasting.Spells](/Architecture/Spellcasting/Spellcasting.Spells.md)
 - [Spellcasting.Agents](/Architecture/Spellcasting/Spellcasting.Agents.md)
 - [Spellcasting.Agents.Validation](/Architecture/Spellcasting/Spellcasting.Agents.Validation.md)
+ - [Codex CLI Agent](/Architecture/Spellcasting/Agents/CodexCliAgent.md)
 
 ## Chat Subsystem
 - [Chat (Overview)](/Architecture/Chat/Chat.md)
