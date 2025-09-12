@@ -7,28 +7,38 @@ High-level design and usage notes for `Coven.Spellcasting.Agents.Codex`.
 The agent acts as a bidirectional bridge. These two diagrams separate the user-side and Codex-side flows for clarity.
 
 ### A) User → ChatAdapter → CodexCliAgent
+Note, there are two independent IScriveners here, one available to the CodexCliAgent and one available to the IAdapterHost.
 
+Their T MUST match for them to share a journal but they can (and should) be separate instances of IScrivener, sometimes even different implementations.
+
+#### A.1 User ↔ IAdapterHost
+Note:
+- A.1 is independent from everything described in our Codex agent.
+- This functionality is defined via Coven.Chat
+- We include this diagram here simply to connect what the agent's responsibilities are to a normal use pattern.
 ```
 Outbound (1: User → Agent)
-┌──────┐     ┌──────────────┐     ┌────────────────┐     ┌─────────┐
-│ User │ ──► │ IAdapterHost │ ──► │  IScrivener    │ ──► | Journal │
-└──────┘     └──────────────┘     └────────────────┘     └─────────┘
+┌──────┐     ┌──────────────┐     ┌───────────────┐     ┌─────────┐
+│ User │ ──► │ IAdapterHost │ ──► │ IScrivener<T> │ ──► │ Journal │
+└──────┘     └──────────────┘     └───────────────┘     └─────────┘
 
 Inbound (2: Journal → User)
-┌────────────┐            ┌─────────┐     ┌──────────────┐     ┌──────┐
-│ IScrivener │ ──tails──► │ Journal │ ──► │ IAdapterHost │ ──► │ User │
-└────────────┘            └─────────┘     └──────────────┘     └──────┘
+┌─────────┐  Tailed by  ┌───────────────┐     ┌──────────────┐     ┌──────┐
+│ Journal │ ──────────► │ IScrivener<T> │ ──► │ IAdapterHost │ ──► │ User │
+└─────────┘             └───────────────┘     └──────────────┘     └──────┘
+```
 
+#### A.2 CodexCliAgent ↔ IAdapterHost
+```
 Outbound (3: Agent → User)
-┌───────────────┐     ┌────────────┐     ┌─────────┐
-│ CodexCliAgent │ ──► │ IScrivener │ ──► │ Journal │
-└───────────────┘     └────────────┘     └─────────┘
+┌───────────────┐     ┌───────────────┐     ┌─────────┐
+│ CodexCliAgent │ ──► │ IScrivener<T> │ ──► │ Journal │
+└───────────────┘     └───────────────┘     └─────────┘
 
 Inbound (4: Journal → Agent)
-┌──────────────┐            ┌─────────┐     ┌───────────────┐
-│  IScrivener  │ ──tails──► │ Journal │ ──► │ CodexCliAgent │
-└──────────────┘            └─────────┘     └───────────────┘
-
+┌─────────┐  Tailed by  ┌───────────────┐     ┌───────────────┐
+│ Journal │ ──────────► │ IScrivener<T> │ ──► │ CodexCliAgent │
+└─────────┘             └───────────────┘     └───────────────┘
 ```
 
 ### B) CodexCliAgent → TailMux → Codex CLI
@@ -40,9 +50,9 @@ Outbound (Agent → Codex stdin):
 └───────────────┘                              └─────────┘           └───────────────────┘
 
 Inbound (Codex rollout → Agent):
-┌───────────────────┐  append JSONL  ┌────────────────┐  tail lines   ┌───────────────┐
-│ Codex CLI Process │ ─────────────► │ rollout-*.jsonl│ ───────────►  │ CodexCliAgent │
-└───────────────────┘                └────────────────┘               └───────────────┘
+┌───────────────────┐  append JSONL  ┌─────────────────┐  tail lines   ┌───────────────┐
+│ Codex CLI Process │ ─────────────► │ rollout-*.jsonl │ ───────────►  │ CodexCliAgent │
+└───────────────────┘                └─────────────────┘               └───────────────┘
 
 TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout lines → messages.
 ```
@@ -57,7 +67,6 @@ TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout li
 
 - Start/stop the Codex CLI process with an isolated `CODEX_HOME` under the working repo.
 - Tail Codex rollout JSONL and translate events to messages written via `IScrivener<T>`.
-- For chat mode, forward user `ChatThought` messages to Codex stdin.
 - If spells are registered, host an MCP server and write Codex `config.toml` that points to the shim.
 - Provide basic validation utilities to preflight the environment.
 

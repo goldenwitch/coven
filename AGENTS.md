@@ -4,6 +4,8 @@ Code directory is at \INDEX.md. It's way faster to start with that and then swit
 When using find or grep ALWAYS filter by file extension.
 For example: grep -R --include='*.cs'
 
+> ALWAYS READ THE DESIGN DOC BEFORE STARTING WORK.
+> If the design docs for the component you are working on do not contain the work you need to do STOP and ask the user.
 
 Preferred tools by task:
 - Patch
@@ -21,9 +23,6 @@ Missing/Banned tools:
 - perl
 - ruby
 - node
-
-Stop and ask questions when:
-- You have to modify more than one project to accomplish a goal.
 
 Recite AGENTS.md regularly so you don't forget these important details!
 
