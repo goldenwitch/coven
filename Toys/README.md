@@ -33,6 +33,18 @@ Template launch entry
 }
 ```
 
+## MockProcess
+
+- Purpose: a minimal mock CLI that reads stdin and writes Codex-style JSONL rollout events to a file. Use it to validate `CodexCliAgent` I/O without installing the real Codex CLI.
+- Rollout path selection order:
+  - `--rollout <path>` or `-r <path>` argument.
+  - `MOCK_ROLLOUT_PATH` environment variable.
+  - Default: `./codex.rollout.jsonl` in the working directory.
+- Behavior:
+  - On start, writes a `metadata` line with a unique `session_id` and `created` timestamp.
+  - For each stdin line, writes a `message` line with `content: "echo: <line>"`.
+  - Special input `error` emits an `error` line; `exit` terminates the process.
+
 ## Add to Solution
 
 - Using CLI: run `dotnet sln add Toys/<ToyPath>/<Project>.csproj` from repo root.

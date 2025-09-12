@@ -50,5 +50,18 @@
       ],
       "problemMatcher": ["$msCompile"]
     }
+    ,
+    {
+      "label": "build MockProcess",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Toys/Coven.Toys.MockProcess/Coven.Toys.MockProcess.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": ["$msCompile"]
+    }
   ]
 }

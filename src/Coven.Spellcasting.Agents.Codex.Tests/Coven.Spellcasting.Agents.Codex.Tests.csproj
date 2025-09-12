@@ -30,6 +30,31 @@
     <ProjectReference Include="..\Coven.Spellcasting.Agents.Codex\Coven.Spellcasting.Agents.Codex.csproj" />
     <ProjectReference Include="..\Coven.Spellcasting.Agents\Coven.Spellcasting.Agents.csproj" />
     <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
+    <!-- Build MockProcess but don't reference its assembly directly -->
+    <ProjectReference Include="..\..\Toys\Coven.Toys.MockProcess\Coven.Toys.MockProcess.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- After building tests, copy the MockProcess outputs next to test binaries under mock-process/ -->
+  <Target Name="CopyMockProcess" AfterTargets="Build">
+    <MSBuild Projects="..\..\Toys\Coven.Toys.MockProcess\Coven.Toys.MockProcess.csproj"
+             Targets="GetTargetPath"
+             Properties="Configuration=$(Configuration)">
+      <Output TaskParameter="TargetOutputs" ItemName="MockTarget" />
+    </MSBuild>
+
+    <PropertyGroup>
+      <MockDir>$([System.IO.Path]::GetDirectoryName('%(MockTarget.Identity)'))\</MockDir>
+    </PropertyGroup>
+
+    <MakeDir Directories="$(OutDir)mock-process" />
+
+    <ItemGroup>
+      <MockFiles Include="$(MockDir)Coven.Toys.MockProcess.*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(MockFiles)"
+          DestinationFolder="$(OutDir)mock-process"
+          SkipUnchangedFiles="true" />
+  </Target>
 
 </Project>
