@@ -20,12 +20,11 @@ namespace Coven.Spellcasting.Agents.Codex;
     public string Id => "codex";
     private readonly string _codexExecutablePath;
     private readonly string _workspaceDirectory;
-    private readonly List<ISpellContract> _registeredSpells = new();
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
     private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
     private readonly string? _shimExecutablePath;
-    private readonly IMcpSpellExecutorRegistry? _executorRegistry;
+    private IMcpSpellExecutorRegistry? _executorRegistry;
     private readonly IMcpServerHost? _hostOverride;
     private readonly ICodexProcessFactory? _procFactory;
     private readonly ITailMuxFactory? _tailFactory;
@@ -37,7 +36,7 @@ namespace Coven.Spellcasting.Agents.Codex;
 
     // Removed unused process/task tracking fields from an earlier design.
 
-    internal CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null, IEnumerable<object>? spells = null)
+    internal CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null)
     {
         _codexExecutablePath = codexExecutablePath;
         _workspaceDirectory = workspaceDirectory;
@@ -52,14 +51,6 @@ namespace Coven.Spellcasting.Agents.Codex;
             _translator = (ICodexRolloutTranslator<TMessageFormat>) (object) new DefaultStringTranslator();
         }
         
-        if (spells is not null)
-        {
-            // Build an executor registry from the provided spell instances for invocation.
-            // Toolbelt (definitions) will be provided via RegisterSpells to ensure the
-            // Codex-visible schemas/names come from the caller's Spellbook, not reflection.
-            var registry = new ReflectionMcpSpellExecutorRegistry(spells);
-            _executorRegistry = registry;
-        }
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
@@ -70,13 +61,12 @@ namespace Coven.Spellcasting.Agents.Codex;
         IScrivener<TMessageFormat> scrivener,
         ICodexRolloutTranslator<TMessageFormat> translator,
         string? shimExecutablePath,
-        IEnumerable<object>? spells,
         IMcpServerHost? host,
         ICodexProcessFactory? processFactory,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
         IRolloutPathResolver? rolloutResolver)
-        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath, spells)
+        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath)
     {
         _hostOverride = host;
         _procFactory = processFactory;
@@ -91,13 +81,12 @@ namespace Coven.Spellcasting.Agents.Codex;
         string workspaceDirectory,
         IScrivener<TMessageFormat> scrivener,
         string? shimExecutablePath,
-        IEnumerable<object>? spells,
         IMcpServerHost? host,
         ICodexProcessFactory? processFactory,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
         IRolloutPathResolver? rolloutResolver)
-        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath, spells)
+        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath)
     {
         _hostOverride = host;
         _procFactory = processFactory;
@@ -108,14 +97,9 @@ namespace Coven.Spellcasting.Agents.Codex;
 
     public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
     {
-        _registeredSpells.Clear();
-        if (Spells is not null)
-        {
-            _registeredSpells.AddRange(Spells);
-        }
-
-        // Build MCP tools from caller-provided spell contracts.
-        _toolbelt = McpToolbeltBuilder.FromSpells(_registeredSpells);
+        // Build MCP tools and an executor registry directly from the provided spell instances.
+        _toolbelt = McpToolbeltBuilder.FromSpells(Spells);
+        _executorRegistry = new ReflectionMcpSpellExecutorRegistry(Spells.Cast<object>());
         return Task.CompletedTask;
     }
 
@@ -129,14 +113,6 @@ namespace Coven.Spellcasting.Agents.Codex;
             {
                 ["CODEX_HOME"] = _codexHomeDir
             };
-
-            // If spells were provided (executor registry exists) but no toolbelt was registered,
-            // surface a clear configuration error to the developer.
-            if ((_executorRegistry is not null) && (_toolbelt is null || _toolbelt.Tools.Count == 0))
-            {
-                throw new InvalidOperationException(
-                    "No MCP tools registered. Call RegisterSpells with your SpellDefinitions to expose tools for the provided spells.");
-            }
 
             // Start disposable MCP server session for this invocation if we have tools.
             if (_toolbelt is not null && _toolbelt.Tools.Count != 0)

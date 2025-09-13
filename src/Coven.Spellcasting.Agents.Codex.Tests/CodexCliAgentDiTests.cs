@@ -29,7 +29,6 @@ public sealed class CodexCliAgentDiTests
             {
                 o.ExecutablePath = "codex"; // not actually started (NoopProcessFactory)
                 o.ShimExecutablePath = "shim.exe";
-                o.Spells = new object[] { new EchoSpell() };
             })
             .WithHost(hostDouble)
             .WithConfigWriter(configCapture)
@@ -90,7 +89,6 @@ public sealed class CodexCliAgentDiTests
             .Configure(o =>
             {
                 o.ExecutablePath = "codex";
-                // No spells
             })
             .WithHost(hostDouble)
             .WithConfigWriter(configCapture)
@@ -163,7 +161,6 @@ public sealed class CodexCliAgentDiTests
             .Configure(o =>
             {
                 o.ExecutablePath = "codex";
-                o.Spells = new object[] { new EchoSpell() };
                 // No shim provided
             })
             .WithHost(hostDouble)

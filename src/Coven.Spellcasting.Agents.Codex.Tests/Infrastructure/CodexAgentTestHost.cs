@@ -83,12 +83,6 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
         return this;
     }
 
-    public CodexAgentTestHost<TMessageFormat> WithSpells(IEnumerable<object> spells)
-    {
-        _options.Spells = spells ?? throw new ArgumentNullException(nameof(spells));
-        return this;
-    }
-
     /// <summary>
     /// Build the provider and register the agent using the configured options and services.
     /// </summary>
@@ -103,7 +97,6 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
                     o.ExecutablePath = _options.ExecutablePath;
                     o.WorkspaceDirectory = _options.WorkspaceDirectory;
                     o.ShimExecutablePath = _options.ShimExecutablePath;
-                    o.Spells = _options.Spells;
                 });
             }
             else
@@ -115,7 +108,6 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
                     o.ExecutablePath = _options.ExecutablePath;
                     o.WorkspaceDirectory = _options.WorkspaceDirectory;
                     o.ShimExecutablePath = _options.ShimExecutablePath;
-                    o.Spells = _options.Spells;
                 });
             }
 

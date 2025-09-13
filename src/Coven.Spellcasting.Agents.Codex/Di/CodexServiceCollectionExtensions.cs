@@ -20,7 +20,6 @@ public sealed class CodexCliAgentRegistrationOptions
     public string ExecutablePath { get; set; } = "codex";
     public string WorkspaceDirectory { get; set; } = Directory.GetCurrentDirectory();
     public string? ShimExecutablePath { get; set; }
-    public IEnumerable<object>? Spells { get; set; }
 }
 
     public static class CodexServiceCollectionExtensions
@@ -46,7 +45,7 @@ public sealed class CodexCliAgentRegistrationOptions
                 var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
                 var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
                 var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
-                var spells = opts.Spells ?? (sp.GetService<Spellbook>()?.Spells);
+                // Spells are registered at runtime via MagikUser → agent.RegisterSpells
 
                 // Auto-discover shim path if not provided: look under AppContext.BaseDirectory/mcp-shim
                 var shimPath = opts.ShimExecutablePath;
@@ -77,7 +76,6 @@ public sealed class CodexCliAgentRegistrationOptions
                     opts.WorkspaceDirectory,
                     scrivener,
                     shimPath,
-                    spells,
                     host,
                     procFactory,
                     tailFactory,
@@ -178,7 +176,6 @@ public sealed class CodexCliAgentRegistrationOptions
                     scrivener,
                     translator,
                     shimPath,
-                    opts.Spells,
                     host,
                     procFactory,
                     tailFactory,
