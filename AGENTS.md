@@ -7,6 +7,8 @@ For example: grep -R --include='*.cs'
 > ALWAYS READ THE DESIGN DOC BEFORE STARTING WORK.
 > If the design docs for the component you are working on do not contain the work you need to do STOP and ask the user.
 
+No optional features! We don't need extraneous features!
+
 Preferred tools by task:
 - Patch
     - apply_patch

@@ -65,7 +65,7 @@ TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout li
 
 ## Responsibilities
 
-- Start/stop the Codex CLI process with an isolated `CODEX_HOME` under the working repo.
+- Start/stop the Codex CLI process.
 - Tail Codex rollout JSONL and translate events to messages written via `IScrivener<ChatEntry>`.
 - If spells are registered, host an MCP server and write Codex `config.toml` that points to the shim.
 - Provide basic validation utilities to preflight the environment.
