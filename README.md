@@ -81,7 +81,15 @@ var output = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(repo, "
 
 Note: Ensure `codex` is on your PATH, or pass `new CodexCliAgent<FixSpell, string>.Options { ExecutablePath = "/absolute/path/to/codex" }` when constructing the agent.
 
-See fuller, two-part end‑to‑end examples in `/Architecture/EndToEndExample.md`.
+// End-to-end example was removed as outdated. Follow Samples and Architecture docs instead.
+
+## Canonical Patterns
+
+- Use `MagikUser<TIn,TOut>` to encapsulate agent logic. Provide Guidebook, Spellbook, and Testbook via DI or builders, then implement `InvokeMagik` to drive your agent.
+- Define tools as spells implementing `ISpellContract` (`ISpell`, `ISpell<TIn>`, `ISpell<TIn,TOut>`). Register spells with agents by passing an `IReadOnlyList<ISpellContract>`.
+- Prefer DI everywhere: resolve scriveners, agents, and blocks from the container; let `BuildCoven` compose graphs and finalize with `.Done()`.
+- Keep agents unopinionated: external transport (CLI/HTTP/RPC) is owned by the agent package (e.g., Codex CLI). Your app wires them together.
+- Schema generation is automatic: spell schemas derive from their generic types; Spellbooks are the source of truth for names/schemas passed to agents.
 
 ## Samples
 

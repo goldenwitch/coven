@@ -55,7 +55,6 @@ Start with Overview, then explore by topic. All paths below are under `/Architec
 
 ## Getting Started
 - [Overview](/Architecture/Overview.md)
-- [End-to-End Example](/Architecture/EndToEndExample.md)
 
 ## Core Concepts
 - [MagikBlocks & Builder](/Architecture/MagikBlocks.md)

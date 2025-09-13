@@ -1,4 +1,4 @@
-Always start by reading \README.md
+Always start by reading \README.md and \Architecture\README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
 When using find or grep ALWAYS filter by file extension.
