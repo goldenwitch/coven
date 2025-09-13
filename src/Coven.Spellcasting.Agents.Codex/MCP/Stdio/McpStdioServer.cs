@@ -101,7 +101,8 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
                 break;
 
             case "tools/list":
-                var list = (_registry?.Tools ?? _toolbelt.Tools);
+                // Tool listing should reflect the canonical Spellbook-provided definitions via toolbelt.
+                var list = _toolbelt.Tools;
                 var tools = list.Select(t => new
                 {
                     name = t.Name,

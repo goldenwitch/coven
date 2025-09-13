@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Core;
 using Coven.Core.Di;
 using Coven.Spellcasting.Grimoire;
-using Coven.Spellcasting.Agents;
+using Coven.Spellcasting.Spells;
 using Xunit;
 
 namespace Coven.Spellcasting.Agents.Tests;
@@ -15,7 +15,7 @@ public sealed class AmbientAgentIntegrationTests
     {
         public bool Closed { get; private set; }
 
-        public Task RegisterSpells(List<Spells.SpellDefinition> spells) => Task.CompletedTask;
+        public Task RegisterSpells(IReadOnlyList<ISpellContract> spells) => Task.CompletedTask;
         public Task InvokeAgent(CancellationToken ct = default) => Task.CompletedTask;
         public Task CloseAgent() { Closed = true; return Task.CompletedTask; }
 

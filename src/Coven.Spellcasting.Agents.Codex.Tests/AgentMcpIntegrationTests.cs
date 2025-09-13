@@ -44,12 +44,9 @@ public sealed class AgentMcpIntegrationTests
             .Build();
 
         var agent = testHost.GetAgent();
-        // Provide spell definitions explicitly
-        var defs = new List<Spellcasting.Spells.SpellDefinition>
-        {
-            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
-        };
-        await agent.RegisterSpells(defs);
+        // Provide spells explicitly as contracts (definitions come from GetDefinition)
+        var spells = new List<ISpellContract> { new EchoSpell() };
+        await agent.RegisterSpells(spells);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 
@@ -100,11 +97,8 @@ public sealed class AgentMcpIntegrationTests
             .Build();
 
         var agent = testHost.GetAgent();
-        var defs = new List<Spellcasting.Spells.SpellDefinition>
-        {
-            new(SchemaGen.GetFriendlyName(typeof(SquareIn)), SchemaGen.GenerateSchema(typeof(SquareIn)), SchemaGen.GenerateSchema(typeof(SquareOut)))
-        };
-        await agent.RegisterSpells(defs);
+        var spells = new List<ISpellContract> { new SquareSpell() };
+        await agent.RegisterSpells(spells);
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 

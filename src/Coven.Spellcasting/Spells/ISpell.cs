@@ -9,9 +9,12 @@ namespace Coven.Spellcasting.Spells;
 /// </summary>
 public interface ISpell<TIn, TOut> : ISpellContract
 {
-    public SpellDefinition GetDefinition()
+    public new SpellDefinition Definition
     {
-        return new SpellDefinition(SchemaGen.GetFriendlyName(typeof(TIn)), SchemaGen.GenerateSchema(typeof(TIn)), SchemaGen.GenerateSchema(typeof(TOut)));
+        get => new SpellDefinition(
+            SchemaGen.GetFriendlyName(typeof(TIn)),
+            SchemaGen.GenerateSchema(typeof(TIn)),
+            SchemaGen.GenerateSchema(typeof(TOut)));
     }
     public Task<TOut> CastSpell(TIn Input);
 }
@@ -23,9 +26,11 @@ public interface ISpell<TIn, TOut> : ISpellContract
 public interface ISpell<TIn>
     : ISpellContract
 {
-    public SpellDefinition GetDefinition()
+    public new SpellDefinition Definition
     {
-        return new SpellDefinition(SchemaGen.GetFriendlyName(typeof(TIn)), SchemaGen.GenerateSchema(typeof(TIn)));
+        get => new SpellDefinition(
+            SchemaGen.GetFriendlyName(typeof(TIn)),
+            SchemaGen.GenerateSchema(typeof(TIn)));
     }
     public Task CastSpell(TIn Input);
 }
@@ -38,10 +43,9 @@ public interface ISpell<TIn>
 public interface ISpell
     : ISpellContract
 {
-    public SpellDefinition GetDefinition()
+    public new SpellDefinition Definition
     {
-        return new SpellDefinition(SchemaGen.GetFriendlyName(GetType()));
+        get => new SpellDefinition(SchemaGen.GetFriendlyName(GetType()));
     }
-
     public Task CastSpell();
 }

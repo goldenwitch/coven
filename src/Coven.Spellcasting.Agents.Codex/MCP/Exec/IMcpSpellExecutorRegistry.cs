@@ -6,6 +6,7 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Exec;
 
 public interface IMcpSpellExecutorRegistry
 {
+    IReadOnlyList<McpTool> Tools { get; }
     bool TryInvoke(
         string name,
         JsonElement? args,

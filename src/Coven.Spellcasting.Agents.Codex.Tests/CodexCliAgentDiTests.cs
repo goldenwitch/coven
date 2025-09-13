@@ -39,12 +39,9 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
-        // Provide spell definitions explicitly for EchoSpell
-        var defs0 = new List<SpellDefinition>
-        {
-            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
-        };
-        await agent.RegisterSpells(defs0);
+        // Provide spells explicitly as contracts for EchoSpell
+        var spells0 = new List<ISpellContract> { new EchoSpell() };
+        await agent.RegisterSpells(spells0);
         using var cts = new CancellationTokenSource();
 
         // Kick off the agent in the background
@@ -140,12 +137,9 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
-        // Provide spell definitions explicitly
-        var defs2 = new List<SpellDefinition>
-        {
-            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
-        };
-        await agent.RegisterSpells(defs2);
+        // Provide spells explicitly as contracts
+        var spells2 = new List<ISpellContract> { new EchoSpell() };
+        await agent.RegisterSpells(spells2);
         using var cts = new CancellationTokenSource();
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
 
@@ -180,12 +174,9 @@ public sealed class CodexCliAgentDiTests
             .Build();
 
         var agent = testHost.GetAgent();
-        // Provide spell definitions explicitly
-        var defs3 = new List<SpellDefinition>
-        {
-            new(SchemaGen.GetFriendlyName(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(EchoIn)), SchemaGen.GenerateSchema(typeof(string)))
-        };
-        await agent.RegisterSpells(defs3);
+        // Provide spells explicitly as contracts
+        var spells3 = new List<ISpellContract> { new EchoSpell() };
+        await agent.RegisterSpells(spells3);
         using var cts = new CancellationTokenSource();
         var runTask = Task.Run(() => agent.InvokeAgent(cts.Token));
         await Task.Delay(100);
