@@ -8,6 +8,7 @@ For example: grep -R --include='*.cs'
 > If the design docs for the component you are working on do not contain the work you need to do STOP and ask the user.
 
 No optional features! We don't need extraneous features!
+If a tool fails check for typos and/or recite AGENTS.md
 
 Preferred tools by task:
 - Patch
