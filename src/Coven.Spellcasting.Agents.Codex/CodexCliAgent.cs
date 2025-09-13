@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
-using Coven.Spellcasting.Agents.Codex.MCP.Exec;
+using Coven.Spellcasting.Agents.Codex.MCP.Tools;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents;

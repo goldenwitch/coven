@@ -3,8 +3,8 @@
 using System.Diagnostics;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
-using Coven.Spellcasting.Agents.Codex.MCP.Exec;
-using Coven.Spellcasting.Agents.Codex.MCP.Stdio;
+using Coven.Spellcasting.Agents.Codex.MCP.Server;
+using Coven.Spellcasting.Agents.Codex.MCP.Tools;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents;
 
@@ -54,9 +54,32 @@ public sealed class FakeMcpServerHost : IMcpServerHost
     }
 
     public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default)
-        => StartAsync(toolbelt, null, ct);
+    {
+        // No registry specified for this overload
+        LastToolbelt = toolbelt; LastRegistry = null; StartCalls++;
+        var pipeName = $"coven_mcp_test_{Guid.NewGuid():N}";
+        LastPipeName = pipeName;
 
-    public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry, CancellationToken ct = default)
+        if (_startStdio)
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var serverStream = new System.IO.Pipes.NamedPipeServerStream(pipeName, System.IO.Pipes.PipeDirection.InOut, 1, System.IO.Pipes.PipeTransmissionMode.Byte, System.IO.Pipes.PipeOptions.Asynchronous);
+                    await serverStream.WaitForConnectionAsync(ct).ConfigureAwait(false);
+                    var server = new McpStdioServer(toolbelt, serverStream, null);
+                    server.Start();
+                }
+                catch { }
+            }, ct);
+        }
+
+        IMcpServerSession s = new Session("toolbelt.json", pipeName);
+        return Task.FromResult(s);
+    }
+
+    public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry registry, CancellationToken ct = default)
     {
         LastToolbelt = toolbelt; LastRegistry = registry; StartCalls++;
         var pipeName = $"coven_mcp_test_{Guid.NewGuid():N}";

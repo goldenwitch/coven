@@ -2,7 +2,7 @@
 
 using System.Text.Json;
 
-namespace Coven.Spellcasting.Agents.Codex.MCP.Exec;
+namespace Coven.Spellcasting.Agents.Codex.MCP.Tools;
 
 public interface IMcpSpellExecutorRegistry
 {

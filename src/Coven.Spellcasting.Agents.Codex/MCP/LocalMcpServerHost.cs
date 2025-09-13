@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
-using Coven.Spellcasting.Agents.Codex.MCP.Stdio;
-using Coven.Spellcasting.Agents.Codex.MCP.Exec;
+using Coven.Spellcasting.Agents.Codex.MCP.Server;
+using Coven.Spellcasting.Agents.Codex.MCP.Tools;
 using System.IO.Pipes;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -26,7 +21,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
     public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default)
         => await StartAsync(toolbelt, null, ct).ConfigureAwait(false);
 
-    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry, CancellationToken ct = default)
+    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry registry, CancellationToken ct = default)
     {
         // For now, model a lightweight, disposable session that:
         // - writes the toolbelt to a temp file under the workspace

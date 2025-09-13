@@ -2,11 +2,11 @@
 
 using System.Text;
 using System.Text.Json;
-using Coven.Spellcasting.Agents.Codex.MCP.Exec;
+using Coven.Spellcasting.Agents.Codex.MCP.Tools;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
+namespace Coven.Spellcasting.Agents.Codex.MCP.Server;
 
 /// <summary>
 /// Minimal placeholder MCP server using a STDIO-style loop. For now, it simply
@@ -21,14 +21,18 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
         private volatile bool _disposed;
         private readonly Stream _transport;
         private readonly IMcpSpellExecutorRegistry? _registry;
-        private volatile bool _shutdownRequested;
         private readonly ILogger<McpStdioServer> _log = NullLogger<McpStdioServer>.Instance;
+        private readonly List<IMcpRequestController> _controllers = new();
 
     public McpStdioServer(McpToolbelt toolbelt, Stream transport, IMcpSpellExecutorRegistry? registry = null)
     {
         _toolbelt = toolbelt;
         _transport = transport;
         _registry = registry;
+
+        // Register controllers
+        _controllers.Add(new SessionController());
+        _controllers.Add(new ToolsController());
     }
 
     public void Start()
@@ -47,25 +51,49 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
             {
                 var req = await ReadJsonRpcAsync(ct).ConfigureAwait(false);
                 if (req is null) break;
-                try
-                {
-                    await HandleRequestAsync(req.Value, ct).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    _log.LogError(ex, "MCP request failed for method: {Method}", req.Value.Method);
-                    if (req.Value.Id is not null)
-                    {
-                        var err = new { jsonrpc = "2.0", id = req.Value.Id, error = new { code = -32603, message = ex.Message } };
-                        await WriteJsonRpcAsync(err, ct).ConfigureAwait(false);
-                    }
-                }
+                await DispatchAsync(req.Value, ct).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException) { }
     }
 
-    private readonly record struct JsonRpcRequest(string? Id, string Method, JsonElement? Params);
+    private async Task DispatchAsync(JsonRpcRequest req, CancellationToken ct)
+    {
+        try
+        {
+            var ctx = new McpStdioContext
+            {
+                Toolbelt = _toolbelt,
+                Registry = _registry,
+                Logger = _log,
+                ReplyAsync = ReplyAsync,
+                RequestShutdown = () => { try { _cts.Cancel(); } catch { } }
+            };
+
+            // Route to the first controller that claims the method
+            foreach (var c in _controllers)
+            {
+                if (!c.CanHandle(req.Method)) continue;
+                var handled = await c.TryHandleAsync(req, ctx, ct).ConfigureAwait(false);
+                if (handled) return;
+            }
+
+            if (req.Id is not null)
+            {
+                var err = new { code = -32601, message = $"Method '{req.Method}' not found" };
+                await WriteJsonRpcAsync(new { jsonrpc = "2.0", id = req.Id, error = err }, ct).ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "MCP request failed for method: {Method}", req.Method);
+            if (req.Id is not null)
+            {
+                var err = new { jsonrpc = "2.0", id = req.Id, error = new { code = -32603, message = ex.Message } };
+                await WriteJsonRpcAsync(err, ct).ConfigureAwait(false);
+            }
+        }
+    }
 
     private async Task<JsonRpcRequest?> ReadJsonRpcAsync(CancellationToken ct)
     {
@@ -82,83 +110,6 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
         var method = root.GetProperty("method").GetString() ?? string.Empty;
         JsonElement? @params = root.TryGetProperty("params", out var p) ? p : (JsonElement?)null;
         return new JsonRpcRequest(id, method, @params);
-    }
-
-    private async Task HandleRequestAsync(JsonRpcRequest req, CancellationToken ct)
-    {
-        switch (req.Method)
-        {
-            case "initialize":
-                await ReplyAsync(req.Id, new
-                {
-                    protocolVersion = "2024-11-05",
-                    capabilities = new
-                    {
-                        tools = new { list = new { }, call = new { } }
-                    },
-                    serverInfo = new { name = "coven-mcp", version = "0.1" }
-                }, ct).ConfigureAwait(false);
-                break;
-
-            case "tools/list":
-                // Tool listing should reflect the canonical Spellbook-provided definitions via toolbelt.
-                var list = _toolbelt.Tools;
-                var tools = list.Select(t => new
-                {
-                    name = t.Name,
-                    description = (string?)null,
-                    inputSchema = ParseSchemaOrNull(t.InputSchema),
-                }).ToArray();
-                await ReplyAsync(req.Id, new { tools }, ct).ConfigureAwait(false);
-                break;
-
-            case "tools/call":
-                // Expect params: { name: string, arguments: object }
-                string? name = null;
-                if (req.Params is JsonElement pe && pe.ValueKind == JsonValueKind.Object && pe.TryGetProperty("name", out var nEl))
-                    name = nEl.GetString();
-                if (!string.IsNullOrWhiteSpace(name) && _registry is not null && _registry.TryInvoke(name!, req.Params is JsonElement p2 && p2.TryGetProperty("arguments", out var aEl) ? aEl : (JsonElement?)null, ct, out var resultTask, out var returnsJson))
-                {
-                    var result = await resultTask.ConfigureAwait(false);
-                    object[] content;
-                    if (returnsJson)
-                    {
-                        content = new[] { new { type = "json", json = result } };
-                    }
-                    else
-                    {
-                        var text = result?.ToString() ?? "";
-                        content = new[] { new { type = "text", text } };
-                    }
-                    await ReplyAsync(req.Id, new { content }, ct).ConfigureAwait(false);
-                }
-                else
-                {
-                    var content = new object[] { new { type = "text", text = $"tool '{name ?? "?"}' not implemented" } };
-                    await ReplyAsync(req.Id, new { content }, ct).ConfigureAwait(false);
-                }
-                break;
-
-            case "shutdown":
-                _shutdownRequested = true;
-                await ReplyAsync(req.Id, (object?)null!, ct).ConfigureAwait(false);
-                break;
-
-            case "exit":
-                if (_shutdownRequested)
-                {
-                    try { _cts.Cancel(); } catch { }
-                }
-                break;
-
-            default:
-                if (req.Id is not null)
-                {
-                    var err = new { code = -32601, message = $"Method '{req.Method}' not found" };
-                    await WriteJsonRpcAsync(new { jsonrpc = "2.0", id = req.Id, error = err }, ct).ConfigureAwait(false);
-                }
-                break;
-        }
     }
 
     private async Task ReplyAsync(string? id, object result, CancellationToken ct)
@@ -230,13 +181,6 @@ namespace Coven.Spellcasting.Agents.Codex.MCP.Stdio;
         await _transport.WriteAsync(header.AsMemory(0, header.Length), ct).ConfigureAwait(false);
         await _transport.WriteAsync(bytes.AsMemory(0, bytes.Length), ct).ConfigureAwait(false);
         await _transport.FlushAsync(ct).ConfigureAwait(false);
-    }
-
-    private static object? ParseSchemaOrNull(string? schema)
-    {
-        if (string.IsNullOrWhiteSpace(schema)) return null;
-        using var doc = JsonDocument.Parse(schema);
-        return doc.RootElement.Clone();
     }
 
     public async ValueTask DisposeAsync()

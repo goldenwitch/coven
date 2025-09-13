@@ -93,6 +93,8 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
 
             var p = new Process { StartInfo = psi };
             if (!p.Start()) throw new InvalidOperationException("Failed to start MockProcess");
+            // Track for best-effort cleanup if a disposal path is missed
+            TrackProcess(p);
             return new Handle(p);
         }
     }
