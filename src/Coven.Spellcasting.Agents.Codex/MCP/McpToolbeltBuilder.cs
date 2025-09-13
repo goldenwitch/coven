@@ -8,12 +8,16 @@ namespace Coven.Spellcasting.Agents.Codex.MCP;
 
 internal static class McpToolbeltBuilder
 {
-    public static McpToolbelt FromSpells(IReadOnlyList<SpellDefinition> spells)
+    public static McpToolbelt FromSpells(IReadOnlyList<ISpellContract> spells)
     {
         var tools = new List<McpTool>();
         if (spells is not null)
         {
-            tools.AddRange(spells.Select(s => new McpTool(s.Name, s.InputSchema, s.OutputSchema)));
+            foreach (var s in spells)
+            {
+                var d = s.GetDefinition();
+                tools.Add(new McpTool(d.Name, d.InputSchema, d.OutputSchema));
+            }
         }
         return new McpToolbelt(tools);
     }

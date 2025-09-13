@@ -7,7 +7,7 @@ namespace Coven.Spellcasting.Spells;
 /// Builds a definition from the input shape TIn
 /// Produces TOut during tool execution.
 /// </summary>
-public interface ISpell<TIn, TOut>
+public interface ISpell<TIn, TOut> : ISpellContract
 {
     public SpellDefinition GetDefinition()
     {
@@ -21,6 +21,7 @@ public interface ISpell<TIn, TOut>
 /// Builds a definition from the input shape TIn
 /// </summary>
 public interface ISpell<TIn>
+    : ISpellContract
 {
     public SpellDefinition GetDefinition()
     {
@@ -35,6 +36,12 @@ public interface ISpell<TIn>
 /// No input or output
 /// </summary>
 public interface ISpell
+    : ISpellContract
 {
+    public SpellDefinition GetDefinition()
+    {
+        return new SpellDefinition(SchemaGen.GetFriendlyName(GetType()));
+    }
+
     public Task CastSpell();
 }

@@ -20,7 +20,7 @@ namespace Coven.Spellcasting.Agents.Codex;
     public string Id => "codex";
     private readonly string _codexExecutablePath;
     private readonly string _workspaceDirectory;
-    private readonly List<SpellDefinition> _registeredSpells = new();
+    private readonly List<ISpellContract> _registeredSpells = new();
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
     private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
@@ -106,12 +106,15 @@ namespace Coven.Spellcasting.Agents.Codex;
         _rolloutResolver = rolloutResolver;
     }
 
-    public Task RegisterSpells(List<SpellDefinition> Spells)
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
     {
         _registeredSpells.Clear();
-        _registeredSpells.AddRange(Spells ?? new List<SpellDefinition>());
+        if (Spells is not null)
+        {
+            _registeredSpells.AddRange(Spells);
+        }
 
-        // Build MCP tools from caller-provided spell definitions (preferred over reflection).
+        // Build MCP tools from caller-provided spell contracts.
         _toolbelt = McpToolbeltBuilder.FromSpells(_registeredSpells);
         return Task.CompletedTask;
     }

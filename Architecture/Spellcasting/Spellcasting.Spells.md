@@ -1,40 +1,31 @@
 # Spells
 
-Spells represent a tool call that the agent can intentionally invoke.
-They are defined as well typed dotnet classes and functions, but with some added flavor.
+Spells represent a tool call that the agent can intentionally invoke. They are implemented as well-typed .NET classes, unified under a single, shared contract for metadata.
+
+## Unified Contract
+- ISpellContract: Non-generic base interface implemented by all spells. Exposes `SpellDefinition GetDefinition()` which is the canonical source of name and JSON schemas.
+- ISpell forms:
+  - `ISpell` (zero-arg): `Task CastSpell()`; default `GetDefinition()` uses the spell type’s friendly name; no input/output schema.
+  - `ISpell<TIn>` (unary): `Task CastSpell(TIn input)`; default `GetDefinition()` provides friendly name and input schema from `TIn`.
+  - `ISpell<TIn,TOut>` (binary): `Task<TOut> CastSpell(TIn input)`; default `GetDefinition()` provides friendly name and schemas from `TIn`/`TOut`.
 
 ## Spell Registration
-Because spells need to be able to be cast from outside of a C# context, we automatically generate:
-1. Json schema for the input type.
-2. Json schema for the output type.
-3. A unique spellid.
-
-This generation happens during Coven finalization (aka .Done()).
+Because spells can be cast from outside a C# context, their shapes (name + JSON schemas) must be available:
+- The Spellbook is the source of truth for names and schemas. It supplies an `IReadOnlyList<ISpellContract>` to agents.
+- Schema generation occurs during Coven finalization (`.Done()`), ensuring deterministic names/schemas.
 
 ## DI
-Spells will always be DI compatible. When we invoke the spell, we ensure that it is created from the DI container with all of it's dependencies intact.
+Spells are DI-friendly. Invocation constructs spells via the container so all dependencies are satisfied at call time.
 
-## Agent wireup
-If you are leveraging an agent to utilize these spells, the agent needs to know how to call the tools.
-
-We support two tool calling paths:
-1. MCP
-2. Direct
-
-### MCP
-For codex cli or other MCP aware agents, we wrap spells in a MCP Host that we scope to the agents executing block.
-
-### Direct
-For agents that support emitting direct tool calls, we map these tool calls to the registered spells.
+## Agent Wire-up
+Agents need to list and invoke tools. Two paths are supported:
+1. MCP: Agent builds an MCP toolbelt from `GetDefinition()` for each `ISpellContract`. Invocation is centralized through an executor registry that maps `GetDefinition().Name` → spell instance and reflects the appropriate call (zero/unary/binary).
+2. Direct: For agents that support direct tool calls, names map to registered spells by `GetDefinition().Name`.
 
 ## Spellbooks
-A Spellbook represents the set of spells that land in the MagikUser.
+A Spellbook represents the set of spells available to a `MagikUser`.
 
 It contains:
-1. The list of spells.
-2. The schema for the spells.
-3. Agent guidance around how and when to use the spells.
-
-By default the spellbook passed into a MagikUser is automatically built from:
-1. All valid spells in assembly.
-2. How and when documentation comes from attributes and/or xml documentation.
+1. The list of spells (as `ISpellContract`).
+2. The canonical schemas for those spells.
+3. Agent guidance describing how and when to use them.

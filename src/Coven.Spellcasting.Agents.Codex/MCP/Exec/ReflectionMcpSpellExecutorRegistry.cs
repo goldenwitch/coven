@@ -62,10 +62,7 @@ internal sealed class ReflectionMcpSpellExecutorRegistry : IMcpSpellExecutorRegi
 
     private void RegisterBinary(object spell, Type iface, Type tIn, Type tOut)
     {
-        var name = SchemaGen.GetFriendlyName(tIn);
-        var inputSchema = SchemaGen.GenerateSchema(tIn);
-        var outputSchema = SchemaGen.GenerateSchema(tOut);
-        _tools.Add(new McpTool(name, inputSchema, outputSchema));
+        var name = (spell as ISpellContract)?.GetDefinition().Name ?? SchemaGen.GetFriendlyName(tIn);
 
         var exec = BuildBinaryExecutor(spell, iface, tIn, tOut);
 
@@ -109,9 +106,7 @@ internal sealed class ReflectionMcpSpellExecutorRegistry : IMcpSpellExecutorRegi
 
     private void RegisterUnary(object spell, Type iface, Type tIn)
     {
-        var name = SchemaGen.GetFriendlyName(tIn);
-        var inputSchema = SchemaGen.GenerateSchema(tIn);
-        _tools.Add(new McpTool(name, inputSchema, null));
+        var name = (spell as ISpellContract)?.GetDefinition().Name ?? SchemaGen.GetFriendlyName(tIn);
 
         var exec = BuildUnaryExecutor(spell, iface, tIn);
         _map[name] = (exec, false);
@@ -146,8 +141,7 @@ internal sealed class ReflectionMcpSpellExecutorRegistry : IMcpSpellExecutorRegi
 
     private void RegisterZero(object spell)
     {
-        var name = SchemaGen.GetFriendlyName(spell.GetType());
-        _tools.Add(new McpTool(name, null, null));
+        var name = (spell as ISpellContract)?.GetDefinition().Name ?? SchemaGen.GetFriendlyName(spell.GetType());
         var exec = BuildZeroExecutor(spell);
         _map[name] = (exec, false);
     }
