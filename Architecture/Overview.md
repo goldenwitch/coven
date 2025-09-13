@@ -1,6 +1,5 @@
 ## Getting Started
 - [Overview](./Overview.md) (this document)
-- [End-to-End Example](./EndToEndExample.md)
 
 # Coven
 
