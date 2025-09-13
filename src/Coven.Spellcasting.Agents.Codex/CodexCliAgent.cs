@@ -99,7 +99,7 @@ namespace Coven.Spellcasting.Agents.Codex;
     {
         // Build MCP tools and an executor registry directly from the provided spell instances.
         _toolbelt = McpToolbeltBuilder.FromSpells(Spells);
-        _executorRegistry = new ReflectionMcpSpellExecutorRegistry(Spells.Cast<object>());
+        _executorRegistry = new SimpleMcpSpellExecutorRegistry(Spells);
         return Task.CompletedTask;
     }
 

@@ -91,7 +91,7 @@ Summary mapping to the numbered flow above:
 ## Lifecycle
 
 1) Register spells (optional):
-   - `CodexCliAgent.RegisterSpells(IReadOnlyList<ISpellContract>)` accepts actual spell instances (contracts), builds an MCP `McpToolbelt` from their definitions, and creates a `ReflectionMcpSpellExecutorRegistry` so MCP tool calls can invoke the spells by name.
+   - `CodexCliAgent.RegisterSpells(IReadOnlyList<ISpellContract>)` accepts actual spell instances (contracts), builds an MCP `McpToolbelt` from their definitions, and creates an executor registry so MCP tool calls can invoke the spells by name.
 
 2) Invoke:
    - Compute `CODEX_HOME = <workspace>/.codex` and ensure directory.
