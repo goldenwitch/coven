@@ -23,7 +23,7 @@ public sealed class CodexCliAgentDiTests
         var configCapture = new CapturingConfigWriter();
         var tailFactory = new CapturingInMemoryTailFactory();
 
-        using var testHost = new CodexAgentTestHost<string>()
+        using var testHost = new CodexAgentTestHost<ChatEntry>()
             .UseTempWorkspace()
             .Configure(o =>
             {
@@ -61,17 +61,18 @@ public sealed class CodexCliAgentDiTests
 
         // Feed a rollout message and assert scrivener sees translated entry
         var mux = tailFactory.LastInstance ?? throw new InvalidOperationException("Tail mux not created");
-        var scrivener = testHost.Services.GetRequiredService<IScrivener<string>>();
+        var scrivener = testHost.Services.GetRequiredService<IScrivener<ChatEntry>>();
 
         // Arrange a waiter before feeding
-        var waiter = scrivener.WaitForAsync(0, s => s.Contains("assistant: hello", StringComparison.OrdinalIgnoreCase));
+        var waiter = scrivener.WaitForAsync(0, e => e is ChatResponse r && r.Text.Contains("hello", StringComparison.OrdinalIgnoreCase));
 
         var line = "{\"type\":\"message\",\"role\":\"assistant\",\"content\":\"hello\"}";
         await mux.FeedAsync(new Line(line, DateTimeOffset.UtcNow));
 
         // Confirm entry observed, then cancel the agent loop
         var seen = await waiter;
-        Assert.Contains("assistant: hello", seen.entry, StringComparison.OrdinalIgnoreCase);
+        var chat = (ChatResponse)seen.entry;
+        Assert.Contains("hello", chat.Text, StringComparison.OrdinalIgnoreCase);
 
         cts.Cancel();
         try { await runTask; } catch { }
@@ -84,7 +85,7 @@ public sealed class CodexCliAgentDiTests
         var configCapture = new CapturingConfigWriter();
         var tailFactory = new CapturingInMemoryTailFactory();
 
-        using var testHost = new CodexAgentTestHost<string>()
+        using var testHost = new CodexAgentTestHost<ChatEntry>()
             .UseTempWorkspace()
             .Configure(o =>
             {
@@ -106,14 +107,15 @@ public sealed class CodexCliAgentDiTests
         Assert.Empty(configCapture.Calls);
 
         var mux = tailFactory.LastInstance ?? throw new InvalidOperationException("Tail mux not created");
-        var scrivener = testHost.Services.GetRequiredService<IScrivener<string>>();
+        var scrivener = testHost.Services.GetRequiredService<IScrivener<ChatEntry>>();
 
-        var waiter = scrivener.WaitForAsync(0, s => s.Contains("$ echo", StringComparison.OrdinalIgnoreCase));
+        var waiter = scrivener.WaitForAsync(0, e => e is ChatResponse r && r.Text.Contains("$ echo", StringComparison.OrdinalIgnoreCase));
         var cmdLine = "{\"type\":\"command\",\"command\":\"echo hi\",\"cwd\":\"/tmp\"}";
         await mux.FeedAsync(new Line(cmdLine, DateTimeOffset.UtcNow));
 
         var seen = await waiter;
-        Assert.Contains("$ echo hi", seen.entry, StringComparison.OrdinalIgnoreCase);
+        var chat2 = (ChatResponse)seen.entry;
+        Assert.Contains("$ echo hi", chat2.Text, StringComparison.OrdinalIgnoreCase);
 
         cts.Cancel();
         try { await runTask; } catch { }
@@ -126,7 +128,7 @@ public sealed class CodexCliAgentDiTests
         var proc = new CapturingProcessFactory();
         var resolverPath = Path.Combine(Path.GetTempPath(), "rollout-from-resolver.jsonl");
 
-        using var testHost = new CodexAgentTestHost<string>()
+        using var testHost = new CodexAgentTestHost<ChatEntry>()
             .UseTempWorkspace()
             .Configure(o => o.ExecutablePath = "codex")
             .WithTailFactory(tailFactory)
@@ -156,7 +158,7 @@ public sealed class CodexCliAgentDiTests
         var hostDouble = new FakeMcpServerHost();
         var configCapture = new CapturingConfigWriter();
 
-        using var testHost = new CodexAgentTestHost<string>()
+        using var testHost = new CodexAgentTestHost<ChatEntry>()
             .UseTempWorkspace()
             .Configure(o =>
             {

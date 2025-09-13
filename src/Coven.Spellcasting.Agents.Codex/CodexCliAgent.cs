@@ -36,24 +36,6 @@ namespace Coven.Spellcasting.Agents.Codex;
 
     // Removed unused process/task tracking fields from an earlier design.
 
-    internal CodexCliAgent(string codexExecutablePath, string workspaceDirectory, IScrivener<TMessageFormat> scrivener, string? shimExecutablePath = null)
-    {
-        _codexExecutablePath = codexExecutablePath;
-        _workspaceDirectory = workspaceDirectory;
-        _scrivener = scrivener;
-        _codexHomeDir = Path.Combine(_workspaceDirectory, ".codex");
-        _shimExecutablePath = shimExecutablePath;
-        try { Directory.CreateDirectory(_codexHomeDir); } catch { }
-
-        // Default translator for plain strings; callers can extend later via options/DI.
-        if (typeof(TMessageFormat) == typeof(string))
-        {
-            _translator = (ICodexRolloutTranslator<TMessageFormat>) (object) new DefaultStringTranslator();
-        }
-        
-        _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
-    }
-
     // Constructor that allows specifying a translator for non-string message formats
     internal CodexCliAgent(
         string codexExecutablePath,
@@ -66,14 +48,21 @@ namespace Coven.Spellcasting.Agents.Codex;
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
         IRolloutPathResolver? rolloutResolver)
-        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath)
     {
+        _codexExecutablePath = codexExecutablePath;
+        _workspaceDirectory = workspaceDirectory;
+        _scrivener = scrivener;
+        _codexHomeDir = Path.Combine(_workspaceDirectory, ".codex");
+        _shimExecutablePath = shimExecutablePath;
+        try { Directory.CreateDirectory(_codexHomeDir); } catch { }
+
         _hostOverride = host;
         _procFactory = processFactory;
         _tailFactory = tailFactory;
         _configWriter = configWriter;
         _rolloutResolver = rolloutResolver;
         _translator = translator;
+        _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
     internal CodexCliAgent(
@@ -86,13 +75,20 @@ namespace Coven.Spellcasting.Agents.Codex;
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
         IRolloutPathResolver? rolloutResolver)
-        : this(codexExecutablePath, workspaceDirectory, scrivener, shimExecutablePath)
     {
+        _codexExecutablePath = codexExecutablePath;
+        _workspaceDirectory = workspaceDirectory;
+        _scrivener = scrivener;
+        _codexHomeDir = Path.Combine(_workspaceDirectory, ".codex");
+        _shimExecutablePath = shimExecutablePath;
+        try { Directory.CreateDirectory(_codexHomeDir); } catch { }
+
         _hostOverride = host;
         _procFactory = processFactory;
         _tailFactory = tailFactory;
         _configWriter = configWriter;
         _rolloutResolver = rolloutResolver;
+        _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
     public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)

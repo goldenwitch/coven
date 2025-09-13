@@ -90,7 +90,7 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
         {
             if (_provider is not null) return this; // idempotent
 
-            if (typeof(TMessageFormat) == typeof(string))
+            if (typeof(TMessageFormat) == typeof(Coven.Chat.ChatEntry))
             {
                 _services.AddCodexCliAgent(o =>
                 {
@@ -115,7 +115,7 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
             return this;
         }
 
-        // Placeholder translator to satisfy the generic constraint when TMessageFormat != string.
+        // Placeholder translator to satisfy the generic constraint when TMessageFormat is not ChatEntry.
         // Real translator should be provided via DI; this one will never be resolved because
         // AddCodexCliAgent<TMessage, TTranslator> first tries to resolve ICodexRolloutTranslator<TMessage>
         // from the service provider before creating TTranslator.

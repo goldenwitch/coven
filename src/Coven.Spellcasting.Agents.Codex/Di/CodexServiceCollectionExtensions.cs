@@ -24,7 +24,7 @@ public sealed class CodexCliAgentRegistrationOptions
 
     public static class CodexServiceCollectionExtensions
     {
-        // String-only registration
+        // Default registration: ChatEntry + DefaultChatEntryTranslator
         public static IServiceCollection AddCodexCliAgent(
             this IServiceCollection services,
             Action<CodexCliAgentRegistrationOptions> configure)
@@ -39,7 +39,9 @@ public sealed class CodexCliAgentRegistrationOptions
 
             services.AddCovenAgent(sp =>
             {
-                var scrivener = sp.GetRequiredService<IScrivener<string>>();
+                var scrivener = sp.GetRequiredService<IScrivener<ChatEntry>>();
+                var translator = sp.GetService<Coven.Spellcasting.Agents.Codex.Rollout.ICodexRolloutTranslator<ChatEntry>>()
+                                 ?? new Coven.Spellcasting.Agents.Codex.Rollout.DefaultChatEntryTranslator();
                 var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
                 var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
                 var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
@@ -71,10 +73,11 @@ public sealed class CodexCliAgentRegistrationOptions
                     catch { }
                 }
 
-                return CodexCliAgentBuilder.CreateString(
+                return CodexCliAgentBuilder.Create(
                     opts.ExecutablePath,
                     opts.WorkspaceDirectory,
                     scrivener,
+                    translator,
                     shimPath,
                     host,
                     procFactory,
