@@ -10,10 +10,10 @@ public sealed class McpToolbeltBuilderTests
     [Fact]
     public void FromSpells_Maps_All_Fields()
     {
-        var spells = new List<SpellDefinition>
+        var spells = new List<ISpellContract>
         {
-            new("build", "{\"type\":\"object\"}", "{\"type\":\"string\"}"),
-            new("test",  "{\"type\":\"null\"}",  null)
+            new TestSpell(new("build", "{\"type\":\"object\"}", "{\"type\":\"string\"}")),
+            new TestSpell(new("test",  "{\"type\":\"null\"}",  null))
         };
 
         var belt = Coven.Spellcasting.Agents.Codex.MCP.McpToolbeltBuilder.FromSpells(spells);
@@ -30,7 +30,7 @@ public sealed class McpToolbeltBuilderTests
     [Fact]
     public void ToJson_Emits_Tools_Array_With_Fields()
     {
-        var spells = new List<SpellDefinition> { new("format", "{}", "{}") };
+        var spells = new List<ISpellContract> { new TestSpell(new("format", "{}", "{}")) };
         var belt = Coven.Spellcasting.Agents.Codex.MCP.McpToolbeltBuilder.FromSpells(spells);
 
         var json = belt.ToJson();
@@ -43,5 +43,11 @@ public sealed class McpToolbeltBuilderTests
         Assert.Equal("format", t0.GetProperty("Name").GetString());
         Assert.Equal("{}", t0.GetProperty("InputSchema").GetString());
         Assert.Equal("{}", t0.GetProperty("OutputSchema").GetString());
+    }
+
+    private sealed class TestSpell : ISpellContract
+    {
+        public TestSpell(SpellDefinition def) { Definition = def; }
+        public SpellDefinition Definition { get; }
     }
 }

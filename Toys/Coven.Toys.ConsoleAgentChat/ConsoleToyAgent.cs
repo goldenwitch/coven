@@ -35,7 +35,7 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
         }
     }
 
-    public Task RegisterSpells(List<SpellDefinition> spells)
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells)
     {
         // No-op: this toy agent does not use spells
         return Task.CompletedTask;

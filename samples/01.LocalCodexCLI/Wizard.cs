@@ -26,10 +26,11 @@ internal sealed class Wizard : MagikUser<Empty, Empty, Guidebook, Spellbook, Tes
         Spellbook spellbook,
         Testbook testbook)
     {
-        // Provide spell definitions to the agent and start it.
-        if (spellbook.Definitions is not null)
+        // Provide spells to the agent and start it (definitions come from contracts).
+        var contracts = spellbook.Spells.OfType<ISpellContract>().ToList();
+        if (contracts.Count != 0)
         {
-            await _agent.RegisterSpells(spellbook.Definitions.ToList()).ConfigureAwait(false);
+            await _agent.RegisterSpells(contracts).ConfigureAwait(false);
         }
 
         await _agent.InvokeAgent().ConfigureAwait(false);

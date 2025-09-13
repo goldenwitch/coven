@@ -7,9 +7,9 @@ namespace Coven.Samples.LocalCodexCLI.Tests;
 
 internal sealed class NoopAgent : ICovenAgent<string>
 {
-    private readonly List<SpellDefinition> _defs = new();
+    private readonly List<ISpellContract> _defs = new();
 
-    public Task RegisterSpells(List<SpellDefinition> spells)
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells)
     {
         _defs.Clear();
         if (spells is not null) _defs.AddRange(spells);

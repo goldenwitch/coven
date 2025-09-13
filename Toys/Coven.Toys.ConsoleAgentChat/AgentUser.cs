@@ -4,6 +4,7 @@ using Coven.Core;
 using Coven.Chat;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
+using Coven.Spellcasting.Spells;
 
 namespace Coven.Toys.ConsoleAgentChat;
 
@@ -24,9 +25,10 @@ internal sealed class AgentUser : MagikUser<Empty, Empty, Guidebook, Spellbook, 
         Spellbook spellbook,
         Testbook testbook)
     {
-        if (spellbook.Definitions is not null)
+        var contracts = spellbook.Spells.OfType<ISpellContract>().ToList();
+        if (contracts.Count != 0)
         {
-            await _agent.RegisterSpells(spellbook.Definitions.ToList()).ConfigureAwait(false);
+            await _agent.RegisterSpells(contracts).ConfigureAwait(false);
         }
         await _agent.InvokeAgent().ConfigureAwait(false);
         return Empty.Value;

@@ -13,7 +13,7 @@ public sealed class SpellbookBuilder
     {
         if (spell is null) throw new ArgumentNullException(nameof(spell));
         _spells.Add(spell);
-        _definitions.Add(new SpellDefinition(SchemaGen.GetFriendlyName(spell.GetType())));
+        _definitions.Add(spell.Definition);
         return this;
     }
 
@@ -21,7 +21,7 @@ public sealed class SpellbookBuilder
     {
         if (spell is null) throw new ArgumentNullException(nameof(spell));
         _spells.Add(spell);
-        _definitions.Add(spell.GetDefinition());
+        _definitions.Add(spell.Definition);
         return this;
     }
 
@@ -29,7 +29,7 @@ public sealed class SpellbookBuilder
     {
         if (spell is null) throw new ArgumentNullException(nameof(spell));
         _spells.Add(spell);
-        _definitions.Add(spell.GetDefinition());
+        _definitions.Add(spell.Definition);
         return this;
     }
 

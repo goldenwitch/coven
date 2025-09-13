@@ -23,9 +23,10 @@ internal sealed class CodexWizard : MagikUser<Empty, Empty, Guidebook, Spellbook
         Spellbook spellbook,
         Testbook testbook)
     {
-        if (spellbook.Definitions is not null)
+        var contracts = spellbook.Spells.OfType<Coven.Spellcasting.Spells.ISpellContract>().ToList();
+        if (contracts.Count != 0)
         {
-            await _agent.RegisterSpells(spellbook.Definitions.ToList()).ConfigureAwait(false);
+            await _agent.RegisterSpells(contracts).ConfigureAwait(false);
         }
 
         await _agent.InvokeAgent().ConfigureAwait(false);
