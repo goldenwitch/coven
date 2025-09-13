@@ -14,18 +14,15 @@ Start with Overview, then explore by topic. This index includes all design docs 
 ## Runtime
 - [Board (Push & Pull)](./Board.md)
 - [Dependency Injection](./DependencyInjection.md)
-- [Connectivity](./Connectivity.md)
 
 ## Spellcasting
 - [Spellcasting (Design)](./Spellcasting/Spellcasting.md)
-- [Spellcasting.Agents](./Spellcasting/Spellcasting.Agents.md)
+- [Spellcasting.Spells](./Spellcasting/Spellcasting.Spells.md)
+- [Agents — Codex CLI](./Spellcasting/Agents/CodexCliAgent.md)
 - [Spellcasting.Agents.Validation](./Spellcasting/Spellcasting.Agents.Validation.md)
 
 ## Chat Subsystem
 - [Chat (Overview)](./Chat/Chat.md)
-- [Chat Journal](./Chat/Chat.Journal.md)
-- [Chat Journal Compaction](./Chat/Chat.Journal.Compaction.md)
-- [Discord Adapter](./Chat/Chat.Adapter.Discord.md)
 
 ## Tooling
 - [Roslyn Analyzer Pack](./Analyzer/Analyzer.md)

@@ -28,3 +28,11 @@
 - **Typing:** Payloads are fully generic; teams can evolve schemas without changing the core surface.
 
 ---
+
+## Agents Overview
+
+An `ICovenAgent<TMessage>` is responsible for:
+- Starting and controlling the agent runtime lifecycle.
+- Registering spells (via `ISpellContract`) so tools are available to the agent.
+
+For the Codex CLI implementation, see `Spellcasting/Agents/CodexCliAgent.md`.

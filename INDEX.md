@@ -65,14 +65,13 @@ Start with Overview, then explore by topic. All paths below are under `/Architec
 ## Runtime
 - [Board (Push & Pull)](/Architecture/Board.md)
 - [Dependency Injection](/Architecture/DependencyInjection.md)
-- [Connectivity](/Architecture/Connectivity.md)
+ 
 
 ## Spellcasting
 - [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md)
 - [Spellcasting.Spells](/Architecture/Spellcasting/Spellcasting.Spells.md)
-- [Spellcasting.Agents](/Architecture/Spellcasting/Spellcasting.Agents.md)
 - [Spellcasting.Agents.Validation](/Architecture/Spellcasting/Spellcasting.Agents.Validation.md)
- - [Codex CLI Agent](/Architecture/Spellcasting/Agents/CodexCliAgent.md)
+ - [Agents — Codex CLI](/Architecture/Spellcasting/Agents/CodexCliAgent.md)
 
 ## Chat Subsystem
 - [Chat (Overview)](/Architecture/Chat/Chat.md)
