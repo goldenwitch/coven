@@ -1,4 +1,4 @@
-# Spells
+# Coven.Spellcasting.Spells
 
 Spells represent a tool call that the agent can intentionally invoke. They are implemented as well-typed .NET classes, unified under a single, shared contract for metadata.
 

@@ -1,4 +1,4 @@
-# COVEN.Spellcasting — Design (single‑file, no composites)
+# Coven.Spellcasting
 
 > Provide three canonical “books” (Guide/Spell/Test) to agent code automatically, keeping the system **unopinionated**, **code‑first**, and **type‑safe**. Agents remain user‑owned; no external config files or orchestration in this layer. This doc reflects the simplified design **without composite factories**.
 
@@ -35,4 +35,4 @@ An `ICovenAgent<TMessage>` is responsible for:
 - Starting and controlling the agent runtime lifecycle.
 - Registering spells (via `ISpellContract`) so tools are available to the agent.
 
-For the Codex CLI implementation, see `Spellcasting/Agents/CodexCliAgent.md`.
+For the Codex CLI implementation, see `Coven.Spellcasting.Agents.Codex`.

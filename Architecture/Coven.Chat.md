@@ -1,4 +1,4 @@
-# Coven Journaling Pattern (3‑type, DI‑friendly core) — updated generics & backward reads
+# Coven.Chat
 
 **Scope:** Three public surfaces that match the diagram: `IAdapterHost<TClientMessage, TJournalEntryType>`, `IAgentHost<TClientMessage, TJournalEntryType>`, `IScrivener<TJournalEntryType>`. The **Journal** is conceptual only (the log/stream), not a class.
 

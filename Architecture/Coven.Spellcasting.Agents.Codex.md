@@ -1,4 +1,4 @@
-# Codex CLI Agent
+# Coven.Spellcasting.Agents.Codex
 
 High-level design and usage notes for `Coven.Spellcasting.Agents.Codex`.
 

@@ -68,16 +68,16 @@ Start with Overview, then explore by topic. All paths below are under `/Architec
  
 
 ## Spellcasting
-- [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md)
-- [Spellcasting.Spells](/Architecture/Spellcasting/Spellcasting.Spells.md)
-- [Spellcasting.Agents.Validation](/Architecture/Spellcasting/Spellcasting.Agents.Validation.md)
- - [Agents — Codex CLI](/Architecture/Spellcasting/Agents/CodexCliAgent.md)
+- [Coven.Spellcasting](/Architecture/Coven.Spellcasting.md)
+- [Coven.Spellcasting.Spells](/Architecture/Coven.Spellcasting.Spells.md)
+- [Coven.Spellcasting.Agents.Validation](/Architecture/Coven.Spellcasting.Agents.Validation.md)
+- [Coven.Spellcasting.Agents.Codex](/Architecture/Coven.Spellcasting.Agents.Codex.md)
 
 ## Chat Subsystem
-- [Chat (Overview)](/Architecture/Chat/Chat.md)
+- [Coven.Chat](/Architecture/Coven.Chat.md)
 
 ## Tooling
-- [Roslyn Analyzer Pack](/Architecture/Analyzer/Analyzer.md)
+- [Coven.Analyzers](/Architecture/Coven.Analyzers.md)
 
 ## Meta
 - [Contributing](/Architecture/Contributing.md)

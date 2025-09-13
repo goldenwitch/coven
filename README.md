@@ -100,7 +100,7 @@ Explore runnable examples in `/samples`. Open `samples/Coven.Samples.sln` to bro
 
 - [Code Index](/INDEX.md)
 - [Architecture Guide](/Architecture/README.md)
-- [Spellcasting (Design)](/Architecture/Spellcasting/Spellcasting.md)
+- [Spellcasting (Design)](/Architecture/Coven.Spellcasting.md)
 
 ## License
 

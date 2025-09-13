@@ -1,4 +1,4 @@
-# Coven Roslyn Analyzer Pack
+# Coven.Analyzers
 
 This document describes the design and usage of the **Coven Roslyn analyzer pack** that enforces core architectural constraints for MagikBlocks and tag usage. It ships as a NuGet package `Coven.Analyzers` (analyzers + code fixes) and an optional VSIX for IDEs.
 

@@ -1,5 +1,5 @@
 
-# Coven.Spellcasting.Agents.Validation - Design
+# Coven.Spellcasting.Agents.Validation
 
 > **Purpose.** Provide a tiny, idempotent **AgentValidation** extension point that can run as a regular **MagikBlock** (traditional compute) or be called manually anywhere in the pipeline. This leaves **MagikUser** reserved for *agent runtime*, while validation handles *environment readiness* (e.g., installing CLIs, checking versions) with a minimal public surface.
 
