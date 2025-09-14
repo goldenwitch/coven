@@ -47,6 +47,18 @@
     }
     ,
     {
+      "name": ".NET Launch (Console) - RolloutMuxConsole",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "build RolloutMuxConsole",
+      "program": "${workspaceFolder}/Toys/Coven.Toys.RolloutMuxConsole/bin/Debug/net10.0/Coven.Toys.RolloutMuxConsole.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/Toys/Coven.Toys.RolloutMuxConsole",
+      "console": "externalTerminal",
+      "stopAtEntry": false
+    }
+    ,
+    {
       "name": ".NET Launch (Console) - MockProcess",
       "type": "coreclr",
       "request": "launch",

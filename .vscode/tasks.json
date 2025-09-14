@@ -52,6 +52,19 @@
     }
     ,
     {
+      "label": "build RolloutMuxConsole",
+      "command": "dotnet",
+      "type": "process",
+      "args": [
+        "build",
+        "${workspaceFolder}/Toys/Coven.Toys.RolloutMuxConsole/Coven.Toys.RolloutMuxConsole.csproj",
+        "/property:GenerateFullPaths=true",
+        "/consoleloggerparameters:NoSummary"
+      ],
+      "problemMatcher": ["$msCompile"]
+    }
+    ,
+    {
       "label": "build MockProcess",
       "command": "dotnet",
       "type": "process",

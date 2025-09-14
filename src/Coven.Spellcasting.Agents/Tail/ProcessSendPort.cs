@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.ComponentModel;
 using System.Diagnostics;
 using Coven.Spellcasting.Agents;
 
@@ -67,6 +68,11 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
             if (_started) return;
             if (_disposed) throw new ObjectDisposedException(nameof(ProcessSendPort));
 
+            if (!string.IsNullOrWhiteSpace(_workingDirectory) && !Directory.Exists(_workingDirectory))
+            {
+                throw new DirectoryNotFoundException($"Workspace directory not found: {_workingDirectory}");
+            }
+
             var psi = new ProcessStartInfo(_fileName, _arguments ?? string.Empty)
             {
                 UseShellExecute = false,
@@ -90,8 +96,21 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
             _configurePsi?.Invoke(psi);
 
             _proc = new Process { StartInfo = psi };
-            if (!_proc.Start())
-                throw new InvalidOperationException("Failed to start process.");
+            try
+            {
+                if (!_proc.Start())
+                    throw new InvalidOperationException("Failed to start process.");
+            }
+            catch (Win32Exception win32Ex)
+            {
+                // Common case: executable not found or not executable on PATH
+                throw new FileNotFoundException($"Executable not found or not executable: '{_fileName}'. Ensure it is on PATH or specify an absolute path via configuration.", _fileName, win32Ex);
+            }
+            catch (DirectoryNotFoundException)
+            {
+                // Propagate as-is with clear message set above
+                throw;
+            }
 
             _started = true;
         }

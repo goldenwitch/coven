@@ -46,6 +46,7 @@ Project overview: see [README](/README.md).
 - [Coven.Toys.ConsoleEcho](/Toys/Coven.Toys.ConsoleEcho/)
 - [Coven.Toys.ConsoleAgentChat](/Toys/Coven.Toys.ConsoleAgentChat/)
 - [Coven.Toys.CodexConsole](/Toys/Coven.Toys.CodexConsole/)
+- [Coven.Toys.RolloutMuxConsole](/Toys/Coven.Toys.RolloutMuxConsole/)
 
 # Architecture Guide
 
