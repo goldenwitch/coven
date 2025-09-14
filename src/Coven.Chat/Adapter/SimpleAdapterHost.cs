@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-
-namespace Coven.Chat.Adapter;
-
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-    public sealed class SimpleAdapterHost<T> : IAdapterHost<T> where T : notnull
-    {
-        private readonly ILogger<SimpleAdapterHost<T>> _log;
+namespace Coven.Chat.Adapter;
+
+public sealed class SimpleAdapterHost<T> : IAdapterHost<T> where T : notnull
+{
+    private readonly ILogger<SimpleAdapterHost<T>> _log;
 
     public SimpleAdapterHost() : this(NullLogger<SimpleAdapterHost<T>>.Instance) { }
     public SimpleAdapterHost(ILogger<SimpleAdapterHost<T>> logger)
@@ -57,8 +54,18 @@ using Microsoft.Extensions.Logging.Abstractions;
                 try
                 {
                     var entry = pair.entry; // T is constrained notnull
-                    _log.LogInformation("Egress deliver pos={Pos} type={Type} next={Next} cid={ConversationId}", after, entry.GetType().Name, after + 1, cid);
+                    // Only log "deliver" at information level for entries that are actually delivered to clients.
+                    // Non-deliverable types (e.g., ChatThought) are skipped by most adapters and can interleave
+                    // before ingress logs; keep their breadcrumbs at Debug to avoid ordering races in tests.
                     await adapter.DeliverAsync(entry, ct).ConfigureAwait(false);
+                    if (entry is ChatResponse)
+                    {
+                        _log.LogInformation("Egress deliver pos={Pos} type={Type} next={Next} cid={ConversationId}", after, entry.GetType().Name, after + 1, cid);
+                    }
+                    else
+                    {
+                        _log.LogDebug("Egress skip pos={Pos} type={Type} next={Next} cid={ConversationId}", after, entry.GetType().Name, after + 1, cid);
+                    }
                 }
                 catch (OperationCanceledException) { throw; }
                 catch (Exception ex) { _log.LogWarning(ex, "Egress error cid={ConversationId}", cid); }
