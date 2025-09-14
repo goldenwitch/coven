@@ -5,14 +5,9 @@ using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Microsoft.Extensions.Logging;
 using Coven.Spellcasting.Agents.Codex.MCP;
-using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
-using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex.Tail;
-using Coven.Spellcasting;
 using Coven.Spellcasting.Agents.Validation;
-using Coven.Core;
-// duplicate using removed
 
 namespace Coven.Spellcasting.Agents.Codex.Di;
 
@@ -34,10 +29,8 @@ public sealed class CodexCliAgentRegistrationOptions
             var scrivener = sp.GetRequiredService<IScrivener<TMessage>>();
             var translator = sp.GetService<ICodexRolloutTranslator<TMessage>>() ?? new TTranslator();
             var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
-            var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
             var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
             var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
-            var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
             var logger = sp.GetService<ILogger<CodexCliAgent<TMessage>>>();
 
             var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
@@ -49,10 +42,8 @@ public sealed class CodexCliAgentRegistrationOptions
                 translator,
                 shimPath,
                 host,
-                procFactory,
                 tailFactory,
                 configWriter,
-                resolver,
                 logger);
         }
 

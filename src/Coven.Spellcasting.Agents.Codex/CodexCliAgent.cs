@@ -8,7 +8,6 @@ using Coven.Spellcasting.Spells;
 using Coven.Spellcasting.Agents.Codex.Rollout;
 using Coven.Spellcasting.Agents.Codex.MCP.Tools;
 using Coven.Spellcasting.Agents.Codex.MCP;
-using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex.Tail;
 using Coven.Spellcasting.Agents.Codex.Config;
@@ -25,10 +24,8 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly string? _shimExecutablePath;
     private IMcpSpellExecutorRegistry? _executorRegistry;
     private readonly IMcpServerHost? _hostOverride;
-    private readonly ICodexProcessFactory? _procFactory;
     private readonly ITailMuxFactory? _tailFactory;
     private readonly ICodexConfigWriter? _configWriter;
-    private readonly IRolloutPathResolver? _rolloutResolver;
     private McpToolbelt? _toolbelt;
         private IMcpServerSession? _mcpSession;
         private readonly ILogger<CodexCliAgent<TMessageFormat>> _log;
@@ -43,10 +40,8 @@ namespace Coven.Spellcasting.Agents.Codex;
         ICodexRolloutTranslator<TMessageFormat> translator,
         string? shimExecutablePath,
         IMcpServerHost? host,
-        ICodexProcessFactory? processFactory,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
-        IRolloutPathResolver? rolloutResolver,
         ILogger<CodexCliAgent<TMessageFormat>>? logger = null)
     {
         _codexExecutablePath = codexExecutablePath;
@@ -57,10 +52,8 @@ namespace Coven.Spellcasting.Agents.Codex;
         try { Directory.CreateDirectory(_codexHomeDir); } catch { }
 
         _hostOverride = host;
-        _procFactory = processFactory;
         _tailFactory = tailFactory;
         _configWriter = configWriter;
-        _rolloutResolver = rolloutResolver;
         _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         _log = logger ?? NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
@@ -101,23 +94,12 @@ namespace Coven.Spellcasting.Agents.Codex;
                 }
                 }
 
-            var processFactory = _procFactory ?? new DefaultCodexProcessFactory();
-            await using var handle = processFactory.Start(_codexExecutablePath, arguments: null, _workspaceDirectory, env);
-            var proc = handle.Process;
-
-            // Determine rollout path for the just-started session
-            var resolver = _rolloutResolver ?? new DefaultRolloutPathResolver();
-            var rolloutPath = await resolver.ResolveAsync(_codexExecutablePath, _workspaceDirectory, _codexHomeDir, env, TimeSpan.FromSeconds(8), ct)
-                .ConfigureAwait(false);
-            if (string.IsNullOrWhiteSpace(rolloutPath))
-            {
-                // Fallback to a local log; mux will wait if/when it appears
-                rolloutPath = Path.Combine(_codexHomeDir, "codex.rollout.jsonl");
-            }
+            // Use a deterministic rollout path; mux will start Codex and the file will appear when Codex begins logging
+            var rolloutPath = Path.Combine(_codexHomeDir, "codex.rollout.jsonl");
             _log.LogDebug("Using rollout path: {RolloutPath}", rolloutPath);
 
             var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
-            await using ITailMux mux = tailFactory.CreateForRollout(rolloutPath, proc);
+            await using ITailMux mux = tailFactory.CreateForRollout(rolloutPath, _codexExecutablePath, _workspaceDirectory);
 
             // Ingress: begin reading from scrivener and forward user thoughts to Codex stdin.
             // Only supported for ChatEntry journals to avoid echo/feedback loops for plain string journals.

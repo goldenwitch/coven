@@ -7,13 +7,23 @@ namespace Coven.Spellcasting.Agents.Codex.Tail;
 
 internal sealed class DefaultTailMuxFactory : ITailMuxFactory
 {
-    public ITailMux CreateForRollout(string rolloutPath, Process? process)
+    public ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory)
     {
-        if (process is null)
+        var codexHome = Path.Combine(workspaceDirectory, ".codex");
+        try { Directory.CreateDirectory(codexHome); } catch { }
+
+        var env = new Dictionary<string, string?>
         {
-            // Fallback to tail-only: write-only path will be unused
-            return new ProcessDocumentTailMux(rolloutPath, fileName: "cmd", arguments: null);
-        }
-        return new ProcessDocumentTailMux(rolloutPath, process);
+            ["CODEX_HOME"] = codexHome
+        };
+
+        // Start codex with an explicit log directory under the workspace
+        var args = $"--log-dir {codexHome}";
+        return new ProcessDocumentTailMux(
+            rolloutPath,
+            fileName: codexExecutablePath,
+            arguments: args,
+            workingDirectory: workspaceDirectory,
+            environment: env);
     }
 }

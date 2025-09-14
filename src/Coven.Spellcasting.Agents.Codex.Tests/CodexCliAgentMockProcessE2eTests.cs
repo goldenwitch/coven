@@ -4,8 +4,8 @@ using System.Diagnostics;
 using System.Collections.Concurrent;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Di;
-using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
+using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using System.Text.Json;
@@ -45,57 +45,21 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
             }
         }
 
-    private static void TrackProcess(Process p)
+    private sealed class MockTailMuxFactory : ITailMuxFactory
     {
-        try { s_startedProcesses.Add(p); } catch { }
-    }
-    private sealed class MockProcessFactory : ICodexProcessFactory
-    {
-        private sealed class Handle : IProcessHandle
-        {
-            public Process Process { get; }
-            public Handle(Process p) { Process = p; }
-            public async ValueTask DisposeAsync()
-            {
-                try { if (!Process.HasExited) Process.Kill(entireProcessTree: true); } catch { }
-                try { await Process.WaitForExitAsync(); } catch { }
-                Process.Dispose();
-            }
-        }
-
         private readonly string _mockExePath;
-        private readonly string _rolloutPath;
         private readonly string _logPath;
-        public MockProcessFactory(string mockExePath, string rolloutPath, string logPath)
-        { _mockExePath = mockExePath; _rolloutPath = rolloutPath; _logPath = logPath; }
+        public MockTailMuxFactory(string mockExePath, string logPath)
+        { _mockExePath = mockExePath; _logPath = logPath; }
 
-        public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+        public ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory)
         {
-            // Start the toy via 'dotnet <dll> --rollout <path>' so stdin is available
-            var psi = new ProcessStartInfo(_mockExePath, $"--rollout \"{_rolloutPath}\" --log \"{_logPath}\"")
-            {
-                UseShellExecute = false,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = false,
-                RedirectStandardError = false,
-                WorkingDirectory = workingDirectory,
-                CreateNoWindow = true
-            };
-            // Carry environment
-            foreach (var kv in environment)
-            {
-                if (kv.Value is null) psi.Environment.Remove(kv.Key);
-                else psi.Environment[kv.Key] = kv.Value;
-            }
-            // Ensure PATH is present
-            var path = Environment.GetEnvironmentVariable("PATH");
-            if (!string.IsNullOrWhiteSpace(path)) psi.Environment["PATH"] = path;
-
-            var p = new Process { StartInfo = psi };
-            if (!p.Start()) throw new InvalidOperationException("Failed to start MockProcess");
-            // Track for best-effort cleanup if a disposal path is missed
-            TrackProcess(p);
-            return new Handle(p);
+            // Start the toy with rollout/log paths; mux tails rollout and writes to stdin
+            return new ProcessDocumentTailMux(
+                documentPath: rolloutPath,
+                fileName: _mockExePath,
+                arguments: $"--rollout \"{rolloutPath}\" --log \"{_logPath}\"",
+                workingDirectory: workspaceDirectory);
         }
     }
 
@@ -110,7 +74,6 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
 
         var workspace = Path.Combine(Path.GetTempPath(), $"coven_mock_e2e_{Guid.NewGuid():N}");
         Directory.CreateDirectory(workspace);
-        var rolloutPath = Path.Combine(workspace, "codex.rollout.jsonl");
         var logPath = Path.Combine(workspace, "sophia.logs.json");
 
         var services = new ServiceCollection();
@@ -130,13 +93,12 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
             lb.SetMinimumLevel(LogLevel.Debug);
         });
 
-        // Override process + rollout resolution so we exercise real mux + process
-        services.AddSingleton<ICodexProcessFactory>(new MockProcessFactory(mockExe, rolloutPath, logPath));
-        services.AddSingleton<IRolloutPathResolver>(new StubRolloutResolver(rolloutPath));
+        // Override tail factory to exercise real mux + process with the mock toy process
+        services.AddSingleton<ITailMuxFactory>(new MockTailMuxFactory(mockExe, logPath));
 
         services.AddCodexCliAgent<ChatEntry, DefaultChatEntryTranslator>(o =>
         {
-            o.ExecutablePath = "mock"; // ignored by our process factory
+            o.ExecutablePath = "mock"; // ignored by our factory
             o.WorkspaceDirectory = workspace;
             o.ShimExecutablePath = null;
         });

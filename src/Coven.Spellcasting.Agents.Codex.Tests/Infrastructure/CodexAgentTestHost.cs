@@ -4,7 +4,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Di;
 using Coven.Spellcasting.Agents.Codex.MCP;
-using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
 
@@ -55,13 +54,6 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
         return this;
     }
 
-    public CodexAgentTestHost<TMessageFormat> WithProcessFactory(Processes.ICodexProcessFactory factory)
-    {
-        if (factory is null) throw new ArgumentNullException(nameof(factory));
-        _services.AddSingleton(factory);
-        return this;
-    }
-
     public CodexAgentTestHost<TMessageFormat> WithTailFactory(ITailMuxFactory factory)
     {
         if (factory is null) throw new ArgumentNullException(nameof(factory));
@@ -73,13 +65,6 @@ public sealed class CodexAgentTestHost<TMessageFormat> : IDisposable where TMess
     {
         if (writer is null) throw new ArgumentNullException(nameof(writer));
         _services.AddSingleton(writer);
-        return this;
-    }
-
-    public CodexAgentTestHost<TMessageFormat> WithRolloutResolver(Rollout.IRolloutPathResolver resolver)
-    {
-        if (resolver is null) throw new ArgumentNullException(nameof(resolver));
-        _services.AddSingleton(resolver);
         return this;
     }
 

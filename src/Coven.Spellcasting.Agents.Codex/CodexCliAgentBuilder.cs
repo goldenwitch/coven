@@ -4,9 +4,7 @@ using Coven.Chat;
 using Microsoft.Extensions.Logging;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
-using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
-using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
@@ -20,10 +18,8 @@ public static class CodexCliAgentBuilder
         ICodexRolloutTranslator<TMessage> translator,
         string? shimExecutablePath = null,
         IMcpServerHost? host = null,
-        ICodexProcessFactory? processFactory = null,
         ITailMuxFactory? tailFactory = null,
         ICodexConfigWriter? configWriter = null,
-        IRolloutPathResolver? rolloutResolver = null,
         ILogger<CodexCliAgent<TMessage>>? logger = null)
         where TMessage : notnull
     {
@@ -34,10 +30,8 @@ public static class CodexCliAgentBuilder
             translator,
             shimExecutablePath,
             host,
-            processFactory,
             tailFactory,
             configWriter,
-            rolloutResolver,
             logger);
     }
 }

@@ -55,29 +55,8 @@ public sealed class CodexCliValidation : IAgentValidation
         var ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
         if (!ver.Ok)
         {
-            // Attempt discovery via Windows PATH resolution (prefers .cmd)
-            var winPath = ExecutableDiscovery.TryLocateCodexOnWindowsPath();
-            if (!string.IsNullOrWhiteSpace(winPath))
-            {
-                codexExec = winPath!;
-                ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
-            }
-            // Attempt discovery via npm global bin
-            if (!ver.Ok)
-            {
-                var npmPath = ExecutableDiscovery.TryLocateCodexViaNpm();
-                if (!string.IsNullOrWhiteSpace(npmPath))
-                {
-                    codexExec = npmPath!;
-                    ver = _ops.RunProcess(codexExec, plan.VersionProbe.Arguments, plan.VersionProbe.WorkingDirectory, plan.VersionProbe.Environment);
-                }
-            }
-
-            if (!ver.Ok)
-            {
-                var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
-                throw new InvalidOperationException($"Codex CLI not found or not runnable. Looked for '{_executablePath}'. PATH begins: '" + Truncate(pathEnv, 2000) + "'. Set CODEX_EXE or ExecutablePath to an absolute path.");
-            }
+            var pathEnv = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+            throw new InvalidOperationException($"Codex CLI not found or not runnable. Looked for '{_executablePath}'. PATH begins: '" + Truncate(pathEnv, 2000) + "'. Set ExecutablePath to an absolute path or ensure it is on PATH.");
         }
         notes.Add(!string.IsNullOrWhiteSpace(ver.StdOut) ? $"codex ok: {ver.StdOut.Trim()}" : "codex ok: version probe succeeded");
 

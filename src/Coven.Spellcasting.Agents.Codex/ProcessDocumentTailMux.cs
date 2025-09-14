@@ -63,34 +63,8 @@ internal sealed class ProcessDocumentTailMux : ITailMux
         _configurePsi = configurePsi;
     }
 
-    /// <summary>
-    /// Alternate constructor that accepts an already-created process. The mux will not start the process, but will
-    /// assume ownership of its lifecycle (e.g., terminate on dispose) and write to its stdin while tailing
-    /// <paramref name="documentPath"/>.
-    /// </summary>
-    internal ProcessDocumentTailMux(
-        string documentPath,
-        Process process)
-    {
-        _documentPath = documentPath;
-        _fileName = process.StartInfo.FileName;
-        _arguments = process.StartInfo.Arguments;
-        _workingDirectory = process.StartInfo.WorkingDirectory;
-        _environment = null;
-        _configurePsi = null;
-
-        _proc = process;
-        _procStarted = true;
-        try
-        {
-            _procExitTask = _proc.WaitForExitAsync(_tailCts.Token);
-        }
-        catch (Exception ex)
-        {
-            // Non-fatal: exit tracking may not be required in some scenarios
-            _log.LogDebug(ex, "Failed to register process exit tracking; continuing");
-        }
-    }
+    // Removed constructor that accepted an external Process: this mux now owns
+    // process startup and lifecycle using the provided executable + arguments.
 
     // Removed dynamic path resolver; callers should provide a concrete document path.
 

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Diagnostics;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.MCP.Server;
 using Coven.Spellcasting.Agents.Codex.MCP.Tools;
-using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents;
 
 namespace Coven.Spellcasting.Agents.Codex.Tests.Infrastructure;
@@ -17,19 +15,7 @@ public sealed class CapturingConfigWriter : ICodexConfigWriter
         => Calls.Add((codexHomeDir, shimPath, pipeName, serverKey));
 }
 
-public sealed class StubRolloutResolver : Rollout.IRolloutPathResolver
-{
-    private readonly string? _path;
-    public StubRolloutResolver(string? path) { _path = path; }
-    public Task<string?> ResolveAsync(string codexExecutablePath, string workspaceDirectory, string codexHomeDir, IReadOnlyDictionary<string, string?> env, TimeSpan timeout, CancellationToken ct)
-        => Task.FromResult(_path);
-}
-
-public sealed class ThrowingProcessFactory : ICodexProcessFactory
-{
-    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
-        => throw new InvalidOperationException("Process start should not be called in this test.");
-}
+// Removed obsolete resolver/process factory doubles.
 
 public sealed class FakeMcpServerHost : IMcpServerHost
 {
@@ -106,62 +92,22 @@ public sealed class FakeMcpServerHost : IMcpServerHost
     }
 }
 
-public sealed class NoopProcessFactory : ICodexProcessFactory
-{
-    private sealed class Handle : IProcessHandle
-    {
-        public Process Process { get; }
-        public Handle()
-        {
-            Process = new Process();
-        }
-        public ValueTask DisposeAsync()
-        {
-            try { Process.Dispose(); } catch { }
-            return ValueTask.CompletedTask;
-        }
-    }
-
-    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
-        => new Handle();
-}
+// Removed obsolete Noop process factory.
 
 public sealed class CapturingInMemoryTailFactory : ITailMuxFactory
 {
     internal InMemoryTailMux? LastInstance { get; private set; }
     public string? LastRolloutPath { get; private set; }
-    public Process? LastProcess { get; private set; }
-    public ITailMux CreateForRollout(string rolloutPath, Process? process)
+    public string? LastExecutablePath { get; private set; }
+    public string? LastWorkspaceDirectory { get; private set; }
+    public ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory)
     {
         LastRolloutPath = rolloutPath;
-        LastProcess = process;
+        LastExecutablePath = codexExecutablePath;
+        LastWorkspaceDirectory = workspaceDirectory;
         LastInstance = new InMemoryTailMux();
         return LastInstance;
     }
 }
 
-public sealed class CapturingProcessFactory : ICodexProcessFactory
-{
-    public int StartCalls { get; private set; }
-    public string? LastExecutablePath { get; private set; }
-    public string? LastArguments { get; private set; }
-    public string? LastWorkingDirectory { get; private set; }
-    public IReadOnlyDictionary<string, string?>? LastEnvironment { get; private set; }
-
-    private sealed class Handle : IProcessHandle
-    {
-        public Process Process { get; }
-        public Handle() { Process = new Process(); }
-        public ValueTask DisposeAsync() { try { Process.Dispose(); } catch { } return ValueTask.CompletedTask; }
-    }
-
-    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
-    {
-        StartCalls++;
-        LastExecutablePath = executablePath;
-        LastArguments = arguments;
-        LastWorkingDirectory = workingDirectory;
-        LastEnvironment = environment;
-        return new Handle();
-    }
-}
+// Removed obsolete capturing process factory.

@@ -6,5 +6,5 @@ namespace Coven.Spellcasting.Agents;
 
 public interface ITailMuxFactory
 {
-    ITailMux CreateForRollout(string rolloutPath, Process? process);
+    ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory);
 }

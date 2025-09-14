@@ -49,11 +49,9 @@ public sealed class CodexConsoleStyleAgentTests
         var adapter = new TestAdapter();
         services.AddSingleton<IAdapter<ChatEntry>>(adapter);
 
-        // Use capturing tail factory + no-op process + stub resolver; translator for ChatEntry
+        // Use capturing tail factory; translator for ChatEntry
         var tailFactory = new CapturingInMemoryTailFactory();
         services.AddSingleton<ITailMuxFactory>(tailFactory);
-        services.AddSingleton<Processes.ICodexProcessFactory>(new NoopProcessFactory());
-        services.AddSingleton<Rollout.IRolloutPathResolver>(new StubRolloutResolver(path: "ignored"));
 
         services.AddCodexCliAgent<ChatEntry, DefaultChatEntryTranslator>(o =>
         {

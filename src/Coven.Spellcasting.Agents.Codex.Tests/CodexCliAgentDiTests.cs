@@ -33,8 +33,6 @@ public sealed class CodexCliAgentDiTests
             .WithHost(hostDouble)
             .WithConfigWriter(configCapture)
             .WithTailFactory(tailFactory)
-            .WithProcessFactory(new NoopProcessFactory())
-            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
             .Build();
 
         var agent = testHost.GetAgent();
@@ -94,8 +92,6 @@ public sealed class CodexCliAgentDiTests
             .WithHost(hostDouble)
             .WithConfigWriter(configCapture)
             .WithTailFactory(tailFactory)
-            .WithProcessFactory(new NoopProcessFactory())
-            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
             .Build();
 
         var agent = testHost.GetAgent();
@@ -122,18 +118,14 @@ public sealed class CodexCliAgentDiTests
     }
 
     [Fact]
-    public async Task Uses_Resolver_Path_And_ProcessFactory()
+    public async Task Uses_Deterministic_Rollout_And_Passes_Exec_And_Workspace()
     {
         var tailFactory = new CapturingInMemoryTailFactory();
-        var proc = new CapturingProcessFactory();
-        var resolverPath = Path.Combine(Path.GetTempPath(), "rollout-from-resolver.jsonl");
 
         using var testHost = new CodexAgentTestHost<ChatEntry>()
             .UseTempWorkspace()
             .Configure(o => o.ExecutablePath = "codex")
             .WithTailFactory(tailFactory)
-            .WithProcessFactory(proc)
-            .WithRolloutResolver(new StubRolloutResolver(resolverPath))
             .Build();
 
         var agent = testHost.GetAgent();
@@ -145,8 +137,9 @@ public sealed class CodexCliAgentDiTests
 
         await Task.Delay(100);
 
-        Assert.Equal(1, proc.StartCalls);
-        Assert.Equal(resolverPath, tailFactory.LastRolloutPath);
+        Assert.Equal("codex", tailFactory.LastExecutablePath);
+        var expectedRollout = Path.Combine(tailFactory.LastWorkspaceDirectory!, ".codex", "codex.rollout.jsonl");
+        Assert.Equal(expectedRollout, tailFactory.LastRolloutPath);
 
         cts.Cancel();
         try { await runTask; } catch { }
@@ -167,9 +160,7 @@ public sealed class CodexCliAgentDiTests
             })
             .WithHost(hostDouble)
             .WithConfigWriter(configCapture)
-            .WithProcessFactory(new NoopProcessFactory())
             .WithTailFactory(new CapturingInMemoryTailFactory())
-            .WithRolloutResolver(new StubRolloutResolver(path: "ignored"))
             .Build();
 
         var agent = testHost.GetAgent();
