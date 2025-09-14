@@ -21,7 +21,6 @@ public sealed class CodexCliAgentRegistrationOptions
     public string ExecutablePath { get; set; } = "codex";
     public string WorkspaceDirectory { get; set; } = Directory.GetCurrentDirectory();
     public string? ShimExecutablePath { get; set; }
-    public string? LogDirectory { get; set; }
 }
 
     public static class CodexServiceCollectionExtensions
@@ -43,16 +42,11 @@ public sealed class CodexCliAgentRegistrationOptions
 
             var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
 
-            var logs = string.IsNullOrWhiteSpace(opts.LogDirectory)
-                ? Path.Combine(opts.WorkspaceDirectory, ".codex")
-                : opts.LogDirectory!;
-
             return CodexCliAgentBuilder.Create(
                 opts.ExecutablePath,
                 opts.WorkspaceDirectory,
                 scrivener,
                 translator,
-                logs,
                 shimPath,
                 host,
                 procFactory,

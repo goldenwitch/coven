@@ -21,7 +21,6 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly string _workspaceDirectory;
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
-    private readonly string _logDirectory;
     private readonly ICodexRolloutTranslator<TMessageFormat> _translator;
     private readonly string? _shimExecutablePath;
     private IMcpSpellExecutorRegistry? _executorRegistry;
@@ -42,7 +41,6 @@ namespace Coven.Spellcasting.Agents.Codex;
         string workspaceDirectory,
         IScrivener<TMessageFormat> scrivener,
         ICodexRolloutTranslator<TMessageFormat> translator,
-        string? logDirectory,
         string? shimExecutablePath,
         IMcpServerHost? host,
         ICodexProcessFactory? processFactory,
@@ -55,12 +53,8 @@ namespace Coven.Spellcasting.Agents.Codex;
         _workspaceDirectory = workspaceDirectory;
         _scrivener = scrivener;
         _codexHomeDir = Path.Combine(_workspaceDirectory, ".codex");
-        _logDirectory = string.IsNullOrWhiteSpace(logDirectory)
-            ? _codexHomeDir
-            : Path.GetFullPath(logDirectory);
         _shimExecutablePath = shimExecutablePath;
         try { Directory.CreateDirectory(_codexHomeDir); } catch { }
-        try { Directory.CreateDirectory(_logDirectory); } catch { }
 
         _hostOverride = host;
         _procFactory = processFactory;
@@ -108,18 +102,17 @@ namespace Coven.Spellcasting.Agents.Codex;
                 }
 
             var processFactory = _procFactory ?? new DefaultCodexProcessFactory();
-            var args = $"--log-dir \"{_logDirectory}\"";
-            await using var handle = processFactory.Start(_codexExecutablePath, args, _workspaceDirectory, env);
+            await using var handle = processFactory.Start(_codexExecutablePath, arguments: null, _workspaceDirectory, env);
             var proc = handle.Process;
 
             // Determine rollout path for the just-started session
             var resolver = _rolloutResolver ?? new DefaultRolloutPathResolver();
-            var rolloutPath = await resolver.ResolveAsync(_codexExecutablePath, _workspaceDirectory, _logDirectory, env, TimeSpan.FromSeconds(8), ct)
+            var rolloutPath = await resolver.ResolveAsync(_codexExecutablePath, _workspaceDirectory, _codexHomeDir, env, TimeSpan.FromSeconds(8), ct)
                 .ConfigureAwait(false);
             if (string.IsNullOrWhiteSpace(rolloutPath))
             {
                 // Fallback to a local log; mux will wait if/when it appears
-                rolloutPath = Path.Combine(_logDirectory, "codex.rollout.jsonl");
+                rolloutPath = Path.Combine(_codexHomeDir, "codex.rollout.jsonl");
             }
             _log.LogDebug("Using rollout path: {RolloutPath}", rolloutPath);
 
