@@ -82,7 +82,7 @@ Summary mapping to the numbered flow above:
 - Agent: `CodexCliAgent<TMessageFormat>` — core agent lifecycle and IO plumbing.
 - DI: `CodexServiceCollectionExtensions` — registers the `ChatEntry` agent by default; typed overload enforces a translator.
 - Translation: `ICodexRolloutTranslator<TMessageFormat>`, `DefaultChatEntryTranslator`, `DefaultStringTranslator`.
-- Tail: `ITailMux`, `ProcessDocumentTailMux`, `DefaultTailMuxFactory` — tails a file and writes to stdin; owns process startup.
+- Tail: `ITailMux`, `BaseCompositeTailMux`, `ProcessDocumentTailMux`, `DocumentTailSource`, `ProcessSendPort`, `DefaultTailMuxFactory` — tails rollout from file and writes to stdin; send port owns process startup.
 - Logging: `ILogger<CodexCliAgent<T>>` via DI; defaults to null logger.
 - Rollout: `CodexRolloutParser`, `CodexRolloutLineKind`, `CodexRolloutLine`.
 - MCP: `IMcpServerHost`, `LocalMcpServerHost`, `McpStdioServer`, `McpToolbelt`, `McpToolbeltBuilder`, `IMcpSpellExecutorRegistry`.
@@ -123,13 +123,13 @@ Summary mapping to the numbered flow above:
 ## Rollout Tailing
 
 - Path: Deterministic path `<workspace>/.codex/codex.rollout.jsonl`. Codex is launched with `--log-dir <workspace>/.codex` so the rollout file appears there.
-- Tail Mux: `ProcessDocumentTailMux` is asymmetric:
-  - Read: tails the rollout JSONL into a bounded channel; supports one consumer; reads from the start to include full session history, then continues tailing.
-  - Write: lazily starts the Codex CLI process and writes lines to stdin.
+- Tail Mux: `ProcessDocumentTailMux` composes specialized parts:
+  - Read: `DocumentTailSource` tails the rollout JSONL from the start (full session history), then continues watching for appended lines; single reader.
+  - Write: `ProcessSendPort` lazily starts the Codex CLI process and writes lines to stdin.
 
 ## Process Launching
 
-- Ownership: The tail mux owns process startup and lifecycle using the configured executable + arguments.
+- Ownership: The send port owns process startup and lifecycle using the configured executable + arguments.
 - Defaults: `DefaultTailMuxFactory` sets `CODEX_HOME=<workspace>/.codex` and launches `codex --log-dir <workspace>/.codex` in the configured workspace directory.
 
 ## Dependency Injection
