@@ -18,7 +18,7 @@ internal sealed class DefaultTailMuxFactory : ITailMuxFactory
         };
 
         // Start codex with an explicit log directory under the workspace
-        var args = $"--log-dir {codexHome}";
+        var args = new[] { "--log-dir", codexHome } as IReadOnlyList<string>;
         return new ProcessDocumentTailMux(
             rolloutPath,
             fileName: codexExecutablePath,

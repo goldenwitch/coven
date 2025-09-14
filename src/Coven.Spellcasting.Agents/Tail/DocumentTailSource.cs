@@ -8,8 +8,8 @@ namespace Coven.Spellcasting.Agents.Tail;
 /// Read-only tail source that follows a text file from the beginning,
 /// emitting lines as TailEvents and continuing to watch for appended content.
 /// </summary>
-public sealed class DocumentTailSource : ITailSource, IAsyncDisposable
-{
+    public sealed class DocumentTailSource : ITailSource, IAsyncDisposable
+    {
     private readonly string _path;
     private readonly TimeSpan _pollInterval;
     private volatile bool _disposed;
@@ -23,43 +23,49 @@ public sealed class DocumentTailSource : ITailSource, IAsyncDisposable
     public async Task TailAsync(Func<TailEvent, ValueTask> onMessage, CancellationToken ct = default)
     {
         ThrowIfDisposed();
-
-        // Wait for file to exist
-        while (!File.Exists(_path))
+        try
         {
-            ct.ThrowIfCancellationRequested();
-            await Task.Delay(_pollInterval, ct).ConfigureAwait(false);
-        }
-
-        using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-        using var sr = new StreamReader(fs);
-
-        // Read existing content first
-        string? line;
-        while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) is not null)
-        {
-            await onMessage(new Line(line, DateTimeOffset.UtcNow)).ConfigureAwait(false);
-        }
-
-        // Tail appended content
-        while (!ct.IsCancellationRequested)
-        {
-            line = await sr.ReadLineAsync().ConfigureAwait(false);
-            if (line is null)
+            // Wait for file to exist
+            while (!File.Exists(_path))
             {
-                try { await Task.Delay(_pollInterval, ct).ConfigureAwait(false); }
-                catch (OperationCanceledException) { break; }
-                continue;
+                if (ct.IsCancellationRequested) return;
+                await Task.Delay(_pollInterval, ct).ConfigureAwait(false);
             }
 
-            try
+            using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var sr = new StreamReader(fs);
+
+            // Read existing content first
+            string? line;
+            while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) is not null)
             {
                 await onMessage(new Line(line, DateTimeOffset.UtcNow)).ConfigureAwait(false);
             }
-            catch (Exception ex)
+
+            // Tail appended content
+            while (!ct.IsCancellationRequested)
             {
-                await onMessage(new ErrorLine(ex.Message, DateTimeOffset.UtcNow)).ConfigureAwait(false);
+                line = await sr.ReadLineAsync().ConfigureAwait(false);
+                if (line is null)
+                {
+                    try { await Task.Delay(_pollInterval, ct).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { break; }
+                    continue;
+                }
+
+                try
+                {
+                    await onMessage(new Line(line, DateTimeOffset.UtcNow)).ConfigureAwait(false);
+                }
+                catch (Exception ex)
+                {
+                    await onMessage(new ErrorLine(ex.Message, DateTimeOffset.UtcNow)).ConfigureAwait(false);
+                }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            // Treat cancellation as a graceful end of tailing
         }
     }
 

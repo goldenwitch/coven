@@ -13,7 +13,7 @@ namespace Coven.Spellcasting.Agents.Tail;
 public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
 {
     private readonly string _fileName;
-    private readonly string? _arguments;
+    private readonly IReadOnlyList<string>? _arguments;
     private readonly string? _workingDirectory;
     private readonly IReadOnlyDictionary<string, string?>? _environment;
     private readonly Action<ProcessStartInfo>? _configurePsi;
@@ -26,7 +26,7 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
 
     public ProcessSendPort(
         string fileName,
-        string? arguments = null,
+        IReadOnlyList<string>? arguments = null,
         string? workingDirectory = null,
         IReadOnlyDictionary<string, string?>? environment = null,
         Action<ProcessStartInfo>? configurePsi = null)
@@ -73,13 +73,21 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
                 throw new DirectoryNotFoundException($"Workspace directory not found: {_workingDirectory}");
             }
 
-            var psi = new ProcessStartInfo(_fileName, _arguments ?? string.Empty)
+            var psi = new ProcessStartInfo(_fileName)
             {
                 UseShellExecute = false,
                 RedirectStandardInput = true,
                 RedirectStandardOutput = false,
                 RedirectStandardError = false
             };
+
+            if (_arguments is not null)
+            {
+                foreach (var arg in _arguments)
+                {
+                    psi.ArgumentList.Add(arg);
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(_workingDirectory))
                 psi.WorkingDirectory = _workingDirectory!;

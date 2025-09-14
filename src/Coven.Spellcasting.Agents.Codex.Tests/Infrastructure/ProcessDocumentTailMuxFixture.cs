@@ -34,7 +34,7 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
                         return new ProcessDocumentTailMux(
                             documentPath: docPath,
                             fileName: "cmd.exe",
-                            arguments: "/C more",
+                            arguments: new[] { "/C", "more" },
                             workingDirectory: Path.GetTempPath());
                     }
                     else if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
@@ -42,7 +42,7 @@ public sealed class ProcessDocumentTailMuxFixture : ITailMuxFixture, IDisposable
                         return new ProcessDocumentTailMux(
                             documentPath: docPath,
                             fileName: "/bin/sh",
-                            arguments: "-c cat",
+                            arguments: new[] { "-c", "cat" },
                             workingDirectory: Path.GetTempPath());
                     }
                     throw new NotSupportedException("Unsupported OS for test environment.");

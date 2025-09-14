@@ -58,7 +58,7 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
             return new ProcessDocumentTailMux(
                 documentPath: rolloutPath,
                 fileName: _mockExePath,
-                arguments: $"--rollout \"{rolloutPath}\" --log \"{_logPath}\"",
+                arguments: new[] { "--rollout", rolloutPath, "--log", _logPath },
                 workingDirectory: workspaceDirectory);
         }
     }

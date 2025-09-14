@@ -38,14 +38,14 @@ internal static class Program
 
         // Environment and args to mirror DefaultTailMuxFactory behavior
         var env = new Dictionary<string, string?> { ["CODEX_HOME"] = codexHome };
-        var argsLine = $"--log-dir {codexHome}";
+        var argsList = new[] { "--log-dir", codexHome };
 
         // Debug environment info for PATH/npx visibility
         PrintDebugInfo(exe, ws, codexHome, Config.Debug);
 
         await using var send = new ProcessSendPort(
             fileName: exe,
-            arguments: argsLine,
+            arguments: argsList,
             workingDirectory: ws,
             environment: env);
 
@@ -106,7 +106,7 @@ internal static class Program
         Console.WriteLine("RolloutMuxConsole ready. Ctrl+C to exit.");
         Console.WriteLine($"Workspace: {ws}");
         Console.WriteLine($"CodexHome: {codexHome}");
-        Console.WriteLine($"Executable: {exe} {argsLine}");
+        Console.WriteLine($"Executable: {exe} {string.Join(" ", argsList)}");
 
         try { await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false); }
         catch (OperationCanceledException) { }
