@@ -50,9 +50,9 @@ Outbound (Agent → Codex stdin):
 └───────────────┘                              └─────────┘           └───────────────────┘
 
 Inbound (Codex rollout → Agent):
-┌───────────────────┐  append JSONL  ┌─────────────────┐  tail lines   ┌───────────────┐
-│ Codex CLI Process │ ─────────────► │ rollout-*.jsonl │ ───────────►  │ CodexCliAgent │
-└───────────────────┘                └─────────────────┘               └───────────────┘
+┌───────────────────┐  append JSONL  ┌────────────────────────────┐  tail lines ┌───────────────┐
+│ Codex CLI Process │ ─────────────► │ .codex/codex.rollout.jsonl │ ──────────► │ CodexCliAgent │
+└───────────────────┘                └────────────────────────────┘             └───────────────┘
 
 TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout lines → messages.
 ```
@@ -65,26 +65,26 @@ TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout li
 
 ## Responsibilities
 
-- Start/stop the Codex CLI process.
-- Tail Codex rollout JSONL and translate events to messages written via `IScrivener<ChatEntry>`.
-- If spells are registered, host an MCP server and write Codex `config.toml` that points to the shim.
+- Use a deterministic rollout path at `<workspace>/.codex/codex.rollout.jsonl`.
+- Tail the rollout JSONL and translate events to messages written via `IScrivener<TMessageFormat>`.
+- Start Codex lazily via the TailMux when needed and write user thoughts to Codex stdin.
+- If spells are registered, host an MCP server and merge Codex `config.toml` to point to the shim.
 - Provide basic validation utilities to preflight the environment.
 
 Summary mapping to the numbered flow above:
-- (1) Listen: `IScrivener<ChatEntry>.TailAsync` for `ChatThought` entries.
-- (2) Write to user: `IScrivener<ChatEntry>.WriteAsync` with translated rollout events.
+- (1) Listen: For `ChatEntry` journals only, `IScrivener<ChatEntry>.TailAsync` for `ChatThought` entries.
+- (2) Write to user: `IScrivener<TMessageFormat>.WriteAsync` with translated rollout events.
 - (3) Write to Codex: `ITailMux.WriteLineAsync` to Codex stdin.
-- (4) Read from Codex: `ITailMux.TailAsync` from rollout JSONL, parsed via `CodexRolloutParser`.
+- (4) Read from Codex: `ITailMux.TailAsync` from the deterministic rollout JSONL, parsed via `CodexRolloutParser`.
 
 ## Key Types (by role)
 
-- Agent: `CodexCliAgent<ChatEntry>` — core agent lifecycle and IO plumbing.
-- DI: `CodexServiceCollectionExtensions` — registers the ChatEntry agent by default.
-- Translation: `ICodexRolloutTranslator<ChatEntry>`, `DefaultChatEntryTranslator` (required; DI provides default for `ChatEntry`).
-- Process: `ICodexProcessFactory`, `DefaultCodexProcessFactory` — starting Codex robustly on Windows/Linux.
-- Tail: `ITailMux`, `ProcessDocumentTailMux`, `DefaultTailMuxFactory` — tails rollout file, writes to stdin.
-- Logging: `ILogger<CodexCliAgent<T>>` injected via DI; falls back to a null logger if not registered.
-- Rollout: `CodexRolloutParser`, `CodexRolloutLineKind`, `CodexRolloutLine`, `IRolloutPathResolver`.
+- Agent: `CodexCliAgent<TMessageFormat>` — core agent lifecycle and IO plumbing.
+- DI: `CodexServiceCollectionExtensions` — registers the `ChatEntry` agent by default; typed overload enforces a translator.
+- Translation: `ICodexRolloutTranslator<TMessageFormat>`, `DefaultChatEntryTranslator`, `DefaultStringTranslator`.
+- Tail: `ITailMux`, `ProcessDocumentTailMux`, `DefaultTailMuxFactory` — tails a file and writes to stdin; owns process startup.
+- Logging: `ILogger<CodexCliAgent<T>>` via DI; defaults to null logger.
+- Rollout: `CodexRolloutParser`, `CodexRolloutLineKind`, `CodexRolloutLine`.
 - MCP: `IMcpServerHost`, `LocalMcpServerHost`, `McpStdioServer`, `McpToolbelt`, `McpToolbeltBuilder`, `IMcpSpellExecutorRegistry`.
 - Config: `ICodexConfigWriter`, `DefaultCodexConfigWriter` — merging/updating `config.toml`.
 - Validation: `CodexCliValidation`, `CodexValidationPlanner`, `IValidationOps`.
@@ -96,15 +96,12 @@ Summary mapping to the numbered flow above:
 
 2) Invoke:
    - Compute `CODEX_HOME = <workspace>/.codex` and ensure directory.
-   - If tools exist, start a local `IMcpServerHost` session. This writes a `toolbelt-*.json` under `/.coven-mcp` and listens on a named pipe. Then write/merge Codex `config.toml` so the shim can connect to the pipe.
-   - Start Codex via `ICodexProcessFactory.Start(...)` with the provided working directory and env.
-   - Resolve rollout path via `IRolloutPathResolver`:
-     - Probe `codex sessions list` (with platform-appropriate process launching) to extract `rollout-*.jsonl`.
-     - Fallback: scan `CODEX_HOME/sessions` or use `<workspace>/codex.rollout.jsonl`.
-   - Create an `ITailMux` to tail the rollout file and, if a process is available, write stdin lines to Codex.
+   - If tools exist, start a local `IMcpServerHost` session (named pipe) and merge Codex `config.toml` to point the shim at that pipe.
+   - Use a deterministic rollout path: `<workspace>/.codex/codex.rollout.jsonl`.
+   - Create an `ITailMux` for that path; it owns Codex startup and writes stdin. Default mux launches `codex --log-dir <workspace>/.codex`.
    - Start two pipelines:
-     - Egress: Tail rollout -> parse to `CodexRolloutLine` -> translate to `ChatEntry` -> `IScrivener<ChatEntry>.WriteAsync`.
-     - Ingress: Tail `IScrivener<ChatEntry>.TailAsync` for `ChatThought` -> send `.Text` to `ITailMux.WriteLineAsync` (Codex stdin).
+     - Egress: Tail rollout → parse to `CodexRolloutLine` → translate to `TMessageFormat` → `IScrivener<TMessageFormat>.WriteAsync`.
+     - Ingress (ChatEntry only): `IScrivener<ChatEntry>.TailAsync` for `ChatThought` → send `.Text` to `ITailMux.WriteLineAsync` (Codex stdin).
 
 3) Close:
    - Dispose the MCP session if created.
@@ -112,9 +109,9 @@ Summary mapping to the numbered flow above:
 
 ## Message Format
 
-- Single format: `Coven.Chat.ChatEntry`.
-  - Egress: Codex rollout → `CodexRolloutLine` → `ICodexRolloutTranslator<ChatEntry>` → `ChatEntry` → `IScrivener<ChatEntry>`.
-  - Ingress: `IScrivener<ChatEntry>.TailAsync` → `ChatThought` only → `ITailMux.WriteLineAsync` (Codex stdin).
+- Typical format: `Coven.Chat.ChatEntry`; other formats supported via a translator.
+  - Egress: Codex rollout → `CodexRolloutLine` → `ICodexRolloutTranslator<TMessageFormat>` → `IScrivener<TMessageFormat>`.
+  - Ingress: Supported for `ChatEntry` only (`ChatThought` → Codex stdin) to avoid feedback loops for arbitrary types.
 
 ## MCP Integration
 
@@ -125,22 +122,20 @@ Summary mapping to the numbered flow above:
 
 ## Rollout Tailing
 
-- Path Resolution: `DefaultRolloutPathResolver` attempts CLI session listing, then `~/.codex/sessions` scan, and finally a workspace fallback file. Windows and npm shims are handled explicitly.
+- Path: Deterministic path `<workspace>/.codex/codex.rollout.jsonl`. Codex is launched with `--log-dir <workspace>/.codex` so the rollout file appears there.
 - Tail Mux: `ProcessDocumentTailMux` is asymmetric:
-  - Read: tails the rollout JSONL into a bounded channel; supports one consumer.
-  - Write: lazily starts or reuses a process, writing lines to stdin; in agent usage the process is the Codex CLI.
+  - Read: tails the rollout JSONL into a bounded channel; supports one consumer; reads from the start to include full session history, then continues tailing.
+  - Write: lazily starts the Codex CLI process and writes lines to stdin.
 
-## Process Launching and Discovery
+## Process Launching
 
-- `DefaultCodexProcessFactory` starts the configured executable path. On Windows, it can prefer `cmd.exe /c` for `.cmd` shims, and it attempts discovery via:
-  - `npm bin -g` to locate `codex` (prefers `codex.cmd` on Windows).
-  - `where codex` on Windows to prefer `.cmd`, then `.exe`.
-- `ExecutableDiscovery` contains shared helpers for PATH/npm probing.
+- Ownership: The tail mux owns process startup and lifecycle using the configured executable + arguments.
+- Defaults: `DefaultTailMuxFactory` sets `CODEX_HOME=<workspace>/.codex` and launches `codex --log-dir <workspace>/.codex` in the configured workspace directory.
 
 ## Dependency Injection
 
 - `AddCodexCliAgent(...)` registers the ChatEntry agent by default. It requires `IScrivener<ChatEntry>` and composes optional services:
-  - `IMcpServerHost`, `ICodexProcessFactory`, `ITailMuxFactory`, `ICodexConfigWriter`, `IRolloutPathResolver`.
+  - `IMcpServerHost`, `ITailMuxFactory`, `ICodexConfigWriter`.
   - Optionally override `ICodexRolloutTranslator<ChatEntry>`; defaults to `DefaultChatEntryTranslator`.
 
 - For non-ChatEntry message types, use the generic overload `AddCodexCliAgent<TMessage, TTranslator>()` and provide an `ICodexRolloutTranslator<TMessage>`.
