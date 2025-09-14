@@ -65,31 +65,7 @@ namespace Coven.Spellcasting.Agents.Codex;
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
-    internal CodexCliAgent(
-        string codexExecutablePath,
-        string workspaceDirectory,
-        IScrivener<TMessageFormat> scrivener,
-        string? shimExecutablePath,
-        IMcpServerHost? host,
-        ICodexProcessFactory? processFactory,
-        ITailMuxFactory? tailFactory,
-        ICodexConfigWriter? configWriter,
-        IRolloutPathResolver? rolloutResolver)
-    {
-        _codexExecutablePath = codexExecutablePath;
-        _workspaceDirectory = workspaceDirectory;
-        _scrivener = scrivener;
-        _codexHomeDir = Path.Combine(_workspaceDirectory, ".codex");
-        _shimExecutablePath = shimExecutablePath;
-        try { Directory.CreateDirectory(_codexHomeDir); } catch { }
-
-        _hostOverride = host;
-        _procFactory = processFactory;
-        _tailFactory = tailFactory;
-        _configWriter = configWriter;
-        _rolloutResolver = rolloutResolver;
-        _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
-    }
+    
 
     public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
     {
@@ -114,23 +90,15 @@ namespace Coven.Spellcasting.Agents.Codex;
             if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
             {
                 var host = _hostOverride ?? new LocalMcpServerHost(_workspaceDirectory);
-                _mcpSession = await (_executorRegistry is null
-                    ? host.StartAsync(_toolbelt, ct)
-                    : host.StartAsync(_toolbelt, _executorRegistry, ct)).ConfigureAwait(false);
+                _mcpSession = await host.StartAsync(_toolbelt, _executorRegistry, ct).ConfigureAwait(false);
                 // Generate a minimal Codex config that points to our shim, which bridges to the named pipe.
                 if (!string.IsNullOrWhiteSpace(_shimExecutablePath) && !string.IsNullOrWhiteSpace(_mcpSession.PipeName))
                 {
-                    if (_configWriter is not null)
-                    {
-                        try { _configWriter.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); }
-                        catch (Exception ex) { _log.LogWarning(ex, "Failed to write Codex config for shim"); }
-                    }
-                    else
-                    {
-                        WriteCodexConfigForShim(_shimExecutablePath!, _mcpSession.PipeName!);
-                    }
+                    var writer = _configWriter ?? new DefaultCodexConfigWriter();
+                    try { writer.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); }
+                    catch (Exception ex) { _log.LogWarning(ex, "Failed to write Codex config for shim"); }
                 }
-            }
+                }
 
             var processFactory = _procFactory ?? new DefaultCodexProcessFactory();
             await using var handle = processFactory.Start(_codexExecutablePath, _workspaceDirectory, env);
@@ -283,69 +251,6 @@ namespace Coven.Spellcasting.Agents.Codex;
             // As a last resort, swallow to avoid masking the original exception
         }
     }
-    private void WriteCodexConfigForShim(string shimPath, string pipeName)
-    {
-        try
-        {
-            Directory.CreateDirectory(_codexHomeDir);
-            var cfgPath = Path.Combine(_codexHomeDir, "config.toml");
-            var toml = $"[mcp_servers.coven]\ncommand = \"{EscapeToml(shimPath)}\"\nargs = [\"{EscapeToml(pipeName)}\"]\n";
-            if (File.Exists(cfgPath))
-            {
-                var existing = File.ReadAllText(cfgPath);
-                var merged = MergeToml(existing, toml, "[mcp_servers.coven]");
-                File.WriteAllText(cfgPath, merged);
-            }
-            else
-            {
-                File.WriteAllText(cfgPath, toml);
-            }
-        }
-        catch { }
-    }
-
-    private static string EscapeToml(string s)
-        => s.Replace("\\", "\\\\").Replace("\"", "\\\"");
-
-    private static string MergeToml(string existing, string newSection, string sectionHeader)
-    {
-        try
-        {
-            var lines = existing.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None).ToList();
-            int start = -1;
-            for (int i = 0; i < lines.Count; i++)
-            {
-                if (lines[i].Trim().Equals(sectionHeader, StringComparison.OrdinalIgnoreCase))
-                {
-                    start = i;
-                    break;
-                }
-            }
-            if (start >= 0)
-            {
-                int end = lines.Count;
-                for (int i = start + 1; i < lines.Count; i++)
-                {
-                    var t = lines[i].TrimStart();
-                    if (t.StartsWith("[")) { end = i; break; }
-                }
-                lines.RemoveRange(start, end - start);
-                var newLines = newSection.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                lines.InsertRange(start, newLines);
-                return string.Join(Environment.NewLine, lines);
-            }
-            else
-            {
-                if (!existing.EndsWith("\n") && !existing.EndsWith("\r\n")) existing += Environment.NewLine;
-                return existing + newSection;
-            }
-        }
-        catch
-        {
-            // Fallback: append
-            if (!existing.EndsWith("\n") && !existing.EndsWith("\r\n")) existing += Environment.NewLine;
-            return existing + newSection;
-        }
-    }
+    
 
 }

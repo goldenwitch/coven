@@ -12,6 +12,5 @@ public interface IMcpServerSession : IAsyncDisposable
 
 public interface IMcpServerHost
 {
-    Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default);
-    Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry registry, CancellationToken ct = default);
+    Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry = null, CancellationToken ct = default);
 }

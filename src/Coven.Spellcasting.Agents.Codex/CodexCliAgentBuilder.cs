@@ -11,30 +11,6 @@ namespace Coven.Spellcasting.Agents.Codex;
 
 public static class CodexCliAgentBuilder
 {
-    // String-only builder (happy path)
-    public static ICovenAgent<string> CreateString(
-        string executablePath,
-        string workspaceDirectory,
-        IScrivener<string> scrivener,
-        string? shimExecutablePath = null,
-        IMcpServerHost? host = null,
-        ICodexProcessFactory? processFactory = null,
-        ITailMuxFactory? tailFactory = null,
-        ICodexConfigWriter? configWriter = null,
-        IRolloutPathResolver? rolloutResolver = null)
-    {
-        return new CodexCliAgent<string>(
-            executablePath,
-            workspaceDirectory,
-            scrivener,
-            shimExecutablePath,
-            host,
-            processFactory,
-            tailFactory,
-            configWriter,
-            rolloutResolver);
-    }
-
     // Typed builder that requires a translator at compile time
     public static ICovenAgent<TMessage> Create<TMessage>(
         string executablePath,

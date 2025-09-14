@@ -40,8 +40,8 @@ public sealed class CodexCliAgentRegistrationOptions
             services.AddCovenAgent(sp =>
             {
                 var scrivener = sp.GetRequiredService<IScrivener<ChatEntry>>();
-                var translator = sp.GetService<Coven.Spellcasting.Agents.Codex.Rollout.ICodexRolloutTranslator<ChatEntry>>()
-                                 ?? new Coven.Spellcasting.Agents.Codex.Rollout.DefaultChatEntryTranslator();
+                var translator = sp.GetService<ICodexRolloutTranslator<ChatEntry>>()
+                                 ?? new DefaultChatEntryTranslator();
                 var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
                 var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
                 var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
@@ -50,28 +50,7 @@ public sealed class CodexCliAgentRegistrationOptions
                 // Spells are registered at runtime via MagikUser → agent.RegisterSpells
 
                 // Auto-discover shim path if not provided: look under AppContext.BaseDirectory/mcp-shim
-                var shimPath = opts.ShimExecutablePath;
-                if (string.IsNullOrWhiteSpace(shimPath))
-                {
-                    try
-                    {
-                        var baseDir = AppContext.BaseDirectory;
-                        var shimDir = Path.Combine(baseDir, "mcp-shim");
-                        if (Directory.Exists(shimDir))
-                        {
-                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                            if (File.Exists(exe)) shimPath = exe;
-                            else if (File.Exists(dll)) shimPath = dll;
-                            else
-                            {
-                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
 
                 return CodexCliAgentBuilder.Create(
                     opts.ExecutablePath,
@@ -91,28 +70,7 @@ public sealed class CodexCliAgentRegistrationOptions
             {
                 var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
                 var spellbook = sp.GetService<Spellbook>();
-                string? shimPath = opts.ShimExecutablePath;
-                if (string.IsNullOrWhiteSpace(shimPath))
-                {
-                    try
-                    {
-                        var baseDir = AppContext.BaseDirectory;
-                        var shimDir = Path.Combine(baseDir, "mcp-shim");
-                        if (Directory.Exists(shimDir))
-                        {
-                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                            if (File.Exists(exe)) shimPath = exe;
-                            else if (File.Exists(dll)) shimPath = dll;
-                            else
-                            {
-                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                string? shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
                 return new CodexCliValidation(
                     opts.ExecutablePath,
                     opts.WorkspaceDirectory,
@@ -150,28 +108,7 @@ public sealed class CodexCliAgentRegistrationOptions
                 var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
 
                 // Auto-discover shim path if not provided
-                var shimPath = opts.ShimExecutablePath;
-                if (string.IsNullOrWhiteSpace(shimPath))
-                {
-                    try
-                    {
-                        var baseDir = AppContext.BaseDirectory;
-                        var shimDir = Path.Combine(baseDir, "mcp-shim");
-                        if (Directory.Exists(shimDir))
-                        {
-                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                            if (File.Exists(exe)) shimPath = exe;
-                            else if (File.Exists(dll)) shimPath = dll;
-                            else
-                            {
-                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
 
                 return CodexCliAgentBuilder.Create(
                     opts.ExecutablePath,
@@ -191,28 +128,7 @@ public sealed class CodexCliAgentRegistrationOptions
             {
                 var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
                 var spellbook = sp.GetService<Spellbook>();
-                string? shimPath = opts.ShimExecutablePath;
-                if (string.IsNullOrWhiteSpace(shimPath))
-                {
-                    try
-                    {
-                        var baseDir = AppContext.BaseDirectory;
-                        var shimDir = Path.Combine(baseDir, "mcp-shim");
-                        if (Directory.Exists(shimDir))
-                        {
-                            var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                            var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                            if (File.Exists(exe)) shimPath = exe;
-                            else if (File.Exists(dll)) shimPath = dll;
-                            else
-                            {
-                                var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                                if (!string.IsNullOrWhiteSpace(any)) shimPath = any;
-                            }
-                        }
-                    }
-                    catch { }
-                }
+                string? shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
                 return new CodexCliValidation(
                     opts.ExecutablePath,
                     opts.WorkspaceDirectory,
@@ -222,5 +138,26 @@ public sealed class CodexCliAgentRegistrationOptions
             });
 
             return services;
+        }
+
+        private static string? AutoDiscoverShimIfMissing(string? provided)
+        {
+            if (!string.IsNullOrWhiteSpace(provided)) return provided;
+            try
+            {
+                var baseDir = AppContext.BaseDirectory;
+                var shimDir = Path.Combine(baseDir, "mcp-shim");
+                if (Directory.Exists(shimDir))
+                {
+                    var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
+                    var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
+                    if (File.Exists(exe)) return exe;
+                    if (File.Exists(dll)) return dll;
+                    var any = Directory.GetFiles(shimDir).FirstOrDefault();
+                    if (!string.IsNullOrWhiteSpace(any)) return any;
+                }
+            }
+            catch { }
+            return null;
         }
     }

@@ -18,10 +18,7 @@ internal sealed class LocalMcpServerHost : IMcpServerHost
         _workspaceDirectory = workspaceDirectory;
     }
 
-    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, CancellationToken ct = default)
-        => await StartAsync(toolbelt, null, ct).ConfigureAwait(false);
-
-    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry registry, CancellationToken ct = default)
+    public async Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry = null, CancellationToken ct = default)
     {
         // For now, model a lightweight, disposable session that:
         // - writes the toolbelt to a temp file under the workspace

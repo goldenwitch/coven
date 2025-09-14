@@ -79,7 +79,7 @@ public sealed class FakeMcpServerHost : IMcpServerHost
         return Task.FromResult(s);
     }
 
-    public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry registry, CancellationToken ct = default)
+    public Task<IMcpServerSession> StartAsync(McpToolbelt toolbelt, IMcpSpellExecutorRegistry? registry, CancellationToken ct = default)
     {
         LastToolbelt = toolbelt; LastRegistry = registry; StartCalls++;
         var pipeName = $"coven_mcp_test_{Guid.NewGuid():N}";

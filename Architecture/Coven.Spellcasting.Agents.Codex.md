@@ -78,8 +78,8 @@ Summary mapping to the numbered flow above:
 
 ## Key Types (by role)
 
-- Agent: `CodexCliAgent<ChatEntry>` (or a non-generic wrapper) — core agent lifecycle and IO plumbing.
-- DI: `CodexServiceCollectionExtensions` — registration helpers for ChatEntry.
+- Agent: `CodexCliAgent<ChatEntry>` — core agent lifecycle and IO plumbing.
+- DI: `CodexServiceCollectionExtensions` — registers the ChatEntry agent by default.
 - Translation: `ICodexRolloutTranslator<ChatEntry>`, `DefaultChatEntryTranslator`.
 - Process: `ICodexProcessFactory`, `DefaultCodexProcessFactory` — starting Codex robustly on Windows/Linux.
 - Tail: `ITailMux`, `ProcessDocumentTailMux`, `DefaultTailMuxFactory` — tails rollout file, writes to stdin.
@@ -138,9 +138,11 @@ Summary mapping to the numbered flow above:
 
 ## Dependency Injection
 
-- `AddCodexCliAgent(...)` registers the ChatEntry agent. It requires `IScrivener<ChatEntry>` and composes optional services:
+- `AddCodexCliAgent(...)` registers the ChatEntry agent by default. It requires `IScrivener<ChatEntry>` and composes optional services:
   - `IMcpServerHost`, `ICodexProcessFactory`, `ITailMuxFactory`, `ICodexConfigWriter`, `IRolloutPathResolver`.
   - Optionally override `ICodexRolloutTranslator<ChatEntry>`; defaults to `DefaultChatEntryTranslator`.
+
+- For non-ChatEntry message types, use the generic overload `AddCodexCliAgent<TMessage, TTranslator>()` and provide an `ICodexRolloutTranslator<TMessage>`.
 
 ## Validation
 
