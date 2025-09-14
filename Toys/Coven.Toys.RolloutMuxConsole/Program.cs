@@ -30,11 +30,19 @@ internal static class Program
         string codexHome = Path.Combine(ws, ".codex");
         try { Directory.CreateDirectory(codexHome); } catch { }
 
-        string rolloutPath = Path.Combine(codexHome, "codex.rollout.jsonl");
+        // Use session recording under CODEX_HOME/log with a deterministic file name
+        string logDir = Path.Combine(codexHome, "log");
+        try { Directory.CreateDirectory(logDir); } catch { }
+        string rolloutPath = Path.Combine(logDir, "codex.rollout.jsonl");
 
-        // Environment and args to mirror DefaultTailMuxFactory behavior
-        Dictionary<string, string?> env = new() { ["CODEX_HOME"] = codexHome };
-        string[] argsList = ["--log-dir", codexHome];
+        // Environment to match CodexCliAgent behavior per scratch.txt
+        Dictionary<string, string?> env = new()
+        {
+            ["CODEX_HOME"] = codexHome,
+            ["CODEX_TUI_RECORD_SESSION"] = "1",
+            ["CODEX_TUI_SESSION_LOG_PATH"] = rolloutPath
+        };
+        string[] argsList = Array.Empty<string>();
 
         // Debug environment info for PATH/npx visibility
         if (Config.Debug)
@@ -102,7 +110,12 @@ internal static class Program
         {
             Console.WriteLine($"Workspace: {ws}");
             Console.WriteLine($"CodexHome: {codexHome}");
+            Console.WriteLine($"LogDir: {logDir}");
+            Console.WriteLine($"SessionLog: {rolloutPath}");
             Console.WriteLine($"Executable: {exe} {string.Join(" ", argsList)}");
+            Console.WriteLine("Env overrides:");
+            foreach (var kv in env)
+                Console.WriteLine($"  {kv.Key}={(kv.Value ?? "<unset>")}");
         }
 
         try { await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false); }

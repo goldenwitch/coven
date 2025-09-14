@@ -138,7 +138,7 @@ public sealed class CodexCliAgentDiTests
         await Task.Delay(100);
 
         Assert.Equal("codex", tailFactory.LastExecutablePath);
-        var expectedRollout = Path.Combine(tailFactory.LastWorkspaceDirectory!, ".codex", "codex.rollout.jsonl");
+        var expectedRollout = Path.Combine(tailFactory.LastWorkspaceDirectory!, ".codex", "log", "codex.rollout.jsonl");
         Assert.Equal(expectedRollout, tailFactory.LastRolloutPath);
 
         cts.Cancel();

@@ -52,14 +52,21 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
         public MockTailMuxFactory(string mockExePath, string logPath)
         { _mockExePath = mockExePath; _logPath = logPath; }
 
-        public ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory)
+        // Implement ITailMuxFactory.Create with the current signature.
+        // We ignore the provided codex executable/args and instead start the mock process
+        // with explicit --rollout/--log flags so tests can control IO deterministically.
+        public ITailMux Create(
+            string documentPath,
+            string executablePath,
+            IReadOnlyList<string> arguments,
+            string workingDirectory,
+            IReadOnlyDictionary<string, string?> environment)
         {
-            // Start the toy with rollout/log paths; mux tails rollout and writes to stdin
             return new ProcessDocumentTailMux(
-                documentPath: rolloutPath,
+                documentPath: documentPath,
                 fileName: _mockExePath,
-                arguments: new[] { "--rollout", rolloutPath, "--log", _logPath },
-                workingDirectory: workspaceDirectory);
+                arguments: new[] { "--rollout", documentPath, "--log", _logPath },
+                workingDirectory: workingDirectory);
         }
     }
 

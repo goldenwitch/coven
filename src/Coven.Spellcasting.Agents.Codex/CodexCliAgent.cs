@@ -20,13 +20,14 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly string _workspaceDirectory;
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
-    private readonly ICodexRolloutTranslator<TMessageFormat> _translator;
-    private readonly string? _shimExecutablePath;
-    private IMcpSpellExecutorRegistry? _executorRegistry;
-    private readonly IMcpServerHost? _hostOverride;
-    private readonly ITailMuxFactory? _tailFactory;
-    private readonly ICodexConfigWriter? _configWriter;
-    private McpToolbelt? _toolbelt;
+        private readonly ICodexRolloutTranslator<TMessageFormat> _translator;
+        private readonly string? _shimExecutablePath;
+        private readonly IReadOnlyList<string> _configOverrides;
+        private IMcpSpellExecutorRegistry? _executorRegistry;
+        private readonly IMcpServerHost? _hostOverride;
+        private readonly ITailMuxFactory? _tailFactory;
+        private readonly ICodexConfigWriter? _configWriter;
+        private McpToolbelt? _toolbelt;
         private IMcpServerSession? _mcpSession;
         private readonly ILogger<CodexCliAgent<TMessageFormat>> _log;
 
@@ -39,6 +40,7 @@ namespace Coven.Spellcasting.Agents.Codex;
         IScrivener<TMessageFormat> scrivener,
         ICodexRolloutTranslator<TMessageFormat> translator,
         string? shimExecutablePath,
+        IReadOnlyList<string>? configOverrides,
         IMcpServerHost? host,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
@@ -56,6 +58,7 @@ namespace Coven.Spellcasting.Agents.Codex;
         _configWriter = configWriter;
         _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         _log = logger ?? NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
+        _configOverrides = (configOverrides is null) ? Array.Empty<string>() : new List<string>(configOverrides);
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
@@ -94,12 +97,34 @@ namespace Coven.Spellcasting.Agents.Codex;
                 }
                 }
 
-            // Use a deterministic rollout path; mux will start Codex and the file will appear when Codex begins logging
-            var rolloutPath = Path.Combine(_codexHomeDir, "codex.rollout.jsonl");
-            _log.LogDebug("Using rollout path: {RolloutPath}", rolloutPath);
+            // Use a deterministic session log path under CODEX_HOME/log and enable TUI session recording
+            var logDir = Path.Combine(_codexHomeDir, "log");
+            try { Directory.CreateDirectory(logDir); } catch { }
+            var rolloutPath = Path.Combine(logDir, "codex.rollout.jsonl");
+            env["CODEX_TUI_RECORD_SESSION"] = "1";
+            env["CODEX_TUI_SESSION_LOG_PATH"] = rolloutPath;
+            _log.LogDebug("Using session log path: {RolloutPath}", rolloutPath);
 
             var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
-            await using ITailMux mux = tailFactory.CreateForRollout(rolloutPath, _codexExecutablePath, _workspaceDirectory);
+
+            // Build CLI args; avoid redundant flags. Logs default under CODEX_HOME.
+            var args = new List<string>();
+            // Thread through -c/--config overrides without branching complexity
+            foreach (var ov in _configOverrides)
+            {
+                if (!string.IsNullOrWhiteSpace(ov))
+                {
+                    args.Add("-c");
+                    args.Add(ov);
+                }
+            }
+
+            await using ITailMux mux = tailFactory.Create(
+                documentPath: rolloutPath,
+                executablePath: _codexExecutablePath,
+                arguments: args,
+                workingDirectory: _workspaceDirectory,
+                environment: env);
 
             // Ingress: begin reading from scrivener and forward user thoughts to Codex stdin.
             // Only supported for ChatEntry journals to avoid echo/feedback loops for plain string journals.

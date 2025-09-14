@@ -100,11 +100,20 @@ public sealed class CapturingInMemoryTailFactory : ITailMuxFactory
     public string? LastRolloutPath { get; private set; }
     public string? LastExecutablePath { get; private set; }
     public string? LastWorkspaceDirectory { get; private set; }
-    public ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory)
+    public IReadOnlyList<string>? LastArguments { get; private set; }
+    public IReadOnlyDictionary<string, string?>? LastEnvironment { get; private set; }
+    public ITailMux Create(
+        string documentPath,
+        string executablePath,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string?> environment)
     {
-        LastRolloutPath = rolloutPath;
-        LastExecutablePath = codexExecutablePath;
-        LastWorkspaceDirectory = workspaceDirectory;
+        LastRolloutPath = documentPath;
+        LastExecutablePath = executablePath;
+        LastWorkspaceDirectory = workingDirectory;
+        LastArguments = arguments;
+        LastEnvironment = environment;
         LastInstance = new InMemoryTailMux();
         return LastInstance;
     }

@@ -8,30 +8,32 @@ using Coven.Spellcasting.Agents.Codex.Rollout;
 
 namespace Coven.Spellcasting.Agents.Codex;
 
-public static class CodexCliAgentBuilder
-{
-    // Typed builder that requires a translator at compile time
-    public static ICovenAgent<TMessage> Create<TMessage>(
-        string executablePath,
-        string workspaceDirectory,
-        IScrivener<TMessage> scrivener,
-        ICodexRolloutTranslator<TMessage> translator,
-        string? shimExecutablePath = null,
-        IMcpServerHost? host = null,
-        ITailMuxFactory? tailFactory = null,
-        ICodexConfigWriter? configWriter = null,
-        ILogger<CodexCliAgent<TMessage>>? logger = null)
-        where TMessage : notnull
+    public static class CodexCliAgentBuilder
     {
-        return new CodexCliAgent<TMessage>(
-            executablePath,
-            workspaceDirectory,
-            scrivener,
-            translator,
-            shimExecutablePath,
-            host,
-            tailFactory,
-            configWriter,
-            logger);
+        // Typed builder that requires a translator at compile time
+        public static ICovenAgent<TMessage> Create<TMessage>(
+            string executablePath,
+            string workspaceDirectory,
+            IScrivener<TMessage> scrivener,
+            ICodexRolloutTranslator<TMessage> translator,
+            string? shimExecutablePath = null,
+            IReadOnlyList<string>? configOverrides = null,
+            IMcpServerHost? host = null,
+            ITailMuxFactory? tailFactory = null,
+            ICodexConfigWriter? configWriter = null,
+            ILogger<CodexCliAgent<TMessage>>? logger = null)
+            where TMessage : notnull
+        {
+            return new CodexCliAgent<TMessage>(
+                executablePath,
+                workspaceDirectory,
+                scrivener,
+                translator,
+                shimExecutablePath,
+                configOverrides,
+                host,
+                tailFactory,
+                configWriter,
+                logger);
+        }
     }
-}

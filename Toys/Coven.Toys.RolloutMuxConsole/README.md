@@ -2,7 +2,7 @@
 
 Minimal console app that demonstrates the new flexible mux pattern without DI:
 
-- Reads Codex rollout from `<workspace>/.codex/codex.rollout.jsonl` and writes it to the console.
+- Reads Codex session JSONL from `<workspace>/.codex/log/codex.rollout.jsonl` and writes it to the console.
 - Reads console input and forwards it to Codex process stdin.
 
 Configuration:
@@ -13,6 +13,13 @@ Configuration:
     - Non-Windows: `codex` (resolved via PATH)
   - `WorkspaceDirectory` — set to a directory, or leave `null` to use the current directory.
   - `Debug` — set `true` to dump PATH entries on startup.
+
+The console sets the following environment variables for Codex (see scratch notes):
+- `CODEX_HOME=<workspace>/.codex`
+- `CODEX_TUI_RECORD_SESSION=1`
+- `CODEX_TUI_SESSION_LOG_PATH=<workspace>/.codex/log/codex.rollout.jsonl`
+
+No extra CLI flags are passed; Codex inherits the working directory via the process `WorkingDirectory`.
 
 Usage:
 

@@ -6,5 +6,12 @@ namespace Coven.Spellcasting.Agents;
 
 public interface ITailMuxFactory
 {
-    ITailMux CreateForRollout(string rolloutPath, string codexExecutablePath, string workspaceDirectory);
+    // Generic factory: compose a tail mux from a document path and a process send port.
+    // No Codex-specific parameters.
+    ITailMux Create(
+        string documentPath,
+        string executablePath,
+        IReadOnlyList<string> arguments,
+        string workingDirectory,
+        IReadOnlyDictionary<string, string?> environment);
 }

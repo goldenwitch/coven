@@ -50,11 +50,11 @@ Outbound (Agent → Codex stdin):
 └───────────────┘                              └─────────┘           └───────────────────┘
 
 Inbound (Codex rollout → Agent):
-┌───────────────────┐  append JSONL  ┌────────────────────────────┐  tail lines ┌───────────────┐
-│ Codex CLI Process │ ─────────────► │ .codex/codex.rollout.jsonl │ ──────────► │ CodexCliAgent │
-└───────────────────┘                └────────────────────────────┘             └───────────────┘
+┌───────────────────┐  append JSONL  ┌────────────────────────────────┐  tail lines ┌───────────────┐
+│ Codex CLI Process │ ─────────────► │ .codex/log/codex.rollout.jsonl │ ──────────► │ CodexCliAgent │
+└───────────────────┘                └────────────────────────────────┘             └───────────────┘
 
-TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout lines → messages.
+TailMux provides: write-to-stdin and tail-from-file. Agent translates session-log lines → messages.
 ```
 
 ## Purpose
@@ -65,8 +65,9 @@ TailMux provides: write-to-stdin and tail-from-file. Agent translates rollout li
 
 ## Responsibilities
 
-- Use a deterministic rollout path at `<workspace>/.codex/codex.rollout.jsonl`.
-- Tail the rollout JSONL and translate events to messages written via `IScrivener<TMessageFormat>`.
+- Use `CODEX_HOME=<workspace>/.codex` and a deterministic session log path at `<workspace>/.codex/log/codex.rollout.jsonl`.
+- Set `CODEX_TUI_RECORD_SESSION=1` and `CODEX_TUI_SESSION_LOG_PATH=<path>` so the TUI records JSONL at the deterministic path.
+- Tail the session JSONL and translate events to messages written via `IScrivener<TMessageFormat>`.
 - Start Codex lazily via the TailMux when needed and write user thoughts to Codex stdin.
 - If spells are registered, host an MCP server and merge Codex `config.toml` to point to the shim.
 - Provide basic validation utilities to preflight the environment.
@@ -75,7 +76,7 @@ Summary mapping to the numbered flow above:
 - (1) Listen: For `ChatEntry` journals only, `IScrivener<ChatEntry>.TailAsync` for `ChatThought` entries.
 - (2) Write to user: `IScrivener<TMessageFormat>.WriteAsync` with translated rollout events.
 - (3) Write to Codex: `ITailMux.WriteLineAsync` to Codex stdin.
-- (4) Read from Codex: `ITailMux.TailAsync` from the deterministic rollout JSONL, parsed via `CodexRolloutParser`.
+- (4) Read from Codex: `ITailMux.TailAsync` from the deterministic session JSONL, parsed via `CodexRolloutParser`.
 
 ## Key Types (by role)
 
@@ -124,13 +125,13 @@ Summary mapping to the numbered flow above:
 
 - Path: Deterministic path `<workspace>/.codex/codex.rollout.jsonl`. Codex is launched with `--log-dir <workspace>/.codex` so the rollout file appears there.
 - Tail Mux: `ProcessDocumentTailMux` composes specialized parts:
-  - Read: `DocumentTailSource` tails the rollout JSONL from the start (full session history), then continues watching for appended lines; single reader.
+  - Read: `DocumentTailSource` tails the session JSONL from the start (full session history), then continues watching for appended lines; single reader.
   - Write: `ProcessSendPort` lazily starts the Codex CLI process and writes lines to stdin.
 
 ## Process Launching
 
 - Ownership: The send port owns process startup and lifecycle using the configured executable + arguments.
-- Defaults: `DefaultTailMuxFactory` sets `CODEX_HOME=<workspace>/.codex` and launches `codex --log-dir <workspace>/.codex` in the configured workspace directory.
+- Defaults: `DefaultTailMuxFactory` sets `CODEX_HOME=<workspace>/.codex` in the environment and launches `codex` in the configured workspace directory. The agent sets `CODEX_TUI_RECORD_SESSION=1` and `CODEX_TUI_SESSION_LOG_PATH` to a deterministic path under `<workspace>/.codex/log`.
 
 ## Dependency Injection
 

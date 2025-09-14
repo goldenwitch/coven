@@ -16,6 +16,7 @@ public sealed class CodexCliAgentRegistrationOptions
     public string ExecutablePath { get; set; } = "codex";
     public string WorkspaceDirectory { get; set; } = Directory.GetCurrentDirectory();
     public string? ShimExecutablePath { get; set; }
+    public List<string> ConfigOverrides { get; } = new();
 }
 
     public static class CodexServiceCollectionExtensions
@@ -41,6 +42,7 @@ public sealed class CodexCliAgentRegistrationOptions
                 scrivener,
                 translator,
                 shimPath,
+                opts.ConfigOverrides,
                 host,
                 tailFactory,
                 configWriter,
