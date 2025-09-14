@@ -5,12 +5,31 @@ using Coven.Spellcasting.Agents.Tail;
 
 namespace Coven.Toys.RolloutMuxConsole;
 
+internal static class Config
+{
+    // Path to the Codex CLI executable (computed by OS)
+    // - Windows: %AppData%\npm\codex.cmd
+    // - Non-Windows: "codex" (resolve via PATH)
+    public static string ExecutablePath = OperatingSystem.IsWindows()
+        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "npm", "codex.cmd")
+        : "codex";
+
+    // Optional workspace directory; null uses current directory
+    public static string? WorkspaceDirectory = null;
+
+    // Prefix arguments before our standard flags (usually none when calling codex directly)
+    public static string ExecutableArgsPrefix = "";
+
+    // Enable verbose PATH dump
+    public static bool Debug = false;
+}
+
 internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var exe = EnvOrDefault("CODEX_EXE", "codex");
-        var ws  = EnvOrDefault("CODEX_WORKSPACE", Directory.GetCurrentDirectory());
+        var exe = Config.ExecutablePath;
+        var ws  = Config.WorkspaceDirectory ?? Directory.GetCurrentDirectory();
         var codexHome = Path.Combine(ws, ".codex");
         try { Directory.CreateDirectory(codexHome); } catch { }
 
@@ -20,6 +39,9 @@ internal static class Program
         // Environment and args to mirror DefaultTailMuxFactory behavior
         var env = new Dictionary<string, string?> { ["CODEX_HOME"] = codexHome };
         var argsLine = $"--log-dir {codexHome}";
+
+        // Debug environment info for PATH/npx visibility
+        PrintDebugInfo(exe, ws, codexHome, Config.Debug);
 
         await using var send = new ProcessSendPort(
             fileName: exe,
@@ -91,9 +113,43 @@ internal static class Program
         return 0;
     }
 
-    private static string EnvOrDefault(string name, string fallback)
+    private static void PrintDebugInfo(string exe, string ws, string codexHome, bool debug)
     {
-        var v = Environment.GetEnvironmentVariable(name);
-        return string.IsNullOrWhiteSpace(v) ? fallback : v!;
+        Console.WriteLine("=== RolloutMux Debug ===");
+        Console.WriteLine($"Exe: {exe}");
+        Console.WriteLine($"WS: {ws}");
+        Console.WriteLine($"Home: {codexHome}");
+        Console.WriteLine($"OS: {Environment.OSVersion} 64bit:{Environment.Is64BitProcess}");
+
+        var path = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
+        var pathext = Environment.GetEnvironmentVariable("PATHEXT");
+        Console.WriteLine($"PATH length: {path.Length}");
+        if (!string.IsNullOrWhiteSpace(pathext))
+            Console.WriteLine($"PATHEXT: {pathext}");
+
+        // Common Node managers and hints
+        var hints = new (string Key, string? Val)[]
+        {
+            ("NVM_BIN", Environment.GetEnvironmentVariable("NVM_BIN")),
+            ("NVM_DIR", Environment.GetEnvironmentVariable("NVM_DIR")),
+            ("VOLTA_HOME", Environment.GetEnvironmentVariable("VOLTA_HOME")),
+            ("FNM_DIR", Environment.GetEnvironmentVariable("FNM_DIR")),
+            ("ASDF_DATA_DIR", Environment.GetEnvironmentVariable("ASDF_DATA_DIR")),
+            ("npm_config_prefix", Environment.GetEnvironmentVariable("npm_config_prefix")),
+        };
+        foreach (var (k, v) in hints)
+        {
+            if (!string.IsNullOrWhiteSpace(v)) Console.WriteLine($"{k}: {v}");
+        }
+
+        if (debug)
+        {
+            Console.WriteLine("-- PATH entries --");
+            foreach (var entry in path.Split(Path.PathSeparator))
+            {
+                Console.WriteLine(entry);
+            }
+            Console.WriteLine("-- End PATH entries --");
+        }
     }
 }
