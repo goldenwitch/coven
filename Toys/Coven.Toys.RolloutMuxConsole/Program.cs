@@ -5,8 +5,8 @@ using Coven.Spellcasting.Agents.Tail;
 
 namespace Coven.Toys.RolloutMuxConsole;
 
-internal static class Config
-{
+    internal static class Config
+    {
     // Path to the Codex CLI executable (computed by OS)
     // - Windows: %AppData%\npm\codex.cmd
     // - Non-Windows: "codex" (resolve via PATH)
@@ -17,63 +17,57 @@ internal static class Config
     // Optional workspace directory; null uses current directory
     public static string? WorkspaceDirectory = null;
 
-    // Prefix arguments before our standard flags (usually none when calling codex directly)
-    public static string ExecutableArgsPrefix = "";
-
-    // Enable verbose PATH dump
-    public static bool Debug = false;
-}
+        // Enable verbose PATH dump
+        public static bool Debug = false;
+    }
 
 internal static class Program
 {
     public static async Task<int> Main(string[] args)
     {
-        var exe = Config.ExecutablePath;
-        var ws  = Config.WorkspaceDirectory ?? Directory.GetCurrentDirectory();
-        var codexHome = Path.Combine(ws, ".codex");
+        string exe = Config.ExecutablePath;
+        string ws  = Config.WorkspaceDirectory ?? Directory.GetCurrentDirectory();
+        string codexHome = Path.Combine(ws, ".codex");
         try { Directory.CreateDirectory(codexHome); } catch { }
 
-        // Rollout path matches the Codex agent design
-        var rolloutPath = Path.Combine(codexHome, "codex.rollout.jsonl");
+        string rolloutPath = Path.Combine(codexHome, "codex.rollout.jsonl");
 
         // Environment and args to mirror DefaultTailMuxFactory behavior
-        var env = new Dictionary<string, string?> { ["CODEX_HOME"] = codexHome };
-        var argsList = new[] { "--log-dir", codexHome };
+        Dictionary<string, string?> env = new() { ["CODEX_HOME"] = codexHome };
+        string[] argsList = ["--log-dir", codexHome];
 
         // Debug environment info for PATH/npx visibility
-        PrintDebugInfo(exe, ws, codexHome, Config.Debug);
+        if (Config.Debug)
+            PrintDebugInfo(exe, ws, codexHome);
 
-        await using var send = new ProcessSendPort(
+        await using ProcessSendPort send = new(
             fileName: exe,
             arguments: argsList,
             workingDirectory: ws,
             environment: env);
 
-        await using var tail = new DocumentTailSource(rolloutPath);
+        await using DocumentTailSource tail = new(rolloutPath);
 
-        using var cts = new CancellationTokenSource();
+        using CancellationTokenSource cts = new();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
 
         // Tail Codex rollout -> console
-        var tailTask = Task.Run(async () =>
+        Task tailTask = tail.TailAsync(ev =>
         {
-            await tail.TailAsync(async ev =>
+            switch (ev)
             {
-                switch (ev)
-                {
-                    case Line o:
-                        Console.WriteLine(o.Line);
-                        break;
-                    case ErrorLine e:
-                        Console.Error.WriteLine(e.Line);
-                        break;
-                }
-                await Task.CompletedTask;
-            }, cts.Token);
+                case Line o:
+                    Console.WriteLine(o.Line);
+                    break;
+                case ErrorLine e:
+                    Console.Error.WriteLine(e.Line);
+                    break;
+            }
+            return ValueTask.CompletedTask;
         }, cts.Token);
 
         // Console input -> Codex stdin
-        var inputTask = Task.Run(async () =>
+        Task inputTask = Task.Run(async () =>
         {
             while (!cts.IsCancellationRequested)
             {
@@ -104,16 +98,19 @@ internal static class Program
 
         // Print small help
         Console.WriteLine("RolloutMuxConsole ready. Ctrl+C to exit.");
-        Console.WriteLine($"Workspace: {ws}");
-        Console.WriteLine($"CodexHome: {codexHome}");
-        Console.WriteLine($"Executable: {exe} {string.Join(" ", argsList)}");
+        if (Config.Debug)
+        {
+            Console.WriteLine($"Workspace: {ws}");
+            Console.WriteLine($"CodexHome: {codexHome}");
+            Console.WriteLine($"Executable: {exe} {string.Join(" ", argsList)}");
+        }
 
         try { await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false); }
         catch (OperationCanceledException) { }
         return 0;
     }
 
-    private static void PrintDebugInfo(string exe, string ws, string codexHome, bool debug)
+    private static void PrintDebugInfo(string exe, string ws, string codexHome)
     {
         Console.WriteLine("=== RolloutMux Debug ===");
         Console.WriteLine($"Exe: {exe}");
@@ -128,28 +125,25 @@ internal static class Program
             Console.WriteLine($"PATHEXT: {pathext}");
 
         // Common Node managers and hints
-        var hints = new (string Key, string? Val)[]
-        {
+        (string Key, string? Val)[] hints =
+        [
             ("NVM_BIN", Environment.GetEnvironmentVariable("NVM_BIN")),
             ("NVM_DIR", Environment.GetEnvironmentVariable("NVM_DIR")),
             ("VOLTA_HOME", Environment.GetEnvironmentVariable("VOLTA_HOME")),
             ("FNM_DIR", Environment.GetEnvironmentVariable("FNM_DIR")),
             ("ASDF_DATA_DIR", Environment.GetEnvironmentVariable("ASDF_DATA_DIR")),
             ("npm_config_prefix", Environment.GetEnvironmentVariable("npm_config_prefix")),
-        };
+        ];
         foreach (var (k, v) in hints)
         {
             if (!string.IsNullOrWhiteSpace(v)) Console.WriteLine($"{k}: {v}");
         }
 
-        if (debug)
+        Console.WriteLine("-- PATH entries --");
+        foreach (var entry in path.Split(Path.PathSeparator))
         {
-            Console.WriteLine("-- PATH entries --");
-            foreach (var entry in path.Split(Path.PathSeparator))
-            {
-                Console.WriteLine(entry);
-            }
-            Console.WriteLine("-- End PATH entries --");
+            Console.WriteLine(entry);
         }
+        Console.WriteLine("-- End PATH entries --");
     }
 }

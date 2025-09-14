@@ -11,7 +11,6 @@ Configuration:
   - `ExecutablePath` — computed by OS:
     - Windows: `%AppData%\npm\codex.cmd`
     - Non-Windows: `codex` (resolved via PATH)
-  - `ExecutableArgsPrefix` — prefix args before standard flags. When calling Codex directly, leave empty `""`.
   - `WorkspaceDirectory` — set to a directory, or leave `null` to use the current directory.
   - `Debug` — set `true` to dump PATH entries on startup.
 
