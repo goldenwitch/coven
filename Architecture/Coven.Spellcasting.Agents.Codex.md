@@ -80,9 +80,10 @@ Summary mapping to the numbered flow above:
 
 - Agent: `CodexCliAgent<ChatEntry>` — core agent lifecycle and IO plumbing.
 - DI: `CodexServiceCollectionExtensions` — registers the ChatEntry agent by default.
-- Translation: `ICodexRolloutTranslator<ChatEntry>`, `DefaultChatEntryTranslator`.
+- Translation: `ICodexRolloutTranslator<ChatEntry>`, `DefaultChatEntryTranslator` (required; DI provides default for `ChatEntry`).
 - Process: `ICodexProcessFactory`, `DefaultCodexProcessFactory` — starting Codex robustly on Windows/Linux.
 - Tail: `ITailMux`, `ProcessDocumentTailMux`, `DefaultTailMuxFactory` — tails rollout file, writes to stdin.
+- Logging: `ILogger<CodexCliAgent<T>>` injected via DI; falls back to a null logger if not registered.
 - Rollout: `CodexRolloutParser`, `CodexRolloutLineKind`, `CodexRolloutLine`, `IRolloutPathResolver`.
 - MCP: `IMcpServerHost`, `LocalMcpServerHost`, `McpStdioServer`, `McpToolbelt`, `McpToolbeltBuilder`, `IMcpSpellExecutorRegistry`.
 - Config: `ICodexConfigWriter`, `DefaultCodexConfigWriter` — merging/updating `config.toml`.
@@ -118,7 +119,7 @@ Summary mapping to the numbered flow above:
 ## MCP Integration
 
 - Toolbelt: Built from `SpellDefinition` via `McpToolbeltBuilder.FromSpells`, preserving display names and JSON schemas from the Spellbook rather than reflection.
-- Execution: If spell instances are supplied, `ReflectionMcpSpellExecutorRegistry` deserializes args and invokes `ISpell<TIn, TOut>`, `ISpell<TIn>`, or `ISpell` at runtime; results are returned as `json` or `text` content to the MCP client.
+- Execution: If spell instances are supplied, `SimpleMcpSpellExecutorRegistry` deserializes args and invokes `ISpell<TIn, TOut>`, `ISpell<TIn>`, or `ISpell` at runtime; results are returned as `json` or `text` content to the MCP client.
 - Transport: `LocalMcpServerHost` writes toolbelt JSON, opens a named pipe, performs a small PING/PONG handshake, then runs `McpStdioServer` over the pipe using a simple JSON-RPC loop with `Content-Length` framing.
 - Codex Config: `ICodexConfigWriter.WriteOrMerge` updates `<CODEX_HOME>/config.toml` under `[mcp_servers.coven]` with `command = <shim>` and `args = ["<pipe>"]`.
 

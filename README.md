@@ -8,80 +8,33 @@
 **Tagging & capabilities** drive selection. Routes to the node with the most matching tags, uses registration order as tie breaker.
 **Board**: runtime that posts/consumes work; supports Push (recommended) and Pull modes with timeout/retry control.
 
-## Quick Start (DI + Spellcasting)
+## Quick Start (DI + Codex CLI)
 
-Minimal end-to-end using dependency injection and a single MagikUser. The guide carries a SpellContext so the agent operates relative to a repo path.
+Minimal wiring using dependency injection, matching the `samples/01.LocalCodexCLI` project. The Codex CLI agent streams Codex rollout into `ChatEntry` messages via a required translator.
 
 ```csharp
-using System;
-using System.IO;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Coven.Core;
-using Coven.Core.Di;
-using Coven.Spellcasting;
-using Coven.Spellcasting.Agents;
+using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex;
+using Coven.Spellcasting.Agents.Codex.Di;
+using Coven.Spellcasting.Agents.Codex.Rollout;
 
-// Inputs + payload
-public sealed record ChangeRequest(string RepoRoot, string Goal);
-public sealed record FixSpell(string GuideMarkdown, string SpellVersion, string TestSuite, string Goal);
-
-// Guide carries SpellContext (repo root + permissions)
-public sealed record GuideWithContext(string Markdown, SpellContext Context) : DefaultGuide(Markdown);
-
-// Single user that prepares books and invokes the agent
-public sealed class SpellUser : MagikUser<ChangeRequest, string>
-{
-    private readonly ICovenAgent<FixSpell, string> _agent;
-    public SpellUser(ICovenAgent<FixSpell, string> agent)
-        : base(
-            (input, ct) => new GuideWithContext(
-                "# Guidebook\nFollow user intent; be safe and concise.",
-                new SpellContext
-                {
-                    ContextUri = new Uri($"file://{Path.GetFullPath(input.RepoRoot)}"),
-                    Permissions = AgentPermissions.AutoEdit()
-                }),
-            null, // default spell (0.1)
-            null) // default tests (smoke)
-    { _agent = agent; }
-
-    protected override Task<string> InvokeAsync(
-        ChangeRequest input,
-        IBook<DefaultGuide> guide,
-        IBook<DefaultSpell> spell,
-        IBook<DefaultTest>  test,
-        CancellationToken ct)
-    {
-        var g = (GuideWithContext)guide.Payload;
-        var payload = new FixSpell(g.Markdown, spell.Payload.Version, test.Payload.Suite, input.Goal);
-        return _agent.CastSpellAsync(payload, g.Context, ct);
-    }
-}
-
-// DI wiring: register Codex CLI agent, compose pipeline, and run
 var services = new ServiceCollection();
-services.AddSingleton<ICovenAgent<FixSpell, string>>(sp =>
+
+// Register the Codex CLI agent for ChatEntry, using the default translator.
+services.AddCodexCliAgent<ChatEntry, DefaultChatEntryTranslator>(o =>
 {
-    string ToPrompt(FixSpell f) => $"goal={f.Goal}; version={f.SpellVersion}; suite={f.TestSuite}";
-    string Parse(string s) => s.Trim();
-    return new CodexCliAgent<FixSpell, string>(ToPrompt, Parse);
+    o.ExecutablePath = "codex"; // absolute path if not on PATH
+    o.WorkspaceDirectory = Directory.GetCurrentDirectory();
+    o.ShimExecutablePath = null; // provide if using MCP spells
 });
-services.BuildCoven(c => { c.AddBlock<ChangeRequest, string, SpellUser>(); c.Done(); });
 
-using var sp = services.BuildServiceProvider();
-var coven = sp.GetRequiredService<ICoven>();
-
-var repo = Path.Combine(Path.GetTempPath(), "coven-demo");
-Directory.CreateDirectory(repo);
-var output = await coven.Ritual<ChangeRequest, string>(new ChangeRequest(repo, "demo-goal"));
+// See the sample for full console wiring and Coven composition.
 ```
 
-Note: Ensure `codex` is on your PATH, or pass `new CodexCliAgent<FixSpell, string>.Options { ExecutablePath = "/absolute/path/to/codex" }` when constructing the agent.
+Note: Ensure `codex` is on your PATH or provide an absolute `ExecutablePath`. A translator is required; `DefaultChatEntryTranslator` is used for `ChatEntry`.
 
-// End-to-end example was removed as outdated. Follow Samples and Architecture docs instead.
+For a complete, runnable walkthrough, follow the `samples/01.LocalCodexCLI` project.
 
 ## Canonical Patterns
 
