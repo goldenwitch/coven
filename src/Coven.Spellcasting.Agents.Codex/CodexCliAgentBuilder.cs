@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Chat;
+using Microsoft.Extensions.Logging;
 using Coven.Spellcasting.Agents.Codex.Config;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
@@ -22,7 +23,8 @@ public static class CodexCliAgentBuilder
         ICodexProcessFactory? processFactory = null,
         ITailMuxFactory? tailFactory = null,
         ICodexConfigWriter? configWriter = null,
-        IRolloutPathResolver? rolloutResolver = null)
+        IRolloutPathResolver? rolloutResolver = null,
+        ILogger<CodexCliAgent<TMessage>>? logger = null)
         where TMessage : notnull
     {
         return new CodexCliAgent<TMessage>(
@@ -35,6 +37,7 @@ public static class CodexCliAgentBuilder
             processFactory,
             tailFactory,
             configWriter,
-            rolloutResolver);
+            rolloutResolver,
+            logger);
     }
 }

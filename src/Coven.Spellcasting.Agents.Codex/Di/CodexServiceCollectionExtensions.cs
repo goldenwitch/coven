@@ -3,6 +3,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Config;
+using Microsoft.Extensions.Logging;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Processes;
 using Coven.Spellcasting.Agents.Codex.Rollout;
@@ -24,6 +25,54 @@ public sealed class CodexCliAgentRegistrationOptions
 
     public static class CodexServiceCollectionExtensions
     {
+        private static ICovenAgent<TMessage> BuildAgent<TMessage, TTranslator>(
+            IServiceProvider sp,
+            CodexCliAgentRegistrationOptions opts)
+            where TMessage : notnull
+            where TTranslator : class, ICodexRolloutTranslator<TMessage>, new()
+        {
+            var scrivener = sp.GetRequiredService<IScrivener<TMessage>>();
+            var translator = sp.GetService<ICodexRolloutTranslator<TMessage>>() ?? new TTranslator();
+            var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
+            var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
+            var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
+            var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
+            var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
+            var logger = sp.GetService<ILogger<CodexCliAgent<TMessage>>>();
+
+            var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
+
+            return CodexCliAgentBuilder.Create(
+                opts.ExecutablePath,
+                opts.WorkspaceDirectory,
+                scrivener,
+                translator,
+                shimPath,
+                host,
+                procFactory,
+                tailFactory,
+                configWriter,
+                resolver,
+                logger);
+        }
+
+        private static void AddValidation(
+            IServiceCollection services,
+            CodexCliAgentRegistrationOptions opts)
+        {
+            services.AddSingleton<IAgentValidation>(sp =>
+            {
+                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
+                var spellbook = sp.GetService<Spellbook>();
+                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
+                return new CodexCliValidation(
+                    opts.ExecutablePath,
+                    opts.WorkspaceDirectory,
+                    shimPath,
+                    spellbook,
+                    configWriter);
+            });
+        }
         // Default registration: ChatEntry + DefaultChatEntryTranslator
         public static IServiceCollection AddCodexCliAgent(
             this IServiceCollection services,
@@ -37,47 +86,8 @@ public sealed class CodexCliAgentRegistrationOptions
             if (string.IsNullOrWhiteSpace(opts.ExecutablePath)) throw new ArgumentException("ExecutablePath must be provided.");
             if (string.IsNullOrWhiteSpace(opts.WorkspaceDirectory)) throw new ArgumentException("WorkspaceDirectory must be provided.");
 
-            services.AddCovenAgent(sp =>
-            {
-                var scrivener = sp.GetRequiredService<IScrivener<ChatEntry>>();
-                var translator = sp.GetService<ICodexRolloutTranslator<ChatEntry>>()
-                                 ?? new DefaultChatEntryTranslator();
-                var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
-                var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
-                var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
-                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
-                var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
-                // Spells are registered at runtime via MagikUser → agent.RegisterSpells
-
-                // Auto-discover shim path if not provided: look under AppContext.BaseDirectory/mcp-shim
-                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
-
-                return CodexCliAgentBuilder.Create(
-                    opts.ExecutablePath,
-                    opts.WorkspaceDirectory,
-                    scrivener,
-                    translator,
-                    shimPath,
-                    host,
-                    procFactory,
-                    tailFactory,
-                    configWriter,
-                    resolver);
-            });
-
-            // Register validator using the same options and auto-discovery resolver
-            services.AddSingleton<IAgentValidation>(sp =>
-            {
-                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
-                var spellbook = sp.GetService<Spellbook>();
-                string? shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
-                return new CodexCliValidation(
-                    opts.ExecutablePath,
-                    opts.WorkspaceDirectory,
-                    shimPath,
-                    spellbook,
-                    configWriter);
-            });
+            services.AddCovenAgent(sp => BuildAgent<ChatEntry, DefaultChatEntryTranslator>(sp, opts));
+            AddValidation(services, opts);
 
             return services;
         }
@@ -97,45 +107,8 @@ public sealed class CodexCliAgentRegistrationOptions
             if (string.IsNullOrWhiteSpace(opts.ExecutablePath)) throw new ArgumentException("ExecutablePath must be provided.");
             if (string.IsNullOrWhiteSpace(opts.WorkspaceDirectory)) throw new ArgumentException("WorkspaceDirectory must be provided.");
 
-            services.AddCovenAgent(sp =>
-            {
-                var scrivener = sp.GetRequiredService<IScrivener<TMessage>>();
-                var translator = sp.GetService<ICodexRolloutTranslator<TMessage>>() ?? new TTranslator();
-                var host = sp.GetService<IMcpServerHost>() ?? new LocalMcpServerHost(opts.WorkspaceDirectory);
-                var procFactory = sp.GetService<ICodexProcessFactory>() ?? new DefaultCodexProcessFactory();
-                var tailFactory = sp.GetService<ITailMuxFactory>() ?? new DefaultTailMuxFactory();
-                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
-                var resolver = sp.GetService<IRolloutPathResolver>() ?? new DefaultRolloutPathResolver();
-
-                // Auto-discover shim path if not provided
-                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
-
-                return CodexCliAgentBuilder.Create(
-                    opts.ExecutablePath,
-                    opts.WorkspaceDirectory,
-                    scrivener,
-                    translator,
-                    shimPath,
-                    host,
-                    procFactory,
-                    tailFactory,
-                    configWriter,
-                    resolver);
-            });
-
-            // Register validator using the same options and auto-discovery resolver
-            services.AddSingleton<IAgentValidation>(sp =>
-            {
-                var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
-                var spellbook = sp.GetService<Spellbook>();
-                string? shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
-                return new CodexCliValidation(
-                    opts.ExecutablePath,
-                    opts.WorkspaceDirectory,
-                    shimPath,
-                    spellbook,
-                    configWriter);
-            });
+            services.AddCovenAgent(sp => BuildAgent<TMessage, TTranslator>(sp, opts));
+            AddValidation(services, opts);
 
             return services;
         }

@@ -17,12 +17,11 @@ namespace Coven.Spellcasting.Agents.Codex;
 
     public sealed class CodexCliAgent<TMessageFormat> : ICovenAgent<TMessageFormat> where TMessageFormat : notnull
     {
-    public string Id => "codex";
     private readonly string _codexExecutablePath;
     private readonly string _workspaceDirectory;
     private readonly IScrivener<TMessageFormat> _scrivener;
     private readonly string _codexHomeDir;
-    private readonly ICodexRolloutTranslator<TMessageFormat>? _translator;
+    private readonly ICodexRolloutTranslator<TMessageFormat> _translator;
     private readonly string? _shimExecutablePath;
     private IMcpSpellExecutorRegistry? _executorRegistry;
     private readonly IMcpServerHost? _hostOverride;
@@ -32,7 +31,7 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly IRolloutPathResolver? _rolloutResolver;
     private McpToolbelt? _toolbelt;
         private IMcpServerSession? _mcpSession;
-        private readonly ILogger<CodexCliAgent<TMessageFormat>> _log = NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
+        private readonly ILogger<CodexCliAgent<TMessageFormat>> _log;
 
     // Removed unused process/task tracking fields from an earlier design.
 
@@ -47,7 +46,8 @@ namespace Coven.Spellcasting.Agents.Codex;
         ICodexProcessFactory? processFactory,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
-        IRolloutPathResolver? rolloutResolver)
+        IRolloutPathResolver? rolloutResolver,
+        ILogger<CodexCliAgent<TMessageFormat>>? logger = null)
     {
         _codexExecutablePath = codexExecutablePath;
         _workspaceDirectory = workspaceDirectory;
@@ -61,7 +61,8 @@ namespace Coven.Spellcasting.Agents.Codex;
         _tailFactory = tailFactory;
         _configWriter = configWriter;
         _rolloutResolver = rolloutResolver;
-        _translator = translator;
+        _translator = translator ?? throw new ArgumentNullException(nameof(translator));
+        _log = logger ?? NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
@@ -160,15 +161,8 @@ namespace Coven.Spellcasting.Agents.Codex;
                     case Line o:
                     {
                         var parsed = CodexRolloutParser.Parse(o.Line);
-                        if (_translator is not null)
-                        {
-                            var entry = _translator.Translate(parsed);
-                            await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
-                        }
-                        else if (typeof(TMessageFormat) == typeof(string))
-                        {
-                            await _scrivener.WriteAsync((TMessageFormat)(object)o.Line, ct).ConfigureAwait(false);
-                        }
+                        var entry = _translator.Translate(parsed);
+                        await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
                         break;
                     }
 
@@ -182,15 +176,8 @@ namespace Coven.Spellcasting.Agents.Codex;
                             Message: e.Line,
                             Code: "tail_error");
 
-                        if (_translator is not null)
-                        {
-                            var entry = _translator.Translate(errorLine);
-                            await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
-                        }
-                        else if (typeof(TMessageFormat) == typeof(string))
-                        {
-                            await _scrivener.WriteAsync((TMessageFormat)(object)($"ERROR: {e.Line}"), ct).ConfigureAwait(false);
-                        }
+                        var entry = _translator.Translate(errorLine);
+                        await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
                         break;
                     }
                 }
@@ -235,16 +222,8 @@ namespace Coven.Spellcasting.Agents.Codex;
                 Message: ex.Message,
                 Code: ex.GetType().Name);
 
-            if (_translator is not null)
-            {
-                var entry = _translator.Translate(line);
-                await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
-            }
-            else if (typeof(TMessageFormat) == typeof(string))
-            {
-                var msg = $"ERROR[{ex.GetType().Name}]: {ex.Message}\n{ex}";
-                await _scrivener.WriteAsync((TMessageFormat)(object)msg, ct).ConfigureAwait(false);
-            }
+            var entry = _translator.Translate(line);
+            await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
         }
         catch
         {
