@@ -18,16 +18,16 @@ internal sealed class DefaultCodexProcessFactory : ICodexProcessFactory
         }
     }
 
-        public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+        public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
         {
             // Try direct start (native executables)
-            if (TryStart(executablePath, null, workingDirectory, environment, out var handle))
+            if (TryStart(executablePath, arguments, workingDirectory, environment, out var handle))
                 return handle!;
 
             // Windows fallback for .cmd/.bat npm shims
             if (OperatingSystem.IsWindows())
             {
-                var cmdArgs = "/c " + BuildCommandLine(executablePath, null);
+                var cmdArgs = "/c " + BuildCommandLine(executablePath, arguments);
                 if (TryStart("cmd.exe", cmdArgs, workingDirectory, environment, out var viaCmd))
                     return viaCmd!;
             }
@@ -36,11 +36,11 @@ internal sealed class DefaultCodexProcessFactory : ICodexProcessFactory
             var npmCodex = ExecutableDiscovery.TryLocateCodexViaNpm();
             if (!string.IsNullOrWhiteSpace(npmCodex))
             {
-                if (TryStart(npmCodex!, null, workingDirectory, environment, out var viaNpm))
+                if (TryStart(npmCodex!, arguments, workingDirectory, environment, out var viaNpm))
                     return viaNpm!;
                 if (OperatingSystem.IsWindows())
                 {
-                    var cmdArgsNpm = "/c " + BuildCommandLine(npmCodex!, null);
+                    var cmdArgsNpm = "/c " + BuildCommandLine(npmCodex!, arguments);
                     if (TryStart("cmd.exe", cmdArgsNpm, workingDirectory, environment, out var viaNpmCmd))
                         return viaNpmCmd!;
                 }
@@ -50,11 +50,11 @@ internal sealed class DefaultCodexProcessFactory : ICodexProcessFactory
             var winCodex = ExecutableDiscovery.TryLocateCodexOnWindowsPath();
             if (!string.IsNullOrWhiteSpace(winCodex))
             {
-                if (TryStart(winCodex!, null, workingDirectory, environment, out var viaWin))
+                if (TryStart(winCodex!, arguments, workingDirectory, environment, out var viaWin))
                     return viaWin!;
                 if (OperatingSystem.IsWindows())
                 {
-                    var cmdArgsWin = "/c " + BuildCommandLine(winCodex!, null);
+                    var cmdArgsWin = "/c " + BuildCommandLine(winCodex!, arguments);
                     if (TryStart("cmd.exe", cmdArgsWin, workingDirectory, environment, out var viaWinCmd))
                         return viaWinCmd!;
                 }

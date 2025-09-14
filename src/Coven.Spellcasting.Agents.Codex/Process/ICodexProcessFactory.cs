@@ -11,5 +11,5 @@ public interface IProcessHandle : IAsyncDisposable
 
 public interface ICodexProcessFactory
 {
-    IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment);
+    IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment);
 }

@@ -54,10 +54,12 @@ internal static class Program
                 var exe = Environment.GetEnvironmentVariable("CODEX_EXE");
                 var ws  = Environment.GetEnvironmentVariable("CODEX_WORKSPACE");
                 var shim = Environment.GetEnvironmentVariable("CODEX_SHIM");
+                var log = Environment.GetEnvironmentVariable("CODEX_LOG_DIR");
 
                 o.ExecutablePath = string.IsNullOrWhiteSpace(exe) ? "codex" : exe;
                 o.WorkspaceDirectory = string.IsNullOrWhiteSpace(ws) ? Directory.GetCurrentDirectory() : ws!;
                 o.ShimExecutablePath = string.IsNullOrWhiteSpace(shim) ? null : shim;
+                o.LogDirectory = string.IsNullOrWhiteSpace(log) ? null : log;
             });
 
             // Run orchestration via Generic Host

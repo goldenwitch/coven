@@ -69,7 +69,7 @@ namespace Coven.Spellcasting.Agents.Codex.Tests;
         public MockProcessFactory(string mockExePath, string rolloutPath, string logPath)
         { _mockExePath = mockExePath; _rolloutPath = rolloutPath; _logPath = logPath; }
 
-        public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+        public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
         {
             // Start the toy via 'dotnet <dll> --rollout <path>' so stdin is available
             var psi = new ProcessStartInfo(_mockExePath, $"--rollout \"{_rolloutPath}\" --log \"{_logPath}\"")

@@ -27,7 +27,7 @@ public sealed class StubRolloutResolver : Rollout.IRolloutPathResolver
 
 public sealed class ThrowingProcessFactory : ICodexProcessFactory
 {
-    public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
         => throw new InvalidOperationException("Process start should not be called in this test.");
 }
 
@@ -122,7 +122,7 @@ public sealed class NoopProcessFactory : ICodexProcessFactory
         }
     }
 
-    public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
         => new Handle();
 }
 
@@ -144,6 +144,7 @@ public sealed class CapturingProcessFactory : ICodexProcessFactory
 {
     public int StartCalls { get; private set; }
     public string? LastExecutablePath { get; private set; }
+    public string? LastArguments { get; private set; }
     public string? LastWorkingDirectory { get; private set; }
     public IReadOnlyDictionary<string, string?>? LastEnvironment { get; private set; }
 
@@ -154,10 +155,11 @@ public sealed class CapturingProcessFactory : ICodexProcessFactory
         public ValueTask DisposeAsync() { try { Process.Dispose(); } catch { } return ValueTask.CompletedTask; }
     }
 
-    public IProcessHandle Start(string executablePath, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
+    public IProcessHandle Start(string executablePath, string? arguments, string workingDirectory, IReadOnlyDictionary<string, string?> environment)
     {
         StartCalls++;
         LastExecutablePath = executablePath;
+        LastArguments = arguments;
         LastWorkingDirectory = workingDirectory;
         LastEnvironment = environment;
         return new Handle();
