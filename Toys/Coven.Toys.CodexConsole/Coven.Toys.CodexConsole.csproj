@@ -19,7 +19,6 @@
     <ProjectReference Include="..\..\src\Coven.Spellcasting.Grimoire\Coven.Spellcasting.Grimoire.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Coven.Sophia\Coven.Sophia.csproj" />
-    <ProjectReference Include="..\..\src\Coven.Durables\Coven.Durables.csproj" />
+    
   </ItemGroup>
 </Project>

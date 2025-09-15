@@ -4,6 +4,7 @@ using Coven.Core;
 using Coven.Spellcasting;
 using Coven.Spellcasting.Agents;
 using Coven.Chat;
+using Coven.Spellcasting.Spells;
 
 namespace Coven.Toys.CodexConsole;
 
@@ -23,7 +24,7 @@ internal sealed class CodexWizard : MagikUser<Empty, Empty, Guidebook, Spellbook
         Spellbook spellbook,
         Testbook testbook)
     {
-        var contracts = spellbook.Spells.OfType<Coven.Spellcasting.Spells.ISpellContract>().ToList();
+        var contracts = spellbook.Spells.OfType<ISpellContract>().ToList();
         if (contracts.Count != 0)
         {
             await _agent.RegisterSpells(contracts).ConfigureAwait(false);

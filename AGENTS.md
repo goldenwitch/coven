@@ -1,4 +1,9 @@
-# Current work scope
+# Work Scopes
+Ask the user which one of the following scopes you are working on and then follow those instructions with higher priority than any others.
+
+If your role is Refactor then follow the ## Refactor section.
+If your role is New Feature then follow the ## New Feature section.
+## Refactor
 Let's start at the top level projects like toys and samples and then work backwards eliminating optional features or
 configuration based on whether they are needed.
 
@@ -7,6 +12,15 @@ We will go through each project one at a time with the user, and decide which it
 
 Use ls in the refactor/ folder and read the existing refactor docs to know where you left off.
 This means that we have to update the refactor docs each time we implement one of the items.
+
+## New Feature
+Let's design a new feature together. We should:
+1. Make a design together.
+2. Come up with a plan to implement this design.
+3. Store our plan and design.
+4. Repeatedly break off a piece of work from the design and implement it.
+
+Make sure to log work as you implement it so we can pick up where we left off.
 
 # Rules
 Always start by reading \README.md and \Architecture\README.md
@@ -25,10 +39,10 @@ Preferred tools by task:
 - Patch
     - apply_patch
 - Reading filesystem
+    - find
     - ls
     - grep
     - nl
-    - find
 
 Missing/Banned tools:
 - rg
