@@ -15,15 +15,18 @@ Behavior:
   - `CODEX_TUI_RECORD_SESSION=1`
   - `CODEX_TUI_SESSION_LOG_PATH=<workspace>/.codex/log/codex.rollout.jsonl`
 - No extra CLI flags; Codex inherits the working directory.
+- Starts Codex eagerly after wiring the rollout tail, so rollout begins without requiring initial input.
 
 Interactive input:
 
 - Raw keys are sent immediately; modifiers for arrows use xterm-style CSI sequences (e.g., `ESC[1;5A` for Ctrl+Up).
+- Enter sends `Environment.NewLine` (platform default; CRLF on Windows, LF on Unix).
 - Backtick escape-hatch:
   - Press backtick `` ` `` to enter command mode; type a command and press Enter.
   - Commands: `help`, `exit`/`ctrlc` (send Ctrl+C to child), `quit` (exit mux).
   - Type a double backtick `` `` `` to send a literal backtick to the child.
--. Ctrl+C exits the mux (host); use the escape-hatch `exit` to send Ctrl+C to the child.
+  - Press `Esc` while in command mode with no text entered to pass through a literal ESC to the child and exit command mode. If text has been entered, `Esc` cancels command entry without sending ESC.
+- Ctrl+C exits the mux (host); use the escape-hatch `exit` to send Ctrl+C to the child.
 
 Log handling:
 

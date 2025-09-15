@@ -146,4 +146,5 @@ namespace Coven.Spellcasting.Agents.Tail;
     {
         if (_disposed) throw new ObjectDisposedException(nameof(ProcessSendPort));
     }
+
 }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Spellcasting.Agents;
+using Coven.Spellcasting.Agents.Codex;
 
 namespace Coven.Spellcasting.Agents.Codex.Tail;
 
@@ -19,6 +20,7 @@ internal sealed class DefaultTailMuxFactory : ITailMuxFactory
             fileName: executablePath,
             arguments: arguments,
             workingDirectory: workingDirectory,
-            environment: environment);
+            environment: environment,
+            configurePsi: psi => psi.AugmentPathForCodex());
     }
 }

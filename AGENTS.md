@@ -32,49 +32,42 @@ Always start by reading \README.md and \Architecture\README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
 ## Commands
-ALWAYS filter by file extension for grep when inspecting the src folder.
-There is a lot of items and binaries so save yourself some pain by filtering them.
-For example:
-    grep -R --include='*.cs'
-    grep -R --include='*.md'
 
-The only command that is allowed for updating files is apply_patch
+Use these patterns to explore the repo efficiently within the CLI constraints. Avoid long, unscoped outputs.
 
-The following commands are examples of commands definitely available in the environment. If they fail it is because of some failure in calling them, not because they aren't available.
-- pwd
-- ls -la
-- cat .editorconfig
-- head -n 5 .editorconfig
-- tail -n 5 .editorconfig
-- sed -n '1,5p' .editorconfig
-- wc -l .editorconfig
-- cat .editorconfig | head -n 3
-- head -n 3 .editorconfig | wc -l
-- sed -n '1,3p' .editorconfig | head -n 2
-- cat .editorconfig | echo piped
-- grep -n "=" .editorconfig | head -n 2
-- echo test | cat
-- cat .editorconfig | grep "root"
-- tail -n 10 .editorconfig | head -n 2
-- nl -ba .editorconfig | head -n 3
-- grep -n "AI" README.md | head -n 2
-- cat README.md | echo piped-to-echo
-- wc -c .editorconfig
+- Output limit: Command output truncates at ~10 KB or 256 lines per command. Use chunking patterns below to page through results.
+- Update policy: The only command allowed for writing files is `apply_patch`.
+- Start points: Always read `\README.md` and `\Architecture\README.md` first. The code index is at `\INDEX.md`.
 
-The following commands definitely fail.
-- awk 'NR<=5{print}' .editorconfig (auto-rejected)
-- stat .editorconfig (auto-rejected)
-- hexdump -C -n 64 .editorconfig (auto-rejected)
-- file .editorconfig (auto-rejected)
-- cmd.exe /c type .editorconfig (auto-rejected)
-- powershell -NoProfile -Command Get-Content -TotalCount 5 .editorconfig (auto-rejected)
-- findstr /N ".*" .editorconfig (auto-rejected)
-- more .editorconfig (auto-rejected)
-- cut -d"=" -f1 .editorconfig | head -n 3 (auto-rejected)
-- tr -d "\r" < .editorconfig | head -n 3 (auto-rejected)
-- dd if=.editorconfig bs=1 count=16 2>/dev/null (auto-rejected)
-- dir (auto-rejected)
-- rg (command not available)
+### Search (grep)
+- Filter by extension: Always restrict recursive greps.
+  - Pattern: `grep -R --include=*.EXT --exclude-dir=bin --exclude-dir=obj -n 'PATTERN' PATH`
+- Page large results: Use head/tail chunking to stay under the output limit.
+  - First chunk: `... | head -n 200`
+  - Next chunk(s): `... | tail -n +201 | head -n 200`
+- Cap per-file noise: Add `-m N` to limit matches per file.
+- Find files first: `-l` to list matching files, then grep per file for details.
+- Add context: `-C 2` to include 2 lines of context around matches.
+- Quiet checks: `-q` to test existence (exit code) without printing lines.
+
+Recommended scopes (substitute placeholders):
+- Code: `grep -R --include=*.cs --exclude-dir=bin --exclude-dir=obj -n 'PATTERN' .`
+- Markdown: `grep -R --include=*.md -n 'PATTERN' .`
+- Projects/Solutions: `grep -R --include=*.csproj -n '<TargetFramework' .` and `grep -R --include=*.sln -n 'Project(' .`
+
+Grep quirk in this harness:
+- Do not quote long option values. Using quotes around `--include`/`--exclude-dir` values (e.g., `--include='*.cs'` or `--exclude-dir="obj"`) is rejected by the harness. Use unquoted forms: `--include=*.cs`, `--exclude-dir=obj`.
+- Quoting the search pattern itself is fine: `grep -R --include=*.md -n 'Architecture Guide' .`
+
+### Read files in chunks
+- First lines: `head -n 200 FILE`
+- Last lines: `tail -n 200 FILE`
+- Specific range: `sed -n 'START,ENDp' FILE` (e.g., `sed -n '1,200p' FILE`)
+
+### Known constraints
+- Not available: `rg`, `dir`, or platform-specific binaries like `cmd.exe`, `powershell`, `stat`, `file`, `more` (auto-rejected in this environment).
+- Prefer portable POSIX utilities: `grep`, `sed`, `head`, `tail`, `wc`, `nl`, `ls`, `cat`.
+- Avoid `find -exec` in this harness; it may be blocked. Prefer listing files with `find` or `ls`, then open with `head`/`tail`/`sed -n`.
 
 ## Usings: Acceptable Usage
 - No fully qualified types or members: avoid `Namespace.Type.Member` in code; add a `using` or alias instead.

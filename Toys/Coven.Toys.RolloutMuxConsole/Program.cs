@@ -2,16 +2,39 @@
 
 using Coven.Spellcasting.Agents;
 using Coven.Spellcasting.Agents.Tail;
+using Coven.Spellcasting.Agents.Codex;
 using System.Text;
 
 namespace Coven.Toys.RolloutMuxConsole;
 
 internal static class Program
 {
-    public static async Task<int> Main(string[] args)
+    static class Config
     {
-        string exe = "codex";
-        string ws  = Directory.GetCurrentDirectory();
+        // Run Codex via the npm PowerShell shim found in %APPDATA%\npm per scratch.txt
+        public static string ExecutableName = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            "npm",
+            "codex.cmd");
+        public const bool AugmentPathForCodex = false;
+        public const char CommandEscape = '`';
+        public const bool PrintStartupHelp = true;
+        // Command-line arguments to pass to the executable (computed at runtime).
+        public static string[] ExecutableArgs = { };
+    }
+
+    public static async Task<int> Main(string[] _)
+    {
+        // User Config (Toy): tweak these to change behavior while experimenting.
+        // - ExecutableName: how to invoke Codex (must be on PATH or absolute).
+        // - AugmentPathForCodex: prepend common install folders (e.g., %APPDATA%\npm on Windows).
+        // - CommandEscape: key that enters command mode (double-tap for literal passthrough).
+        // - PrintStartupHelp: whether to print the interactive help banner.
+
+
+        // Launch Codex from PATH (no shim hardcoding).
+        string exe = Config.ExecutableName;
+        string ws = Directory.GetCurrentDirectory();
         await using CodexSessionScope session = new(ws);
 
         // Environment to match CodexCliAgent behavior per scratch.txt
@@ -22,16 +45,21 @@ internal static class Program
             ["CODEX_TUI_SESSION_LOG_PATH"] = session.RolloutPath
         };
 
+        // Using PowerShell to run the npm Codex shim from %APPDATA%\npm\codex.ps1.
+
         await using ProcessSendPort send = new(
             fileName: exe,
-            arguments: null,
+            arguments: Config.ExecutableArgs,
             workingDirectory: ws,
-            environment: env);
+            environment: env,
+            configurePsi: psi => { if (Config.AugmentPathForCodex) psi.AugmentPathForCodex(); });
 
         await using DocumentTailSource tail = new(session.RolloutPath);
 
         using CancellationTokenSource cts = new();
         Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
+
+        // Debug echo is compiled-in for DEBUG builds (see KeyDebugEcho.cs).
 
         // Tail Codex rollout -> console
         Task tailTask = tail.TailAsync(ev =>
@@ -48,126 +76,24 @@ internal static class Program
             return ValueTask.CompletedTask;
         }, cts.Token);
 
+        // Eagerly start Codex after tail is wired so rollout begins without initial input
+        await send.SafeWriteAsync(string.Empty, cts.Token).ConfigureAwait(false);
+
         // Console key pump -> Codex stdin (raw, with escape-hatch)
-        Task inputTask = Task.Run(async () =>
-        {
-            while (!cts.IsCancellationRequested)
-            {
-                ConsoleKeyInfo key;
-                try { key = Console.ReadKey(intercept: true); }
-                catch (InvalidOperationException) { cts.Cancel(); break; } // input stream closed
-
-                // Escape hatch: backtick for command mode, double backtick to send literal backtick
-                if (key.KeyChar == '`' && key.Modifiers == 0)
-                {
-                    ConsoleKeyInfo next;
-                    try { next = Console.ReadKey(intercept: true); }
-                    catch (InvalidOperationException) { cts.Cancel(); break; }
-
-                    if (next.KeyChar == '`' && next.Modifiers == 0)
-                    {
-                        await SafeWriteAsync(send, "`", cts.Token).ConfigureAwait(false);
-                        continue;
-                    }
-
-                    Console.WriteLine();
-                    Console.Write("`> ");
-                    var cmd = new StringBuilder();
-                    // Seed command with the second key if printable (non-control, excluding modifiers except Shift)
-                    if (next.KeyChar != '\0' && (next.Modifiers & ~ConsoleModifiers.Shift) == 0 && !char.IsControl(next.KeyChar))
-                    {
-                        cmd.Append(next.KeyChar);
-                        Console.Write(next.KeyChar);
-                    }
-
-                    while (true)
-                    {
-                        ConsoleKeyInfo k = Console.ReadKey(intercept: true);
-                        if (k.Key == ConsoleKey.Enter)
-                        {
-                            Console.WriteLine();
-                            break;
-                        }
-                        if (k.Key == ConsoleKey.Escape)
-                        {
-                            Console.WriteLine();
-                            cmd.Clear();
-                            break;
-                        }
-                        if (k.Key == ConsoleKey.Backspace)
-                        {
-                            if (cmd.Length > 0)
-                            {
-                                cmd.Length -= 1;
-                                Console.Write("\b \b");
-                            }
-                            continue;
-                        }
-                        if (k.KeyChar != '\0' && (k.Modifiers & ~ConsoleModifiers.Shift) == 0 && !char.IsControl(k.KeyChar))
-                        {
-                            cmd.Append(k.KeyChar);
-                            Console.Write(k.KeyChar);
-                            continue;
-                        }
-                    }
-
-                    var command = cmd.ToString().Trim();
-                    if (command.Length > 0)
-                    {
-                        switch (command.ToLowerInvariant())
-                        {
-                            case "exit":
-                            case "ctrlc":
-                                await SafeWriteAsync(send, "\u0003", cts.Token).ConfigureAwait(false); // ETX
-                                break;
-                            case "help":
-                                Console.WriteLine("Commands: help, exit|ctrlc (send Ctrl+C), quit (exit mux)");
-                                break;
-                            case "quit":
-                                cts.Cancel();
-                                break;
-                            default:
-                                Console.WriteLine($"Unknown command: {command}");
-                                break;
-                        }
-                    }
-                    continue;
-                }
-
-                // Normal key mapping
-                if (KeyMapper.TryMap(key, out var seq) && seq is not null)
-                {
-                    await SafeWriteAsync(send, seq, cts.Token).ConfigureAwait(false);
-                }
-            }
-        }, cts.Token);
+        var pump = new ConsoleKeyPump(send, Config.CommandEscape);
+        Task inputTask = pump.RunAsync(cts.Token);
 
         // Print small help
-        Console.WriteLine("RolloutMuxConsole ready.");
-        Console.WriteLine("- Raw key passthrough enabled (arrows, etc.)");
-        Console.WriteLine("- Press ` then type a command (help, exit, quit)");
-        Console.WriteLine("- Ctrl+C exits the mux; use `exit to send Ctrl+C to child");
+        if (Config.PrintStartupHelp)
+        {
+            Console.WriteLine("RolloutMuxConsole ready.");
+            Console.WriteLine("- Raw key passthrough enabled (arrows, etc.)");
+            Console.WriteLine($"- Press {Config.CommandEscape} then type a command (help, exit, quit)");
+            Console.WriteLine($"- Ctrl+C exits the mux; use {Config.CommandEscape}exit to send Ctrl+C to child");
+        }
 
         try { await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false); }
         catch (OperationCanceledException) { }
         return 0;
-        }
-
-    private static async Task SafeWriteAsync(ProcessSendPort send, string data, CancellationToken token)
-    {
-        try { await send.WriteAsync(data, token).ConfigureAwait(false); }
-        catch (OperationCanceledException) { }
-        catch (FileNotFoundException fnf)
-        {
-            Console.Error.WriteLine($"[codex-missing] {fnf.Message}");
-        }
-        catch (DirectoryNotFoundException dnf)
-        {
-            Console.Error.WriteLine($"[workspace-invalid] {dnf.Message}");
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[write-error] {ex.Message}");
-        }
     }
-    }
+}

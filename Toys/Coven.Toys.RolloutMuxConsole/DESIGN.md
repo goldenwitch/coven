@@ -1,6 +1,6 @@
 # RolloutMuxConsole — Raw Key Passthrough (No PTY)
 
-Status: Draft (design-first; scoped to key passthrough)
+Status: Draft → Implemented (scoped to key passthrough)
 
 ## Problem
 
@@ -22,7 +22,7 @@ Status: Draft (design-first; scoped to key passthrough)
 
 - Printable characters:
   - If `ConsoleKeyInfo.KeyChar != '\0'`, write that character as-is (UTF-8), respecting Shift for casing/symbols.
-  - Enter → `\r` (CR). Consider `\r\n` if the child expects CRLF.
+  - Enter → `Environment.NewLine` (platform default).
   - Backspace → `\x08` (BS). Tab → `\t`. Escape → `\x1b`.
 
 - Arrow/navigation keys (VT sequences):
@@ -61,9 +61,9 @@ Status: Draft (design-first; scoped to key passthrough)
 
 ## Design
 
-1) Add a non-breaking raw write API to `ProcessSendPort`:
-   - `Task WriteAsync(string data, bool flush = true, CancellationToken ct = default)` — writes without newline.
-   - Keep `WriteLineAsync` for any line-oriented usage.
+1) Use a raw write API in `ProcessSendPort`:
+   - `Task WriteAsync(string data, CancellationToken ct = default)` — writes without newline; callers own framing.
+   - Do not add `WriteLineAsync` to the core contract; prefer external helpers.
 
 2) Implement a key pump in the toy:
    - Use `Console.ReadKey(intercept: true)` in a loop; no local echo.
@@ -79,13 +79,16 @@ Status: Draft (design-first; scoped to key passthrough)
 
 4) Keep rollout tailing unchanged.
 
+5) Start Codex eagerly:
+   - After wiring the tail, trigger the Codex process start immediately so rollout begins without requiring initial input.
+
 ## Implementation Plan
 
-1. Add `WriteAsync` to `ProcessSendPort` (additive; no breaking changes).
-2. Add `KeyToSequence` helper in toy that maps `ConsoleKeyInfo` to a string.
+1. Use `ProcessSendPort.WriteAsync` for raw writes (no line helper on contract).
+2. Add key mapping helper to convert `ConsoleKeyInfo` to sequences.
 3. Replace line-based input loop with the key pump (with cancellation, EOF handling, and escape hatch mode).
-4. Update `README.md` usage and behavior notes.
-5. Manual validation: verify printable, arrows (with modifiers), backspace, tab, enter; confirm Ctrl+C reaches child and Ctrl+Break exits host.
+4. Start Codex eagerly after tail is configured.
+5. Manual validation: verify printable, arrows (with modifiers), backspace, tab, enter; confirm Ctrl+C reaches child; host Ctrl+C cancels mux.
 
 ## Risks
 
@@ -100,4 +103,14 @@ Status: Draft (design-first; scoped to key passthrough)
 
 ## Work Log
 
-- 2025-09-15: Revised design to raw key passthrough and chord handling.
+- 2025-09-14: Drafted design for raw key passthrough (no PTY), chord handling.
+- 2025-09-15: Implemented key pump via `Console.ReadKey(true)` and `KeyMapper` for printable, navigation (with modifiers), and function keys; Enter uses `Environment.NewLine`.
+- 2025-09-15: Implemented backtick escape-hatch: `help`, `exit|ctrlc` (send ETX), `quit` (exit host); double backtick sends literal backtick.
+- 2025-09-15: Added rollout tailing via `DocumentTailSource`; `CodexSessionScope` ensures unique per-run rollout path and cleans up created files/dirs.
+- 2025-09-15: Start Codex eagerly after tail setup to begin rollout without requiring initial input.
+
+## Notes on Write vs WriteLine and Extensions
+
+- Core contracts expose only `WriteAsync` to keep framing external.
+- Line-oriented convenience is provided via an extension method on `ITailMux` (`TailMuxWriteExtensions.WriteLineAsync`) which appends `Environment.NewLine`.
+- The toy uses raw `WriteAsync` directly; prefer extensions for line behavior rather than expanding core contracts.
