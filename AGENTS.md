@@ -1,14 +1,25 @@
+# Current work scope
+Let's start at the top level projects like toys and samples and then work backwards eliminating optional features or
+configuration based on whether they are needed.
+
+The goal is to document items. Label each item you add with tags like "bug" or "redundant" or "unnecessary".
+We will go through each project one at a time with the user, and decide which items to fix.
+
+Use ls in the refactor/ folder and read the existing refactor docs to know where you left off.
+This means that we have to update the refactor docs each time we implement one of the items.
+
+# Rules
 Always start by reading \README.md and \Architecture\README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
 When using find or grep ALWAYS filter by file extension.
-For example: grep -R --include='*.cs'
-
-> ALWAYS READ THE DESIGN DOC BEFORE STARTING WORK.
-> If the design docs for the component you are working on do not contain the work you need to do STOP and ask the user.
+For example:
+    grep -R --include='*.cs'
+    grep -R --include='*.md'
 
 No optional features! We don't need extraneous features!
 If a tool fails check for typos and/or recite AGENTS.md
+Pipes sometimes don't work. If you can figure out why, tell the user.
 
 Preferred tools by task:
 - Patch
@@ -27,8 +38,6 @@ Missing/Banned tools:
 - ruby
 - node
 
-Recite AGENTS.md regularly so you don't forget these important details!
-
 ## Usings: Acceptable Usage
 - No fully qualified types or members: avoid `Namespace.Type.Member` in code; add a `using` or alias instead.
 - Prefer aliasing on conflicts: when two types share a name, create an alias rather than using fully qualified names.
@@ -42,12 +51,6 @@ using Coven.Chat; // for ChatEntry/ChatThought
 
 var entry = new ChatThought("console", "hello");
 ```
-Bad
-```csharp
-// Redundant with implicit usings
-using System;
-using System.Threading.Tasks;
-```
 
 Pair 2 — No fully qualified types/members
 Good
@@ -55,26 +58,4 @@ Good
 using Coven.Chat.Adapter.Console.Di;
 
 services.AddConsoleChatAdapter(o => o.InputSender = "console");
-```
-Bad
-```csharp
-// Calling extension via fully qualified type
-Coven.Chat.Adapter.Console.Di.ConsoleAdapterServiceCollectionExtensions
-    .AddConsoleChatAdapter(services, o => o.InputSender = "console");
-```
-
-Pair 3 — Prefer aliasing for conflicts
-Good
-```csharp
-using Coven.Chat;
-using Coven.Chat.Adapter;
-using ConsoleAdapter = Coven.Chat.Adapter.Console.ConsoleAdapter;
-
-IAdapter<ChatEntry> adapter = new ConsoleAdapter(io);
-```
-Bad
-```csharp
-// Fully qualified type rather than an alias
-IAdapter<Coven.Chat.ChatEntry> adapter =
-    new Coven.Chat.Adapter.Console.ConsoleAdapter(io);
 ```
