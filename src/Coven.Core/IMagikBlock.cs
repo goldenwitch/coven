@@ -4,5 +4,5 @@
 
 public interface IMagikBlock<T, TOutput>
 {
-    Task<TOutput> DoMagik(T input);
+    Task<TOutput> DoMagik(T input, CancellationToken cancellationToken = default);
 }

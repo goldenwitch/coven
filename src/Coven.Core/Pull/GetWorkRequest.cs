@@ -7,5 +7,6 @@ public sealed record GetWorkRequest<TIn>
 (
     TIn Input,
     IReadOnlyCollection<string>? Tags = null,
-    string? BranchId = null
+    string? BranchId = null,
+    CancellationToken CancellationToken = default
 );

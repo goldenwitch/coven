@@ -31,9 +31,9 @@ public class CovenE2EAsyncTests
     {
         private readonly int delayMs;
         public AsyncDelayThenLength(int delayMs) { this.delayMs = delayMs; }
-        public async Task<int> DoMagik(string input)
+        public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(delayMs).ConfigureAwait(false);
+            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             return input.Length;
         }
     }
@@ -42,9 +42,9 @@ public class CovenE2EAsyncTests
     {
         private readonly int delayMs;
         public AsyncDelayThenToDouble(int delayMs) { this.delayMs = delayMs; }
-        public async Task<double> DoMagik(int input)
+        public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(delayMs).ConfigureAwait(false);
+            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             return (double)input;
         }
     }

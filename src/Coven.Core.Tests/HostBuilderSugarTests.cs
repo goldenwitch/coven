@@ -12,7 +12,7 @@ public sealed class HostBuilderSugarTests
 {
     private sealed class StringToInt : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     [Fact]

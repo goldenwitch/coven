@@ -52,7 +52,7 @@ public static class MagikTrickBuilderExtensions
             return this;
         }
 
-        public IMagikBuilder<TStart, TEnd> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null)
+        public IMagikBuilder<TStart, TEnd> MagikBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
         {
             if (typeof(TIn) == typeof(T))
             {

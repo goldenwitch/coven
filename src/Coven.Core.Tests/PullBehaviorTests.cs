@@ -16,12 +16,12 @@ public class PullBehaviorTests
 
     private sealed class ToObject : IMagikBlock<Start, object>
     {
-        public Task<object> DoMagik(Start input) => Task.FromResult((object)input.Value);
+        public Task<object> DoMagik(Start input, CancellationToken cancellationToken = default) => Task.FromResult((object)input.Value);
     }
 
     private sealed class ObjectToStringPlus : IMagikBlock<object, string>
     {
-        public Task<string> DoMagik(object input) => Task.FromResult(((string)input) + "|b2");
+        public Task<string> DoMagik(object input, CancellationToken cancellationToken = default) => Task.FromResult(((string)input) + "|b2");
     }
 
     [Fact]

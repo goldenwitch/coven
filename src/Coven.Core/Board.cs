@@ -39,7 +39,7 @@ public class Board : IBoard
     private readonly ConcurrentDictionary<(Type start, Type target), Delegate> pipelineCache = new();
 
     // Internal non-generic step for orchestrators; merges tags, selects, executes, persists tags, returns output.
-    internal async Task GetWorkPullAsync(object input, string? branchId, IReadOnlyCollection<string>? extraTags, IOrchestratorSink sink)
+    internal async Task GetWorkPullAsync(object input, string? branchId, IReadOnlyCollection<string>? extraTags, IOrchestratorSink sink, CancellationToken cancellationToken)
     {
         if (currentMode != BoardMode.Pull)
             throw new NotSupportedException("GetWork is only available in pull mode.");
@@ -76,7 +76,7 @@ public class Board : IBoard
             logger?.LogInformation("Pull select {Block} idx={Idx}", chosen.BlockTypeName, chosen.RegistryIndex);
             Tag.IncrementEpoch();
             // Invoke wrapped pull delegate which will finalize via Board.FinalizePullStep<T>
-            await chosen.InvokePull(this, sink, bid, input).ConfigureAwait(false);
+            await chosen.InvokePull(this, sink, bid, input, cancellationToken).ConfigureAwait(false);
             logger?.LogInformation("Pull dispatched {Block}", chosen.BlockTypeName);
         }
         finally
@@ -118,7 +118,7 @@ public class Board : IBoard
                 Descriptor = d,
                 RegistryIndex = idx,
                 Invoke = BlockInvokerFactory.Create(d),
-                InvokePull = static (_, __, ___, ____) => Task.CompletedTask,
+                InvokePull = static (_, __, ___, ____, _____) => Task.CompletedTask,
                 InputType = d.InputType,
                 OutputType = d.OutputType,
                 BlockTypeName = name,
@@ -148,12 +148,12 @@ public class Board : IBoard
             // Compile a pull wrapper that resolves the instance via activator, invokes, then finalizes with generic TOut.
             var finalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic)!;
             var finalizeClosed = finalize.MakeGenericMethod(cur.OutputType);
-            cur.InvokePull = async (board, sink, branchId, input) =>
+            cur.InvokePull = async (board, sink, branchId, input, cancellationToken) =>
             {
                 var cache = new Dictionary<int, object>();
                 var sp = Di.CovenExecutionScope.CurrentProvider;
                 var instance = cur.Activator.GetInstance(sp, cache, cur);
-                var result = await cur.Invoke(instance, input).ConfigureAwait(false);
+                var result = await cur.Invoke(instance, input, cancellationToken).ConfigureAwait(false);
                 finalizeClosed.Invoke(board, new object?[] { sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags });
             };
         }
@@ -167,30 +167,30 @@ public class Board : IBoard
         return true;
     }
 
-    public Task GetWork<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink)
+    public Task GetWork<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink, CancellationToken cancellationToken = default)
     {
         if (currentMode != BoardMode.Pull)
             throw new NotSupportedException("GetWork<TIn>(request) is only available in pull mode.");
         if (sink is null) throw new ArgumentNullException(nameof(sink));
 
         // Execute exactly one step using Push selection semantics, no forward-only constraint.
-        return ExecutePullStepAsync(request, sink);
+        return ExecutePullStepAsync(request, sink, cancellationToken);
     }
 
-    private async Task ExecutePullStepAsync<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink)
+    private async Task ExecutePullStepAsync<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink, CancellationToken cancellationToken)
     {
         var branchId = request.BranchId ?? string.Empty;
-        await GetWorkPullAsync(request.Input!, branchId, request.Tags, sink).ConfigureAwait(false);
+        await GetWorkPullAsync(request.Input!, branchId, request.Tags, sink, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<TOutput> PostWork<T, TOutput>(T input, List<string>? tags = null)
+    public async Task<TOutput> PostWork<T, TOutput>(T input, List<string>? tags = null, CancellationToken cancellationToken = default)
     {
         var startType = typeof(T);
         var targetType = typeof(TOutput);
 
         if (currentMode == BoardMode.Push)
         {
-            var pipeline = (Func<T, Task<TOutput>>)pipelineCache.GetOrAdd(
+            var pipeline = (Func<T, CancellationToken, Task<TOutput>>)pipelineCache.GetOrAdd(
                 (startType, targetType),
                 _ => compiler.Compile<T, TOutput>(startType, targetType)
             );
@@ -198,7 +198,7 @@ public class Board : IBoard
             var prev = Tag.BeginScope(Tag.NewScope(tags));
             try
             {
-                return await pipeline(input);
+                return await pipeline(input, cancellationToken);
             }
             finally
             {
@@ -208,7 +208,7 @@ public class Board : IBoard
 
         // Pull mode: delegate to the concrete orchestrator using GetWork<T> steps.
         var orchestrator = new PullOrchestrator(this, pullOptions);
-        return await orchestrator.Run<T, TOutput>(input, tags);
+        return await orchestrator.Run<T, TOutput>(input, tags, cancellationToken);
     }
 
     internal void PrecompileAllPipelines()

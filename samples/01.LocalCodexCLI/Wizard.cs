@@ -24,16 +24,17 @@ internal sealed class Wizard : MagikUser<Empty, Empty, Guidebook, Spellbook, Tes
         Empty input,
         Guidebook guidebook,
         Spellbook spellbook,
-        Testbook testbook)
+        Testbook testbook,
+        CancellationToken cancellationToken = default)
     {
         // Provide spells to the agent and start it (definitions come from contracts).
         var contracts = spellbook.Spells.OfType<ISpellContract>().ToList();
         if (contracts.Count != 0)
         {
-            await _agent.RegisterSpells(contracts).ConfigureAwait(false);
+            await _agent.RegisterSpells(contracts, cancellationToken).ConfigureAwait(false);
         }
 
-        await _agent.InvokeAgent().ConfigureAwait(false);
+        await _agent.InvokeAgent(cancellationToken).ConfigureAwait(false);
         return Empty.Value;
     }
 }

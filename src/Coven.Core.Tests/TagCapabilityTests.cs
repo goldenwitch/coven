@@ -18,7 +18,7 @@ public class TagCapabilityTests
     {
         private readonly IReadOnlyCollection<string> tags;
         public TagEmit(params string[] tags) { this.tags = tags; }
-        public Task<Counter> DoMagik(Counter input)
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default)
         {
             foreach (var t in tags) Tag.Add(t);
             return Task.FromResult(input);
@@ -30,13 +30,13 @@ public class TagCapabilityTests
         private readonly string name;
         public CapBlock(string name, params string[] caps) { this.name = name; SupportedTags = caps; }
         public IReadOnlyCollection<string> SupportedTags { get; }
-        public Task<Counter> DoMagik(Counter input) => Task.FromResult(input);
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult(input);
         public override string ToString() => name;
     }
 
     private sealed class ToDouble : IMagikBlock<Counter, double>
     {
-        public Task<double> DoMagik(Counter input) => Task.FromResult((double)input.Value);
+        public Task<double> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult((double)input.Value);
     }
 
     [Fact]

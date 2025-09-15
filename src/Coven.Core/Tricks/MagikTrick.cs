@@ -25,7 +25,7 @@ public sealed class MagikTrick<T> : IMagikBlock<T, T>, ITagCapabilities, IMagikT
     internal void SetCandidates(IEnumerable<CandidateRef> refs)
         => candidateRefs = refs.ToList();
 
-    public Task<T> DoMagik(T input)
+    public Task<T> DoMagik(T input, CancellationToken cancellationToken = default)
     {
         if (candidateRefs is not null)
         {

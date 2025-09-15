@@ -92,7 +92,7 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
-    public CovenServiceBuilder AddLambda<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null)
+    public CovenServiceBuilder AddLambda<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         if (func is null) throw new ArgumentNullException(nameof(func));
         EnsureNotFinalized();

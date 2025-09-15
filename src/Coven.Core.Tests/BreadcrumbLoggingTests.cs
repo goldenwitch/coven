@@ -18,15 +18,15 @@ public class BreadcrumbLoggingTests
     public BreadcrumbLoggingTests(ITestOutputHelper output) { this.output = output; }
     private sealed class LengthBlock : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
     private sealed class HashBlock : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.GetHashCode());
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.GetHashCode());
     }
     private sealed class IntToDouble : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     [Fact]

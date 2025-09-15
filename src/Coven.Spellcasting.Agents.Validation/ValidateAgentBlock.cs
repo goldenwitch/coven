@@ -16,11 +16,11 @@ public sealed class ValidateAgentBlock : IMagikBlock<Empty, Empty>
     public ValidateAgentBlock(IAgentValidation validator)
         => _validator = validator ?? throw new ArgumentNullException(nameof(validator));
 
-    public async Task<Empty> DoMagik(Empty input)
+    public async Task<Empty> DoMagik(Empty input, CancellationToken cancellationToken = default)
     {
         // Run validation; ignore outcome to keep block non-failing by default.
         // Implementations may log or track state inside the validator.
-        await _validator.ValidateAsync(CancellationToken.None).ConfigureAwait(false);
+        await _validator.ValidateAsync(cancellationToken).ConfigureAwait(false);
         return input;
     }
 }

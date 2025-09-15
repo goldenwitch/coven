@@ -25,7 +25,7 @@ public class DiScopeLifecycleTests
     {
         private readonly Tracker tracker;
         public UsesTracker(Tracker tracker) { this.tracker = tracker; }
-        public Task<string> DoMagik(string input) => Task.FromResult($"{input}:{tracker.Id}");
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult($"{input}:{tracker.Id}");
     }
 
     [Fact]
@@ -60,7 +60,7 @@ public class DiScopeLifecycleTests
     private sealed class NeedsMissing : IMagikBlock<string, int>
     {
         public NeedsMissing(IMissing missing) { }
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     [Fact]
@@ -86,7 +86,7 @@ public class DiScopeLifecycleTests
         public static int Disposed;
         public DisposableBlock() { Interlocked.Increment(ref Created); }
         public void Dispose() { Interlocked.Increment(ref Disposed); }
-        public Task<string> DoMagik(string input) => Task.FromResult(input);
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input);
         public static void Reset() { Created = 0; Disposed = 0; }
     }
 
@@ -124,7 +124,7 @@ public class DiScopeLifecycleTests
     {
         private readonly SingletonTracker tracker;
         public UsesSingleton(SingletonTracker tracker) { this.tracker = tracker; }
-        public Task<string> DoMagik(string input) => Task.FromResult($"{input}:{tracker.Id}");
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult($"{input}:{tracker.Id}");
     }
 
     [Fact]

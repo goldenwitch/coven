@@ -59,19 +59,19 @@ public class BoardChainTests
 
     private sealed class StringLengthBlock : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     private sealed class IntToDoubleBlock : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     private sealed class ObjectToIntBlock : IMagikBlock<object, int>
     {
         private readonly int value;
         public ObjectToIntBlock(int value) { this.value = value; }
-        public Task<int> DoMagik(object input) => Task.FromResult(value);
+        public Task<int> DoMagik(object input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 
     [Fact]
@@ -136,18 +136,18 @@ public class BoardChainTests
     // Async test blocks
     private sealed class AsyncStringLengthBlock : IMagikBlock<string, int>
     {
-        public async Task<int> DoMagik(string input)
+        public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(1).ConfigureAwait(false);
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             return input.Length;
         }
     }
 
     private sealed class AsyncIntToDoubleAddOne : IMagikBlock<int, double>
     {
-        public async Task<double> DoMagik(int input)
+        public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(1).ConfigureAwait(false);
+            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
             return input + 1d;
         }
     }
@@ -156,9 +156,9 @@ public class BoardChainTests
     {
         private readonly int delayMs;
         public AsyncDelayThenLength(int delayMs) { this.delayMs = delayMs; }
-        public async Task<int> DoMagik(string input)
+        public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(delayMs).ConfigureAwait(false);
+            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             return input.Length;
         }
     }
@@ -167,9 +167,9 @@ public class BoardChainTests
     {
         private readonly int delayMs;
         public AsyncDelayThenToDouble(int delayMs) { this.delayMs = delayMs; }
-        public async Task<double> DoMagik(int input)
+        public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
         {
-            await Task.Delay(delayMs).ConfigureAwait(false);
+            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
             return (double)input;
         }
     }
@@ -180,18 +180,18 @@ public class BoardChainTests
 
     private sealed class IntToDogBlock : IMagikBlock<int, BaseAnimal>
     {
-        public Task<BaseAnimal> DoMagik(int input) => Task.FromResult<BaseAnimal>(new Dog { From = input });
+        public Task<BaseAnimal> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult<BaseAnimal>(new Dog { From = input });
     }
 
     private sealed class ReturnConstInt : IMagikBlock<string, int>
     {
         private readonly int value;
         public ReturnConstInt(int value) { this.value = value; }
-        public Task<int> DoMagik(string input) => Task.FromResult(value);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 
     private sealed class ThrowingBlock : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => throw new InvalidOperationException("boom");
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => throw new InvalidOperationException("boom");
     }
 }

@@ -14,7 +14,7 @@ public class BuilderIntegrationTests
 {
     private sealed class StringLengthBlock : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     [Fact]
@@ -36,22 +36,22 @@ public class BuilderIntegrationTests
     // DI-first equivalents of routing and precompilation tests formerly in DiBuilderE2ETests
     private sealed class StringToInt : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     private sealed class IntToDoubleA : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult(input + 1d);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult(input + 1d);
     }
 
     private sealed class IntToDoubleB : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult(input + 1000d);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult(input + 1000d);
     }
 
     private sealed class EmitFast : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string s)
+        public Task<int> DoMagik(string s, CancellationToken cancellationToken = default)
         {
             Tag.Add("fast");
             return Task.FromResult(s.Length);
@@ -60,7 +60,7 @@ public class BuilderIntegrationTests
 
     private sealed class EmitToB : IMagikBlock<int, int>
     {
-        public Task<int> DoMagik(int i)
+        public Task<int> DoMagik(int i, CancellationToken cancellationToken = default)
         {
             Tag.Add($"to:{nameof(IntToDoubleB)}");
             return Task.FromResult(i);

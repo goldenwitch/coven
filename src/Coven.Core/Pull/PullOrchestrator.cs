@@ -14,6 +14,7 @@ internal sealed class PullOrchestrator : IOrchestratorSink
     private bool usedInitialTags;
     private Type? expectedFinalType;
     private readonly PullOptions? options;
+    private CancellationToken token;
 
     internal PullOrchestrator(Board board, PullOptions? options = null, string branchId = "main")
     {
@@ -54,8 +55,9 @@ internal sealed class PullOrchestrator : IOrchestratorSink
         finalTcs?.TrySetResult((object)result!);
     }
 
-    internal async Task<TOut> Run<TIn, TOut>(TIn input, List<string>? initialTags = null)
+    internal async Task<TOut> Run<TIn, TOut>(TIn input, List<string>? initialTags = null, CancellationToken cancellationToken = default)
     {
+        this.token = cancellationToken;
         // Initial finality is also based on declared types: is TIn assignable to TOut?
         if (typeof(TOut).IsAssignableFrom(typeof(TIn)))
         {
@@ -95,7 +97,7 @@ internal sealed class PullOrchestrator : IOrchestratorSink
         {
             var tags = usedInitialTags ? null : initialTags;
             usedInitialTags = true;
-            await board.GetWork(new GetWorkRequest<TCur>(current, tags, branchId), this).ConfigureAwait(false);
+            await board.GetWork(new GetWorkRequest<TCur>(current, tags, branchId, token), this, token).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

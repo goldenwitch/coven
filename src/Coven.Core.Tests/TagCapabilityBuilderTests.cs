@@ -11,7 +11,7 @@ public class TagCapabilityBuilderTests
 {
     private sealed class EmitFast : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input)
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             Tag.Add("fast");
             return Task.FromResult(input.Length);
@@ -20,12 +20,12 @@ public class TagCapabilityBuilderTests
 
     private sealed class IntToDoubleA : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     private sealed class IntToDoubleB : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input + 1000d);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input + 1000d);
     }
 
     [Fact]

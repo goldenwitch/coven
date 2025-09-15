@@ -9,8 +9,8 @@ namespace Coven.Core.Routing;
 
 internal static class BlockInvokerFactory
 {
-    // Builds an invoker: (object instance, object input) => Task<object>
-    public static Func<object, object, Task<object>> Create(MagikBlockDescriptor d)
+    // Builds an invoker: (object instance, object input, CancellationToken ct) => Task<object>
+    public static Func<object, object, CancellationToken, Task<object>> Create(MagikBlockDescriptor d)
     {
         var ifaceType = typeof(IMagikBlock<,>).MakeGenericType(d.InputType, d.OutputType);
         var doMagik = ifaceType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
@@ -18,9 +18,10 @@ internal static class BlockInvokerFactory
 
         var instParam = Expression.Parameter(typeof(object), "instance");
         var inParam = Expression.Parameter(typeof(object), "input");
+        var ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
         var castInst = Expression.Convert(instParam, ifaceType);
         var castArg = Expression.Convert(inParam, d.InputType);
-        var call = Expression.Call(castInst, doMagik, castArg); // Task<Out>
+        var call = Expression.Call(castInst, doMagik, castArg, ctParam); // Task<Out>
 
         var taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
         var tParam = Expression.Parameter(taskOutType, "t");
@@ -38,13 +39,13 @@ internal static class BlockInvokerFactory
 
         var contCall = Expression.Call(call, continueWith.MakeGenericMethod(typeof(object)), mapLambda); // Task<object>
 
-        var lambda = Expression.Lambda<Func<object, object, Task<object>>>(contCall, instParam, inParam);
+        var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<object>>>(contCall, instParam, inParam, ctParam);
         return lambda.Compile();
     }
 
     // Builds a pull-mode invoker that runs the block and finalizes via Board with a strict generic type.
-    // Signature: (Board board, IOrchestratorSink sink, string? branchId, object input) => Task
-    public static Func<Board, IOrchestratorSink, string?, object, Task> CreatePull(MagikBlockDescriptor d, IReadOnlyList<string> forwardTags)
+    // Signature: (Board board, IOrchestratorSink sink, string? branchId, object input, CancellationToken ct) => Task
+    public static Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task> CreatePull(MagikBlockDescriptor d, IReadOnlyList<string> forwardTags)
     {
         var block = d.BlockInstance;
         var blockType = block.GetType();
@@ -56,10 +57,12 @@ internal static class BlockInvokerFactory
         var sinkParam = Expression.Parameter(typeof(IOrchestratorSink), "sink");
         var branchParam = Expression.Parameter(typeof(string), "branchId");
         var inputParam = Expression.Parameter(typeof(object), "input");
+        var ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
 
         var castArg = Expression.Convert(inputParam, d.InputType);
         var blockConst = Expression.Constant(block);
-        var call = Expression.Call(blockConst, doMagik, castArg); // Task<TOut>
+        // For pull flow, pass through the provided cancellationToken.
+        var call = Expression.Call(blockConst, doMagik, castArg, ctParam); // Task<TOut>
 
         var taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
 
@@ -94,7 +97,7 @@ internal static class BlockInvokerFactory
 
         var contCall = Expression.Call(call, continueWith, contLambda); // Task
 
-        var lambda = Expression.Lambda<Func<Board, IOrchestratorSink, string?, object, Task>>(contCall, boardParam, sinkParam, branchParam, inputParam);
+        var lambda = Expression.Lambda<Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task>>(contCall, boardParam, sinkParam, branchParam, inputParam, ctParam);
         return lambda.Compile();
     }
 }

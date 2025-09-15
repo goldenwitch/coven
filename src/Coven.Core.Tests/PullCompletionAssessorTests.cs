@@ -11,7 +11,7 @@ public class PullCompletionAssessorTests
 {
     private sealed class AppendRan : IMagikBlock<string, string>
     {
-        public Task<string> DoMagik(string input) => Task.FromResult(input + "|ran");
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input + "|ran");
     }
 
     [Fact]

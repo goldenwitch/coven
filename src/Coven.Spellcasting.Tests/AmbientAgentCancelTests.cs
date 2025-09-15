@@ -29,7 +29,7 @@ public sealed class AmbientAgentCancelTests
 
     private sealed class CancelBlock : IMagikBlock<Empty, Empty>
     {
-        public async Task<Empty> DoMagik(Empty input)
+        public async Task<Empty> DoMagik(Empty input, CancellationToken cancellationToken = default)
         {
             var spell = new CancelAgent();
             await spell.CastSpell();

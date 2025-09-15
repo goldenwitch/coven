@@ -13,12 +13,12 @@ public class DiPullModeTests
 {
     private sealed class StringToInt : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     private sealed class IntToDouble : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 1d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 1d);
     }
 
     [Fact]
@@ -40,7 +40,7 @@ public class DiPullModeTests
 
     private sealed class EmitMany : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input)
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             Tag.Add("fast");
             Tag.Add("gpu");
@@ -51,14 +51,14 @@ public class DiPullModeTests
 
     private sealed class FallbackB : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 1000d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 1000d);
     }
 
     [TagCapabilities("fast")] // attribute
     private sealed class CapMerged : IMagikBlock<int, double>, ITagCapabilities // paramless interface
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "gpu" };
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 3000d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 3000d);
     }
 
     [Fact]

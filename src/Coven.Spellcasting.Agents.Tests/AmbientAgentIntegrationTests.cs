@@ -15,7 +15,7 @@ public sealed class AmbientAgentIntegrationTests
     {
         public bool Closed { get; private set; }
 
-        public Task RegisterSpells(IReadOnlyList<ISpellContract> spells) => Task.CompletedTask;
+        public Task RegisterSpells(IReadOnlyList<ISpellContract> spells, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task InvokeAgent(CancellationToken ct = default) => Task.CompletedTask;
         public Task CloseAgent() { Closed = true; return Task.CompletedTask; }
 
@@ -23,7 +23,7 @@ public sealed class AmbientAgentIntegrationTests
 
     private sealed class CancelBlock : IMagikBlock<Empty, Empty>
     {
-        public async Task<Empty> DoMagik(Empty input)
+        public async Task<Empty> DoMagik(Empty input, CancellationToken cancellationToken = default)
         {
             var spell = new CancelAgent();
             await spell.CastSpell();

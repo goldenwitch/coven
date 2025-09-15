@@ -22,7 +22,7 @@ public class TagScopeTests
 
     private sealed class ProbeBlock : IMagikBlock<string, string>
     {
-        public Task<string> DoMagik(string input)
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             Tag.Add("probe");
             var ok = Tag.Contains("probe");

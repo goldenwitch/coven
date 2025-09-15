@@ -17,13 +17,13 @@ public class TagIncrementTests
 
     private sealed class Inc : IMagikBlock<Counter, Counter>
     {
-        public Task<Counter> DoMagik(Counter input)
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default)
             => Task.FromResult(new Counter { Value = input.Value + 1 });
     }
 
     private sealed class IncAndSignalCopy2 : IMagikBlock<Counter, Counter>
     {
-        public Task<Counter> DoMagik(Counter input)
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default)
         {
             Tag.Add("to:Copy2");
             return Task.FromResult(new Counter { Value = input.Value + 1 });
@@ -32,17 +32,17 @@ public class TagIncrementTests
 
     private sealed class Copy1 : IMagikBlock<Counter, Counter>
     {
-        public Task<Counter> DoMagik(Counter input) => Task.FromResult(new Counter { Value = input.Value });
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult(new Counter { Value = input.Value });
     }
 
     private sealed class Copy2 : IMagikBlock<Counter, Counter>
     {
-        public Task<Counter> DoMagik(Counter input) => Task.FromResult(new Counter { Value = input.Value });
+        public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult(new Counter { Value = input.Value });
     }
 
     private sealed class ToDouble : IMagikBlock<Counter, double>
     {
-        public Task<double> DoMagik(Counter input) => Task.FromResult((double)input.Value);
+        public Task<double> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult((double)input.Value);
     }
 
     [Fact]

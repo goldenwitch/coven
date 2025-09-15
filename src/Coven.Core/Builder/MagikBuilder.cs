@@ -27,7 +27,7 @@ public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
         return this;
     }
 
-    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null)
+    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         var mb = new MagikBlock<TIn, TOut>(func);
         registry.Add(new MagikBlockDescriptor(

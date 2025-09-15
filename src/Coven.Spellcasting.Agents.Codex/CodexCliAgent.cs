@@ -61,7 +61,7 @@ namespace Coven.Spellcasting.Agents.Codex;
 
     
 
-        public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
+        public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells, CancellationToken ct = default)
         {
             // Build MCP tools and an executor registry directly from the provided spell instances.
             _toolbelt = McpToolbeltBuilder.FromSpells(Spells);

@@ -11,22 +11,22 @@ public class NestedMagikTrickTests
 {
     private sealed class MarkOuter : IMagikBlock<int, int>
     {
-        public Task<int> DoMagik(int input) { Tag.Add("outer:start"); return Task.FromResult(input); }
+        public Task<int> DoMagik(int input, CancellationToken cancellationToken = default) { Tag.Add("outer:start"); return Task.FromResult(input); }
     }
 
     private sealed class InnerInc : IMagikBlock<int, int>
     {
-        public Task<int> DoMagik(int input) => Task.FromResult(input + 1);
+        public Task<int> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult(input + 1);
     }
 
     private sealed class ToDouble : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     private sealed class NonCandidateBig : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input + 9999d);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input + 9999d);
     }
 
     [Fact]

@@ -35,7 +35,7 @@ internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
         return magikBuilder.MagikBlock(block, capabilities);
     }
 
-    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, Task<TOut>> func, IEnumerable<string>? capabilities = null)
+    public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         return magikBuilder.MagikBlock(func, capabilities);
     }

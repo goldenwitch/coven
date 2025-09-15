@@ -17,17 +17,17 @@ public class TagRoutingTests
     {
         private readonly int value;
         public ReturnConstInt(int value) { this.value = value; }
-        public Task<int> DoMagik(string input) => Task.FromResult(value);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 
     private sealed class IntToDouble : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     private sealed class IntToDoubleAddOne : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input + 1d);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input + 1d);
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class TagRoutingTests
 
     private sealed class EmitNextPreference : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input)
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             // Prefer the AddOne variant by type name
             Tag.Add("to:IntToDoubleAddOne");

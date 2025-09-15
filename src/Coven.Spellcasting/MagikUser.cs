@@ -20,15 +20,16 @@ public abstract class MagikUser<TIn, TOut, TGuide, TSpell, TTest> : IMagikBlock<
         _testBook = Testbook;
     }
 
-    public Task<TOut> DoMagik(TIn input)
+    public Task<TOut> DoMagik(TIn input, CancellationToken cancellationToken = default)
     {
-        return InvokeMagik(input, _guideBook, _spellBook, _testBook);
+        return InvokeMagik(input, _guideBook, _spellBook, _testBook, cancellationToken);
     }
 
     protected abstract Task<TOut> InvokeMagik(
         TIn input,
         TGuide guidebook,
         TSpell spellbook,
-        TTest testbook
+        TTest testbook,
+        CancellationToken cancellationToken = default
     );
 }

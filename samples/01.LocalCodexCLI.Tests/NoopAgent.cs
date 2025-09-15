@@ -9,7 +9,7 @@ internal sealed class NoopAgent : ICovenAgent<string>
 {
     private readonly List<ISpellContract> _defs = new();
 
-    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells)
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells, CancellationToken cancellationToken = default)
     {
         _defs.Clear();
         if (spells is not null) _defs.AddRange(spells);

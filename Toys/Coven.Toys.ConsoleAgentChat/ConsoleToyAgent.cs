@@ -35,46 +35,53 @@ internal sealed class ConsoleToyAgent : ICovenAgent<ChatEntry>
         }
     }
 
-    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells)
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells, CancellationToken ct = default)
     {
         // No-op: this toy agent does not use spells
         return Task.CompletedTask;
     }
 
-    public async Task InvokeAgent(CancellationToken ct = default)
+    public async Task InvokeAgent(CancellationToken cancellationToken = default)
     {
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        CancellationToken token = _cts.Token;
-
-        long after = 0;
-        // Tail the chat journal and mirror each user thought with a random response.
-        await foreach ((long journalPosition, ChatEntry entry) in _scrivener.TailAsync(after, token).ConfigureAwait(false))
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _cts = cts;
+        try
         {
-            after = journalPosition;
-            if (entry is ChatThought thought)
+            CancellationToken token = cts.Token;
+
+            long after = 0;
+            // Tail the chat journal and mirror each user thought with a random response.
+            await foreach ((long journalPosition, ChatEntry entry) in _scrivener.TailAsync(after, token).ConfigureAwait(false))
             {
-                var userText = (thought.Text ?? string.Empty).Trim();
-                if (string.Equals(userText, "exit", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(userText, "cancel", StringComparison.OrdinalIgnoreCase))
+                after = journalPosition;
+                if (entry is ChatThought thought)
                 {
+                    var userText = (thought.Text ?? string.Empty).Trim();
+                    if (string.Equals(userText, "exit", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(userText, "cancel", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _ = await _scrivener.WriteAsync(new ChatResponse("agent", "Exiting. Bye!"), token).ConfigureAwait(false);
+                        var cancel = _spellbook.Spells.OfType<CancelAgent>().FirstOrDefault();
+                        if (cancel is not null) await cancel.CastSpell().ConfigureAwait(false);
+                        break;
+                    }
 
-                    _ = await _scrivener.WriteAsync(new ChatResponse("agent", "Exiting. Bye!"), token).ConfigureAwait(false);
-                    var cancel = _spellbook.Spells.OfType<CancelAgent>().FirstOrDefault();
-                    if (cancel is not null) await cancel.CastSpell().ConfigureAwait(false);
-                    break;
-                }
-
-                string text = _responses[_rng.Next(_responses.Length)];
-                ChatResponse response = new("agent", text);
-                try
-                {
-                    _ = await _scrivener.WriteAsync(response, token).ConfigureAwait(false);
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
+                    string text = _responses[_rng.Next(_responses.Length)];
+                    ChatResponse response = new("agent", text);
+                    try
+                    {
+                        _ = await _scrivener.WriteAsync(response, token).ConfigureAwait(false);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
                 }
             }
+        }
+        finally
+        {
+            _cts = null;
         }
     }
 

@@ -48,12 +48,14 @@ internal static class Program
         }, cts.Token);
 
         // Console input -> Codex stdin
+        await using var stdin = Console.OpenStandardInput();
+        using var reader = new StreamReader(stdin);
         Task inputTask = Task.Run(async () =>
         {
             while (!cts.IsCancellationRequested)
             {
                 string? line;
-                try { line = await Console.In.ReadLineAsync().WaitAsync(cts.Token).ConfigureAwait(false); }
+                try { line = await StdInLineReader.ReadLineAsync(reader, cts.Token).ConfigureAwait(false); }
                 catch (OperationCanceledException) { break; }
                 if (line is null) { cts.Cancel(); break; } // EOF -> cancel tail
 

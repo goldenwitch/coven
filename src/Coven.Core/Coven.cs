@@ -20,7 +20,7 @@ internal class Coven : ICoven
         this.rootProvider = rootProvider;
     }
 
-    public async Task<TOutput> Ritual<T, TOutput>(T input)
+    public async Task<TOutput> Ritual<T, TOutput>(T input, CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post
         if (!board.WorkSupported<T>(new List<string>()))
@@ -32,7 +32,7 @@ internal class Coven : ICoven
         var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
         try
         {
-            return await board.PostWork<T, TOutput>(input).ConfigureAwait(false);
+            return await board.PostWork<T, TOutput>(input, null, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -40,7 +40,7 @@ internal class Coven : ICoven
         }
     }
 
-    public async Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags)
+    public async Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags, CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post with tags
         if (!board.WorkSupported<T>(tags ?? new List<string>()))
@@ -51,7 +51,7 @@ internal class Coven : ICoven
         var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
         try
         {
-            return await board.PostWork<T, TOutput>(input, tags).ConfigureAwait(false);
+            return await board.PostWork<T, TOutput>(input, tags, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -59,7 +59,7 @@ internal class Coven : ICoven
         }
     }
 
-    public async Task<TOutput> Ritual<TOutput>()
+    public async Task<TOutput> Ritual<TOutput>(CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post with no input
         if (!board.WorkSupported<Empty>(new List<string>()))
@@ -70,7 +70,7 @@ internal class Coven : ICoven
         var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
         try
         {
-            return await board.PostWork<Empty, TOutput>(Empty.Value).ConfigureAwait(false);
+            return await board.PostWork<Empty, TOutput>(Empty.Value, null, cancellationToken).ConfigureAwait(false);
         }
         finally
         {

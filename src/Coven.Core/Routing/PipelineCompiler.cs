@@ -19,11 +19,11 @@ internal sealed class PipelineCompiler
         this.engine = new SelectionEngine(registry, this.selector);
     }
 
-    internal Func<TIn, Task<TOut>> Compile<TIn, TOut>(Type startType, Type targetType)
+    internal Func<TIn, CancellationToken, Task<TOut>> Compile<TIn, TOut>(Type startType, Type targetType)
     {
         var candidates = registry.ToArray();
 
-        return async (TIn input) =>
+        return async (TIn input, CancellationToken cancellationToken) =>
         {
             object current = input!;
 
@@ -78,7 +78,7 @@ internal sealed class PipelineCompiler
                 try
                 {
                     logger?.LogDebug("Invoke {Block} rid={RitualId}", chosen.BlockTypeName, ritualId);
-                    current = await chosen.Invoke(instance, current).ConfigureAwait(false);
+                    current = await chosen.Invoke(instance, current, cancellationToken).ConfigureAwait(false);
                     logger?.LogInformation("Complete {Block} => {OutputType} rid={RitualId}", chosen.BlockTypeName, current?.GetType().Name ?? "null", ritualId);
                 }
                 catch (Exception ex)

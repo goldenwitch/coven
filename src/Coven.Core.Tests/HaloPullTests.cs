@@ -17,7 +17,7 @@ public class HaloPullTests
 
     private sealed class ParseAndTag : IMagikBlock<string, Doc>
     {
-        public Task<Doc> DoMagik(string input)
+        public Task<Doc> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             if (input.Contains('!')) Tag.Add("exclaim");
             Tag.Add("style:loud");
@@ -28,18 +28,18 @@ public class HaloPullTests
     private sealed class AddSalutation : IMagikBlock<Doc, Doc>, ITagCapabilities
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "exclaim" };
-        public Task<Doc> DoMagik(Doc input)
+        public Task<Doc> DoMagik(Doc input, CancellationToken cancellationToken = default)
             => Task.FromResult(new Doc { Text = $"☀ PRAISE THE SUN! ☀ {input.Text}" });
     }
 
     private sealed class UppercaseText : IMagikBlock<Doc, Doc>
     {
-        public Task<Doc> DoMagik(Doc input) => Task.FromResult(new Doc { Text = input.Text.ToUpperInvariant() });
+        public Task<Doc> DoMagik(Doc input, CancellationToken cancellationToken = default) => Task.FromResult(new Doc { Text = input.Text.ToUpperInvariant() });
     }
 
     private sealed class ToOut : IMagikBlock<Doc, string>
     {
-        public Task<string> DoMagik(Doc input) => Task.FromResult(input.Text);
+        public Task<string> DoMagik(Doc input, CancellationToken cancellationToken = default) => Task.FromResult(input.Text);
     }
 
     [Fact]

@@ -13,7 +13,7 @@ public sealed class DiCapabilitiesDiscoveryTests
 {
     private sealed class EmitFast : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input)
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             Tag.Add("fast");
             return Task.FromResult(input.Length);
@@ -23,23 +23,23 @@ public sealed class DiCapabilitiesDiscoveryTests
     [TagCapabilities("fast")]
     private sealed class A : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i);
     }
 
     private sealed class B : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 1000d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 1000d);
     }
 
     private sealed class CWithParamless : IMagikBlock<int, double>, ITagCapabilities
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "fast" };
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 2000d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 2000d);
     }
 
     private sealed class EmitMany : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input)
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             Tag.Add("fast");
             Tag.Add("gpu");
@@ -52,7 +52,7 @@ public sealed class DiCapabilitiesDiscoveryTests
     private sealed class MergedCaps : IMagikBlock<int, double>, ITagCapabilities // paramless interface
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "gpu" };
-        public Task<double> DoMagik(int i) => Task.FromResult((double)i + 3000d);
+        public Task<double> DoMagik(int i, CancellationToken cancellationToken = default) => Task.FromResult((double)i + 3000d);
     }
 
     [Fact]

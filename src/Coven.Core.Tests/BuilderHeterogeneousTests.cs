@@ -10,12 +10,12 @@ public class BuilderHeterogeneousTests
 {
     private sealed class StringToInt : IMagikBlock<string, int>
     {
-        public Task<int> DoMagik(string input) => Task.FromResult(input.Length);
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
     }
 
     private sealed class IntToDouble : IMagikBlock<int, double>
     {
-        public Task<double> DoMagik(int input) => Task.FromResult((double)input);
+        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
     [Fact]
@@ -35,8 +35,8 @@ public class BuilderHeterogeneousTests
     public async Task Builder_Registers_HeterogeneousFuncs_AndExecutesChain()
     {
         var coven = new MagikBuilder<string, double>()
-            .MagikBlock((string s) => Task.FromResult(s.Length))
-            .MagikBlock((int i) => Task.FromResult((double)i + 0.5))
+            .MagikBlock((string s, CancellationToken ct) => Task.FromResult(s.Length))
+            .MagikBlock((int i, CancellationToken ct) => Task.FromResult((double)i + 0.5))
             .Done();
 
         var result = await coven.Ritual<string, double>("abc");

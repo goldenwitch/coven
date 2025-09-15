@@ -24,7 +24,7 @@ public class ThuribleBlock<TIn, TOut> : IMagikBlock<TIn, TOut>
         _storage = Storage;
     }
 
-    public async Task<TOut> DoMagik(TIn input)
+    public async Task<TOut> DoMagik(TIn input, CancellationToken cancellationToken = default)
     {
 
         // Pre-action durable telemetry

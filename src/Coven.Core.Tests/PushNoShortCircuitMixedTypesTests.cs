@@ -15,11 +15,11 @@ public class PushNoShortCircuitMixedTypesTests
 
         var coven = new MagikBuilder<string, string>()
             // Step 1: string -> int
-            .MagikBlock<string, int>(s => Task.FromResult(s.Length))
+            .MagikBlock<string, int>((s, ct) => Task.FromResult(s.Length))
             // Step 2: int -> string (now assignable to TOut)
-            .MagikBlock<int, string>(i => Task.FromResult($"len:{i}"))
+            .MagikBlock<int, string>((i, ct) => Task.FromResult($"len:{i}"))
             // Step 3: string -> string (should still run; no short-circuit)
-            .MagikBlock<string, string>(s => { finalRan++; return Task.FromResult(s + "|final"); })
+            .MagikBlock<string, string>((s, ct) => { finalRan++; return Task.FromResult(s + "|final"); })
             .Done(); // push mode
 
         var result = await coven.Ritual<string, string>("abcd");

@@ -21,7 +21,7 @@ public class CapabilitiesSanityTests
             this.blockStepIncrementer = blockStepIncrementer;
         }
 
-        public Task<string> DoMagik(string input)
+        public Task<string> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             blockStepIncrementer();
             Appended = input + Appended;

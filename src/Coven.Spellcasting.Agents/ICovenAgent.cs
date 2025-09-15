@@ -14,7 +14,7 @@ public interface ICovenAgent<TIn, TMessageFormat, TOut> : ICovenAgent<TMessageFo
 
 public interface ICovenAgent<TMessageFormat> : IAgentControl
 {
-    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells);
+    public Task RegisterSpells(IReadOnlyList<ISpellContract> spells, CancellationToken ct = default);
 
     public Task InvokeAgent(CancellationToken ct = default);
 }

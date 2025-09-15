@@ -43,7 +43,7 @@ internal sealed class SampleOrchestrator : BackgroundService
         try
         {
             _logger.LogInformation("Starting ritual to run agent.");
-            _ = await _coven.Ritual<Empty>();
+            _ = await _coven.Ritual<Empty>(stoppingToken);
         }
         catch (Exception ex)
         {

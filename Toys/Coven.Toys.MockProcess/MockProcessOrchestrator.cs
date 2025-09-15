@@ -39,9 +39,13 @@ internal sealed class MockProcessOrchestrator : BackgroundService
             });
             _log.LogInformation("metadata written: session={SessionId}", sessionId);
 
+            await using var stdin = Console.OpenStandardInput();
+            using var reader = new StreamReader(stdin);
             while (!stoppingToken.IsCancellationRequested)
             {
-                var line = await Console.In.ReadLineAsync();
+                string? line;
+                try { line = await StdInLineReader.ReadLineAsync(reader, stoppingToken).ConfigureAwait(false); }
+                catch (OperationCanceledException) { break; }
                 if (line is null) break; // stdin closed
                 _log.LogInformation("stdin line: {Line}", line);
 

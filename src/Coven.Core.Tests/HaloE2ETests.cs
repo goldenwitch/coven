@@ -15,7 +15,7 @@ public class HaloE2ETests
 
     private sealed class ParseAndTag : IMagikBlock<string, Doc>
     {
-        public Task<Doc> DoMagik(string input)
+        public Task<Doc> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             // Tag based on content; exclamation -> exclaim, short vs long, loud for this demo
             if (input.Contains('!')) Tag.Add("exclaim");
@@ -27,7 +27,7 @@ public class HaloE2ETests
     private sealed class AddSalutation : IMagikBlock<Doc, Doc>, ITagCapabilities
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "exclaim" };
-        public Task<Doc> DoMagik(Doc input)
+        public Task<Doc> DoMagik(Doc input, CancellationToken cancellationToken = default)
         {
             // Praise the Sun easter egg
             var text = $"☀ PRAISE THE SUN! ☀ {input.Text} — If only I could be so grossly incandescent.";
@@ -37,18 +37,18 @@ public class HaloE2ETests
 
     private sealed class UppercaseText : IMagikBlock<Doc, Doc>
     {
-        public Task<Doc> DoMagik(Doc input) => Task.FromResult(new Doc { Text = input.Text.ToUpperInvariant() });
+        public Task<Doc> DoMagik(Doc input, CancellationToken cancellationToken = default) => Task.FromResult(new Doc { Text = input.Text.ToUpperInvariant() });
     }
 
     private sealed class LowercaseText : IMagikBlock<Doc, Doc>, ITagCapabilities
     {
         public IReadOnlyCollection<string> SupportedTags => new[] { "style:quiet" };
-        public Task<Doc> DoMagik(Doc input) => Task.FromResult(new Doc { Text = input.Text.ToLowerInvariant() });
+        public Task<Doc> DoMagik(Doc input, CancellationToken cancellationToken = default) => Task.FromResult(new Doc { Text = input.Text.ToLowerInvariant() });
     }
 
     private sealed class ToOut : IMagikBlock<Doc, string>
     {
-        public Task<string> DoMagik(Doc input) => Task.FromResult(input.Text);
+        public Task<string> DoMagik(Doc input, CancellationToken cancellationToken = default) => Task.FromResult(input.Text);
     }
 
     [Fact]

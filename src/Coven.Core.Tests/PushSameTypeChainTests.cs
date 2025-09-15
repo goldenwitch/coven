@@ -14,9 +14,9 @@ public class PushSameTypeChainTests
         int ran = 0;
 
         var coven = new MagikBuilder<string, string>()
-            .MagikBlock<string, string>(s => { ran++; return Task.FromResult(s + "|1"); })
-            .MagikBlock<string, string>(s => { ran++; return Task.FromResult(s + "|2"); })
-            .MagikBlock<string, string>(s => { ran++; return Task.FromResult(s + "|3"); })
+            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); })
+            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); })
+            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); })
             .Done(); // push mode
 
         var result = await coven.Ritual<string, string>("hi");
