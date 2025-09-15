@@ -123,24 +123,5 @@ public sealed class CodexCliValidation : IAgentValidation
     private static string Truncate(string s, int max)
         => s.Length <= max ? s : s.Substring(0, max) + "...";
 
-    private static string? ResolveShimPath(string? provided)
-    {
-        if (!string.IsNullOrWhiteSpace(provided) && File.Exists(provided)) return provided;
-        try
-        {
-            var baseDir = AppContext.BaseDirectory;
-            var shimDir = Path.Combine(baseDir, "mcp-shim");
-            if (Directory.Exists(shimDir))
-            {
-                var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                if (File.Exists(exe)) return exe;
-                if (File.Exists(dll)) return dll;
-                var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(any)) return any;
-            }
-        }
-        catch { }
-        return null;
-    }
+    // Shim discovery logic consolidated in DI; no duplicate here
 }

@@ -15,3 +15,9 @@
 > **Depends on existing types** from `Coven.Spellcasting.Agents`: `AgentPermissions`, and the `RunCommand` action symbol.
 
 ---
+
+## Using With Codex
+
+- Codex auto-registers `IAgentValidation` when you call `AddCodexCliAgent(...)`.
+- Recommended pattern: add `ValidateAgentBlock` before the block that invokes Codex. Codex will not function correctly if validation fails (e.g., missing CLI, unwritable workspace, unavailable named pipes, or missing shim when tools are present).
+- Shim discovery is restrictive: only known shim filenames under `mcp-shim/` are considered; provide an explicit path if your packaging differs.

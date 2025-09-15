@@ -22,14 +22,13 @@ namespace Coven.Spellcasting.Agents.Codex;
     private readonly string _codexHomeDir;
         private readonly ICodexRolloutTranslator<TMessageFormat> _translator;
         private readonly string? _shimExecutablePath;
-        private readonly IReadOnlyList<string> _configOverrides;
         private IMcpSpellExecutorRegistry? _executorRegistry;
         private readonly IMcpServerHost? _hostOverride;
         private readonly ITailMuxFactory? _tailFactory;
         private readonly ICodexConfigWriter? _configWriter;
         private McpToolbelt? _toolbelt;
-        private IMcpServerSession? _mcpSession;
         private readonly ILogger<CodexCliAgent<TMessageFormat>> _log;
+        private readonly CancellationTokenSource _agentCts = new();
 
     // Removed unused process/task tracking fields from an earlier design.
 
@@ -40,7 +39,6 @@ namespace Coven.Spellcasting.Agents.Codex;
         IScrivener<TMessageFormat> scrivener,
         ICodexRolloutTranslator<TMessageFormat> translator,
         string? shimExecutablePath,
-        IReadOnlyList<string>? configOverrides,
         IMcpServerHost? host,
         ITailMuxFactory? tailFactory,
         ICodexConfigWriter? configWriter,
@@ -58,19 +56,24 @@ namespace Coven.Spellcasting.Agents.Codex;
         _configWriter = configWriter;
         _translator = translator ?? throw new ArgumentNullException(nameof(translator));
         _log = logger ?? NullLogger<CodexCliAgent<TMessageFormat>>.Instance;
-        _configOverrides = (configOverrides is null) ? Array.Empty<string>() : new List<string>(configOverrides);
         _log.LogDebug("CodexCliAgent initialized for workspace: {Workspace}", _workspaceDirectory);
     }
 
     
 
-    public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
-    {
-        // Build MCP tools and an executor registry directly from the provided spell instances.
-        _toolbelt = McpToolbeltBuilder.FromSpells(Spells);
-        _executorRegistry = new SimpleMcpSpellExecutorRegistry(Spells);
-        return Task.CompletedTask;
-    }
+        public Task RegisterSpells(IReadOnlyList<ISpellContract> Spells)
+        {
+            // Build MCP tools and an executor registry directly from the provided spell instances.
+            _toolbelt = McpToolbeltBuilder.FromSpells(Spells);
+            _executorRegistry = new SimpleMcpSpellExecutorRegistry(Spells);
+            return Task.CompletedTask;
+        }
+
+        public Task CloseAgent()
+        {
+            try { _agentCts.Cancel(); } catch { }
+            return Task.CompletedTask;
+        }
 
 
     public async Task InvokeAgent(CancellationToken ct = default)
@@ -83,48 +86,30 @@ namespace Coven.Spellcasting.Agents.Codex;
                 ["CODEX_HOME"] = _codexHomeDir
             };
 
-            // Start disposable MCP server session for this invocation if we have tools.
-            if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
+            // Local runner encapsulates rollout/tail lifecycle; captures env
+            async Task RunAsync()
             {
-                var host = _hostOverride ?? new LocalMcpServerHost(_workspaceDirectory);
-                _mcpSession = await host.StartAsync(_toolbelt, _executorRegistry, ct).ConfigureAwait(false);
-                // Generate a minimal Codex config that points to our shim, which bridges to the named pipe.
-                if (!string.IsNullOrWhiteSpace(_shimExecutablePath) && !string.IsNullOrWhiteSpace(_mcpSession.PipeName))
-                {
-                    var writer = _configWriter ?? new DefaultCodexConfigWriter();
-                    try { writer.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, _mcpSession.PipeName!); }
-                    catch (Exception ex) { _log.LogWarning(ex, "Failed to write Codex config for shim"); }
-                }
-                }
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(ct, _agentCts.Token);
+                var token = linked.Token;
+                // Use a deterministic session log path under CODEX_HOME/log and enable TUI session recording
+                var logDir = Path.Combine(_codexHomeDir, "log");
+                try { Directory.CreateDirectory(logDir); } catch { }
+                var rolloutPath = Path.Combine(logDir, "codex.rollout.jsonl");
+                env["CODEX_TUI_RECORD_SESSION"] = "1";
+                env["CODEX_TUI_SESSION_LOG_PATH"] = rolloutPath;
+                _log.LogDebug("Using session log path: {RolloutPath}", rolloutPath);
 
-            // Use a deterministic session log path under CODEX_HOME/log and enable TUI session recording
-            var logDir = Path.Combine(_codexHomeDir, "log");
-            try { Directory.CreateDirectory(logDir); } catch { }
-            var rolloutPath = Path.Combine(logDir, "codex.rollout.jsonl");
-            env["CODEX_TUI_RECORD_SESSION"] = "1";
-            env["CODEX_TUI_SESSION_LOG_PATH"] = rolloutPath;
-            _log.LogDebug("Using session log path: {RolloutPath}", rolloutPath);
+                var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
 
-            var tailFactory = _tailFactory ?? new DefaultTailMuxFactory();
+                // Build CLI args; avoid redundant flags. Logs default under CODEX_HOME.
+                var args = new List<string>();
 
-            // Build CLI args; avoid redundant flags. Logs default under CODEX_HOME.
-            var args = new List<string>();
-            // Thread through -c/--config overrides without branching complexity
-            foreach (var ov in _configOverrides)
-            {
-                if (!string.IsNullOrWhiteSpace(ov))
-                {
-                    args.Add("-c");
-                    args.Add(ov);
-                }
-            }
-
-            await using ITailMux mux = tailFactory.Create(
-                documentPath: rolloutPath,
-                executablePath: _codexExecutablePath,
-                arguments: args,
-                workingDirectory: _workspaceDirectory,
-                environment: env);
+                await using ITailMux mux = tailFactory.Create(
+                    documentPath: rolloutPath,
+                    executablePath: _codexExecutablePath,
+                    arguments: args,
+                    workingDirectory: _workspaceDirectory,
+                    environment: env);
 
             // Ingress: begin reading from scrivener and forward user thoughts to Codex stdin.
             // Only supported for ChatEntry journals to avoid echo/feedback loops for plain string journals.
@@ -136,18 +121,18 @@ namespace Coven.Spellcasting.Agents.Codex;
                     try
                     {
                         long after = 0;
-                        await foreach (var pair in _scrivener.TailAsync(after, ct).ConfigureAwait(false))
+                        await foreach (var pair in _scrivener.TailAsync(after, token).ConfigureAwait(false))
                         {
-                            ct.ThrowIfCancellationRequested();
+                            token.ThrowIfCancellationRequested();
                             var entry = (ChatEntry)(object)pair.entry;
                             if (entry is ChatThought thought)
                             {
-                                try { await mux.WriteLineAsync(thought.Text, ct).ConfigureAwait(false); }
+                                try { await mux.WriteLineAsync(thought.Text, token).ConfigureAwait(false); }
                                 catch (OperationCanceledException) { throw; }
                                 catch (Exception ex)
                                 {
                                     _log.LogWarning(ex, "Ingress write failed");
-                                    await ReportErrorAsync(ex, ct).ConfigureAwait(false);
+                                    await ReportErrorAsync(ex, token).ConfigureAwait(false);
                                 }
                             }
                         }
@@ -156,20 +141,20 @@ namespace Coven.Spellcasting.Agents.Codex;
                     catch (Exception ex)
                     {
                         _log.LogWarning(ex, "Ingress loop error");
-                        await ReportErrorAsync(ex, ct).ConfigureAwait(false);
+                        await ReportErrorAsync(ex, token).ConfigureAwait(false);
                     }
-                }, ct);
+                }, token);
             }
 
-            var rolloutTask = mux.TailAsync(async ev =>
-            {
+                var rolloutTask = mux.TailAsync(async ev =>
+                {
                 switch (ev)
                 {
                     case Line o:
                     {
                         var parsed = CodexRolloutParser.Parse(o.Line);
                         var entry = _translator.Translate(parsed);
-                        await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
+                        await _scrivener.WriteAsync(entry, token).ConfigureAwait(false);
                         break;
                     }
 
@@ -184,14 +169,36 @@ namespace Coven.Spellcasting.Agents.Codex;
                             Code: "tail_error");
 
                         var entry = _translator.Translate(errorLine);
-                        await _scrivener.WriteAsync(entry, ct).ConfigureAwait(false);
+                        await _scrivener.WriteAsync(entry, token).ConfigureAwait(false);
                         break;
                     }
                 }
-            }, ct);
+                }, token);
 
-            await Task.WhenAll(rolloutTask, ingressTask).ConfigureAwait(false);
-            _log.LogInformation("Codex CLI agent invocation completed");
+                await Task.WhenAll(rolloutTask, ingressTask).ConfigureAwait(false);
+                _log.LogInformation("Codex CLI agent invocation completed");
+            }
+
+            // Start disposable MCP server session for this invocation if we have tools.
+            if (_toolbelt is not null && _toolbelt.Tools.Count != 0)
+            {
+                var host = _hostOverride ?? new LocalMcpServerHost(_workspaceDirectory);
+                using var linked2 = CancellationTokenSource.CreateLinkedTokenSource(ct, _agentCts.Token);
+                var token2 = linked2.Token;
+                await using var session = await host.StartAsync(_toolbelt, _executorRegistry, token2).ConfigureAwait(false);
+                // Generate a minimal Codex config that points to our shim, which bridges to the named pipe.
+                if (!string.IsNullOrWhiteSpace(_shimExecutablePath) && !string.IsNullOrWhiteSpace(session.PipeName))
+                {
+                    var writer = _configWriter ?? new DefaultCodexConfigWriter();
+                    try { writer.WriteOrMerge(_codexHomeDir, _shimExecutablePath!, session.PipeName!); }
+                    catch (Exception ex) { _log.LogWarning(ex, "Failed to write Codex config for shim"); }
+                }
+                await RunAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                await RunAsync().ConfigureAwait(false);
+            }
         }
         catch (Exception ex)
         {
@@ -201,20 +208,7 @@ namespace Coven.Spellcasting.Agents.Codex;
         }
     }
 
-    public async Task CloseAgent()
-    {
-        var s = _mcpSession;
-        _mcpSession = null;
-        if (s is not null)
-        {
-            try { await s.DisposeAsync().ConfigureAwait(false); }
-            catch
-            {
-                // best-effort; disposal issues are non-fatal
-            }
-        }
-        return;
-    }
+    
 
     // ---------- helpers ----------
     private async Task ReportErrorAsync(Exception ex, CancellationToken ct)

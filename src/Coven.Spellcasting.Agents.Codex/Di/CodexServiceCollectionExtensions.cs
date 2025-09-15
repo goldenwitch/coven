@@ -3,6 +3,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat;
 using Coven.Spellcasting.Agents.Codex.Config;
+using Coven.Spellcasting.Agents.Codex.Internal;
 using Microsoft.Extensions.Logging;
 using Coven.Spellcasting.Agents.Codex.MCP;
 using Coven.Spellcasting.Agents.Codex.Rollout;
@@ -11,13 +12,12 @@ using Coven.Spellcasting.Agents.Validation;
 
 namespace Coven.Spellcasting.Agents.Codex.Di;
 
-public sealed class CodexCliAgentRegistrationOptions
-{
-    public string ExecutablePath { get; set; } = "codex";
-    public string WorkspaceDirectory { get; set; } = Directory.GetCurrentDirectory();
-    public string? ShimExecutablePath { get; set; }
-    public List<string> ConfigOverrides { get; } = new();
-}
+    public sealed class CodexCliAgentRegistrationOptions
+    {
+        public string ExecutablePath { get; set; } = "codex";
+        public string WorkspaceDirectory { get; set; } = Directory.GetCurrentDirectory();
+        public string? ShimExecutablePath { get; set; }
+    }
 
     public static class CodexServiceCollectionExtensions
     {
@@ -34,7 +34,7 @@ public sealed class CodexCliAgentRegistrationOptions
             var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
             var logger = sp.GetService<ILogger<CodexCliAgent<TMessage>>>();
 
-            var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
+            var shimPath = CodexShimDiscovery.Discover(opts.ShimExecutablePath);
 
             return CodexCliAgentBuilder.Create(
                 opts.ExecutablePath,
@@ -42,7 +42,6 @@ public sealed class CodexCliAgentRegistrationOptions
                 scrivener,
                 translator,
                 shimPath,
-                opts.ConfigOverrides,
                 host,
                 tailFactory,
                 configWriter,
@@ -57,7 +56,7 @@ public sealed class CodexCliAgentRegistrationOptions
             {
                 var configWriter = sp.GetService<ICodexConfigWriter>() ?? new DefaultCodexConfigWriter();
                 var spellbook = sp.GetService<Spellbook>();
-                var shimPath = AutoDiscoverShimIfMissing(opts.ShimExecutablePath);
+                var shimPath = CodexShimDiscovery.Discover(opts.ShimExecutablePath);
                 return new CodexCliValidation(
                     opts.ExecutablePath,
                     opts.WorkspaceDirectory,
@@ -106,24 +105,5 @@ public sealed class CodexCliAgentRegistrationOptions
             return services;
         }
 
-        private static string? AutoDiscoverShimIfMissing(string? provided)
-        {
-            if (!string.IsNullOrWhiteSpace(provided)) return provided;
-            try
-            {
-                var baseDir = AppContext.BaseDirectory;
-                var shimDir = Path.Combine(baseDir, "mcp-shim");
-                if (Directory.Exists(shimDir))
-                {
-                    var exe = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.exe");
-                    var dll = Path.Combine(shimDir, "Coven.Spellcasting.Agents.Codex.McpShim.dll");
-                    if (File.Exists(exe)) return exe;
-                    if (File.Exists(dll)) return dll;
-                    var any = Directory.GetFiles(shimDir).FirstOrDefault();
-                    if (!string.IsNullOrWhiteSpace(any)) return any;
-                }
-            }
-            catch { }
-            return null;
-        }
+        // Shim discovery handled by CodexShimDiscovery
     }

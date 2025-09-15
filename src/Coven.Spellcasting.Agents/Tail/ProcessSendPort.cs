@@ -132,6 +132,9 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
     {
         if (_disposed) return;
         _disposed = true;
+        // First, try to close stdin to allow a graceful exit if the child honors EOF
+        try { _proc?.StandardInput?.Close(); } catch { }
+        // Then ensure the process is not left running
         try { _proc?.Kill(entireProcessTree: true); } catch { }
         try { if (_proc is not null) await _proc.WaitForExitAsync().ConfigureAwait(false); } catch { }
         _proc?.Dispose();

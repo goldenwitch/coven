@@ -139,6 +139,8 @@ Summary mapping to the numbered flow above:
   - `IMcpServerHost`, `ITailMuxFactory`, `ICodexConfigWriter`.
   - Optionally override `ICodexRolloutTranslator<ChatEntry>`; defaults to `DefaultChatEntryTranslator`.
 
+- Validation is auto-registered: `IAgentValidation` for Codex (`CodexCliValidation`) is added by `AddCodexCliAgent`. Run validation before invoking the agent (e.g., with `ValidateAgentBlock`), as Codex will not function correctly if validation fails.
+
 - For non-ChatEntry message types, use the generic overload `AddCodexCliAgent<TMessage, TTranslator>()` and provide an `ICodexRolloutTranslator<TMessage>`.
 
 ## Validation
@@ -146,6 +148,7 @@ Summary mapping to the numbered flow above:
 - `CodexCliValidation` uses `CodexValidationPlanner` for a deterministic plan, then executes via `IValidationOps`:
   - Probes: codex `--version`, workspace/codex-home writability, named-pipe handshake, optional shim `--help`, config merge, `sessions list`.
   - Returns an `AgentValidationResult` summarizing performed actions and notes.
+  - Shim discovery is restrictive: only known filenames are accepted from `mcp-shim/` (`.exe`/`.dll`). There is no fallback to arbitrary files. Provide an explicit path if your packaging differs.
 
 ## Error Handling
 
@@ -156,8 +159,14 @@ Summary mapping to the numbered flow above:
 ## Minimal Usage
 
 - DI:
-  - `services.AddCodexCliAgent(o => { o.ExecutablePath = "codex"; o.WorkspaceDirectory = repo; /* o.ShimExecutablePath? o.Spells? */ });`
+- `services.AddCodexCliAgent(o => { o.ExecutablePath = "codex"; o.WorkspaceDirectory = repo; /* o.ShimExecutablePath? */ });`
   - Ensure an `IScrivener<ChatEntry>` is registered; optionally register a custom `ICodexRolloutTranslator<ChatEntry>`.
+  - Add `ValidateAgentBlock` to your ritual before invoking Codex to preflight the environment.
+
+## Cancellation & Shutdown
+
+- Ambient cancel: casting the `CancelAgent` spell triggers `AmbientAgent.CancelAsync()`, which resolves `IAgentControl.CloseAgent()` for the active agent.
+- Codex links an internal cancellation token with the host token; calling `CloseAgent()` cancels active ingress/egress loops and disposes the `ITailMux` and MCP session (`await using` scopes).
 
 ## Notes
 

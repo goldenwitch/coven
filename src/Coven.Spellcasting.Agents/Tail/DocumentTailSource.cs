@@ -32,7 +32,8 @@ namespace Coven.Spellcasting.Agents.Tail;
                 await Task.Delay(_pollInterval, ct).ConfigureAwait(false);
             }
 
-            using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            // Allow readers and writers, and permit deletion while the file is tailed
+            using var fs = new FileStream(_path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
             using var sr = new StreamReader(fs);
 
             // Read existing content first
