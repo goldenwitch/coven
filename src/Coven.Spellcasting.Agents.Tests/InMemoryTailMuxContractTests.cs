@@ -26,8 +26,8 @@ public sealed class InMemoryTailMux_ContractTests : TailMuxContract<InMemoryTail
             await foreach (var s in underlying.ReadWritesAsync(cts.Token)) collected.Add(s);
         });
 
-        await mux.WriteLineAsync("alpha");
-        await mux.WriteLineAsync("beta");
+        await mux.WriteAsync("alpha");
+        await mux.WriteAsync("beta");
 
         var ok = await Infrastructure.TailMuxTestHelpers.WaitUntilAsync(() => collected.Count >= 2, TimeSpan.FromSeconds(2));
         Assert.True(ok, "Timed out waiting for writes to be observed");

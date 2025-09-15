@@ -39,6 +39,10 @@
 
 - Sandboxing for custom agents
 
+# Short-Term TODOs
+
+- RolloutMuxConsole: continue iterating on raw key passthrough and escape-hatch UX; validate chords and add small refinements as needed.
+
 # Answer these questions
 
 - Canonical API surface: Spellcasting docs vs code mismatch (e.g., `DefaultGuide/DefaultSpell/DefaultTest` and DI-based `MagikUser` vs current `Guidebook/Spellbook/Testbook` and `MagikUser<TIn,TOut,TGuide,TSpell,TTest>`). Which is canonical and what’s the migration plan?

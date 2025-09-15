@@ -4,6 +4,10 @@ Scope: Briefly describe the refactor scope and boundaries. State whether back-co
 
 Status: Current status (e.g., In Progress / Complete). Note tests/docs status.
 
+Examples: See completed refactors for structure and tagging style:
+- refactor/cancellation-tokens.md
+- refactor/process-send-port-write.md
+
 ## Conventions
 - Tags:
   - [ok]: Reviewed and aligned
@@ -47,3 +51,6 @@ Status: Current status (e.g., In Progress / Complete). Note tests/docs status.
 ## References
 - Link to root README / Architecture docs or other canonical guidance updated in this refactor.
 
+### Example Refactors
+- refactor/cancellation-tokens.md
+- refactor/process-send-port-write.md

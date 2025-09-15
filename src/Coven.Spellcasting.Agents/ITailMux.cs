@@ -20,7 +20,8 @@ public interface ITailMux : IAsyncDisposable
     Task TailAsync(Func<TailEvent, ValueTask> onMessage, CancellationToken ct = default);
 
     /// <summary>
-    /// Posts a single line/message into the underlying sink (if supported by the implementation).
+    /// Posts data into the underlying sink (if supported by the implementation).
+    /// Callers are responsible for framing (no implicit newline added).
     /// </summary>
-    Task WriteLineAsync(string line, CancellationToken ct = default);
+    Task WriteAsync(string data, CancellationToken ct = default);
 }

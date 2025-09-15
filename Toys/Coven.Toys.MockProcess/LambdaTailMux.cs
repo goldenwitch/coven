@@ -46,10 +46,10 @@ internal sealed class LambdaTailMux : ITailMux
         catch (ChannelClosedException) { }
     }
 
-    public Task WriteLineAsync(string line, CancellationToken ct = default)
+    public Task WriteAsync(string data, CancellationToken ct = default)
     {
         ThrowIfDisposed();
-        return _onWrite(line, ct);
+        return _onWrite(data, ct);
     }
 
     public ValueTask DisposeAsync()
@@ -67,4 +67,3 @@ internal sealed class LambdaTailMux : ITailMux
         if (_disposed) throw new ObjectDisposedException(nameof(LambdaTailMux));
     }
 }
-

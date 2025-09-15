@@ -45,10 +45,10 @@ public abstract class BaseCompositeTailMux<TSend, TTail> : ITailMux
         }
     }
 
-    public Task WriteLineAsync(string line, CancellationToken ct = default)
+    public Task WriteAsync(string data, CancellationToken ct = default)
     {
         ThrowIfDisposed();
-        return SendPort.WriteLineAsync(line, ct);
+        return SendPort.WriteAsync(data, ct);
     }
 
     public virtual async ValueTask DisposeAsync()

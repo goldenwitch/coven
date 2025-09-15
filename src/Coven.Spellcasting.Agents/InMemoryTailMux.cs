@@ -73,13 +73,13 @@ public sealed class InMemoryTailMux : ITailMux
         }
     }
 
-    public async Task WriteLineAsync(string line, CancellationToken ct = default)
+    public async Task WriteAsync(string data, CancellationToken ct = default)
     {
         ThrowIfDisposed();
         await _writeLock.WaitAsync(ct).ConfigureAwait(false);
         try
         {
-            await _writes.Writer.WriteAsync(line, ct).ConfigureAwait(false);
+            await _writes.Writer.WriteAsync(data, ct).ConfigureAwait(false);
         }
         finally
         {

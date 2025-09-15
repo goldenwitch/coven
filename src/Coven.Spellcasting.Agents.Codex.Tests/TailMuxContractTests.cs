@@ -125,7 +125,7 @@ public abstract class TailMuxContract<TFixture> : IClassFixture<TFixture> where 
     {
         await using var mux = Fixture.CreateMux();
         await mux.DisposeAsync();
-        await Assert.ThrowsAsync<ObjectDisposedException>(() => mux.WriteLineAsync("hello"));
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => mux.WriteAsync("hello"));
     }
 }
 

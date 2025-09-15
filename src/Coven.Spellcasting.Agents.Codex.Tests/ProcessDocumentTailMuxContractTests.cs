@@ -19,8 +19,8 @@ public sealed class ProcessDocumentTailMux_ContractTests : TailMuxContract<Proce
     public async Task Write_Does_Not_Require_Tail()
     {
         await using var mux = Fixture.CreateMux();
-        await mux.WriteLineAsync("hello world");
-        await mux.WriteLineAsync("another line");
+        await mux.WriteAsync("hello world");
+        await mux.WriteAsync("another line");
     }
 
     /// <summary>

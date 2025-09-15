@@ -19,7 +19,7 @@ public interface ITailSource : IAsyncDisposable
 /// </summary>
 public interface ISendPort : IAsyncDisposable
 {
-    Task WriteLineAsync(string line, CancellationToken ct = default);
+    Task WriteAsync(string data, CancellationToken ct = default);
 }
 
 /// <summary>

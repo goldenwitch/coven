@@ -31,31 +31,50 @@ We are focused on a single small fix. Let's keep changes scoped to this fix.
 Always start by reading \README.md and \Architecture\README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
-When using find or grep ALWAYS filter by file extension.
+## Commands
+ALWAYS filter by file extension for grep when inspecting the src folder.
+There is a lot of items and binaries so save yourself some pain by filtering them.
 For example:
     grep -R --include='*.cs'
     grep -R --include='*.md'
 
-No optional features! We don't need extraneous features!
-If a tool fails check for typos and/or recite AGENTS.md
-Pipes sometimes don't work. If you can figure out why, tell the user.
+The only command that is allowed for updating files is apply_patch
 
-Preferred tools by task:
-- Patch
-    - apply_patch
-- Reading filesystem
-    - find
-    - ls
-    - grep
-    - nl
+The following commands are examples of commands definitely available in the environment. If they fail it is because of some failure in calling them, not because they aren't available.
+- pwd
+- ls -la
+- cat .editorconfig
+- head -n 5 .editorconfig
+- tail -n 5 .editorconfig
+- sed -n '1,5p' .editorconfig
+- wc -l .editorconfig
+- cat .editorconfig | head -n 3
+- head -n 3 .editorconfig | wc -l
+- sed -n '1,3p' .editorconfig | head -n 2
+- cat .editorconfig | echo piped
+- grep -n "=" .editorconfig | head -n 2
+- echo test | cat
+- cat .editorconfig | grep "root"
+- tail -n 10 .editorconfig | head -n 2
+- nl -ba .editorconfig | head -n 3
+- grep -n "AI" README.md | head -n 2
+- cat README.md | echo piped-to-echo
+- wc -c .editorconfig
 
-Missing/Banned tools:
-- rg
-- dotnet
-- py
-- perl
-- ruby
-- node
+The following commands definitely fail.
+- awk 'NR<=5{print}' .editorconfig (auto-rejected)
+- stat .editorconfig (auto-rejected)
+- hexdump -C -n 64 .editorconfig (auto-rejected)
+- file .editorconfig (auto-rejected)
+- cmd.exe /c type .editorconfig (auto-rejected)
+- powershell -NoProfile -Command Get-Content -TotalCount 5 .editorconfig (auto-rejected)
+- findstr /N ".*" .editorconfig (auto-rejected)
+- more .editorconfig (auto-rejected)
+- cut -d"=" -f1 .editorconfig | head -n 3 (auto-rejected)
+- tr -d "\r" < .editorconfig | head -n 3 (auto-rejected)
+- dd if=.editorconfig bs=1 count=16 2>/dev/null (auto-rejected)
+- dir (auto-rejected)
+- rg (command not available)
 
 ## Usings: Acceptable Usage
 - No fully qualified types or members: avoid `Namespace.Type.Member` in code; add a `using` or alias instead.

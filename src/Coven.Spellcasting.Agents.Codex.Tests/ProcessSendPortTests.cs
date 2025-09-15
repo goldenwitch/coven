@@ -32,7 +32,7 @@ public sealed class ProcessSendPortTests : IDisposable
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         // First write lazily starts the process; if the command cannot be executed,
         // this will throw (e.g., FileNotFoundException). Successful completion proves execution.
-        await port.WriteLineAsync("hello world", cts.Token);
+        await port.WriteAsync("hello world", cts.Token);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class ProcessSendPortTests : IDisposable
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
 
         // Trigger lazy start; process stays alive briefly to accept stdin
-        await port.WriteLineAsync("start", cts.Token);
+        await port.WriteAsync("start", cts.Token);
 
         var deadline = DateTime.UtcNow + TimeSpan.FromSeconds(3);
         while (!File.Exists(outPath) && DateTime.UtcNow < deadline)

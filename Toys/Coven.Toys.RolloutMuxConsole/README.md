@@ -4,7 +4,7 @@ Minimal console app demonstrating a simple mux without DI:
 
 - Tails Codex rollout JSONL from `<workspace>/.codex/log/codex.rollout.jsonl` to stdout.
 - Forwards console input to Codex process stdin.
- - Lazily starts Codex only when the first line is sent to stdin.
+- Supports raw key passthrough (arrows, home/end, delete, page keys, tab, backspace, enter, ESC), plus an escape-hatch for control actions.
 
 Behavior:
 
@@ -15,6 +15,15 @@ Behavior:
   - `CODEX_TUI_RECORD_SESSION=1`
   - `CODEX_TUI_SESSION_LOG_PATH=<workspace>/.codex/log/codex.rollout.jsonl`
 - No extra CLI flags; Codex inherits the working directory.
+
+Interactive input:
+
+- Raw keys are sent immediately; modifiers for arrows use xterm-style CSI sequences (e.g., `ESC[1;5A` for Ctrl+Up).
+- Backtick escape-hatch:
+  - Press backtick `` ` `` to enter command mode; type a command and press Enter.
+  - Commands: `help`, `exit`/`ctrlc` (send Ctrl+C to child), `quit` (exit mux).
+  - Type a double backtick `` `` `` to send a literal backtick to the child.
+-. Ctrl+C exits the mux (host); use the escape-hatch `exit` to send Ctrl+C to the child.
 
 Log handling:
 
@@ -27,4 +36,4 @@ Usage:
 dotnet run --project Toys/Coven.Toys.RolloutMuxConsole/Coven.Toys.RolloutMuxConsole.csproj
 ```
 
-Type into the console; lines are sent to Codex stdin. Rollout lines print as they appear in the JSONL.
+Interact directly: keys are forwarded to the Codex stdin as you type. Rollout lines print as they appear in the JSONL. Use the backtick escape-hatch for control actions and quitting.

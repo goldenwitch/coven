@@ -10,8 +10,8 @@ namespace Coven.Spellcasting.Agents.Tail;
 /// Write-only port that lazily starts a process and writes lines to its stdin.
 /// Matches the sending behavior used by ProcessDocumentTailMux.
 /// </summary>
-public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
-{
+    public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
+    {
     private readonly string _fileName;
     private readonly IReadOnlyList<string>? _arguments;
     private readonly string? _workingDirectory;
@@ -38,26 +38,26 @@ public sealed class ProcessSendPort : ISendPort, IAsyncDisposable
         _configurePsi = configurePsi;
     }
 
-    public async Task WriteLineAsync(string line, CancellationToken ct = default)
-    {
-        ThrowIfDisposed();
-        await EnsureStartedAsync(ct).ConfigureAwait(false);
-
-        await _writeLock.WaitAsync(ct).ConfigureAwait(false);
-        try
+        public async Task WriteAsync(string data, CancellationToken ct = default)
         {
-            var p = _proc!;
-            if (p.HasExited) throw new InvalidOperationException("Process has already exited.");
-            if (p.StandardInput is null) throw new InvalidOperationException("Process stdin is not available.");
+            ThrowIfDisposed();
+            await EnsureStartedAsync(ct).ConfigureAwait(false);
 
-            await p.StandardInput.WriteLineAsync(line).WaitAsync(ct).ConfigureAwait(false);
-            await p.StandardInput.FlushAsync().WaitAsync(ct).ConfigureAwait(false);
+            await _writeLock.WaitAsync(ct).ConfigureAwait(false);
+            try
+            {
+                var p = _proc!;
+                if (p.HasExited) throw new InvalidOperationException("Process has already exited.");
+                if (p.StandardInput is null) throw new InvalidOperationException("Process stdin is not available.");
+
+                await p.StandardInput.WriteAsync(data).WaitAsync(ct).ConfigureAwait(false);
+                await p.StandardInput.FlushAsync().WaitAsync(ct).ConfigureAwait(false);
+            }
+            finally
+            {
+                _writeLock.Release();
+            }
         }
-        finally
-        {
-            _writeLock.Release();
-        }
-    }
 
     private async Task EnsureStartedAsync(CancellationToken ct)
     {
