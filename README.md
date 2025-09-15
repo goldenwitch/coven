@@ -44,6 +44,12 @@ For a complete, runnable walkthrough, follow the `samples/01.LocalCodexCLI` proj
 - Keep agents unopinionated: external transport (CLI/HTTP/RPC) is owned by the agent package (e.g., Codex CLI). Your app wires them together.
 - Schema generation is automatic: spell schemas derive from their generic types; Spellbooks are the source of truth for names/schemas passed to agents.
 
+### Cancellation
+- Optional tokens: Public async APIs take `CancellationToken cancellationToken = default` as the last parameter.
+- Always propagate: forward tokens to all awaited operations; avoid `CancellationToken.None`.
+- Blocks and builder: Implement `IMagikBlock<TIn,TOut>.DoMagik(TIn, CancellationToken)`. When registering lambdas, use `Func<TIn, CancellationToken, Task<TOut>>`.
+- Push & Pull: `ICoven.Ritual`, `IBoard.PostWork`, and `IBoard.GetWork` are token-aware; pull mode passes tokens via `GetWorkRequest<TIn>`.
+
 ## Samples
 
 Explore runnable examples in `/samples`. Open `samples/Coven.Samples.sln` to browse all samples side-by-side, or use each sample’s individual `.sln` in its folder.

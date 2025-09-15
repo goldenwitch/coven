@@ -13,6 +13,17 @@ Start with Overview, then explore by component. All docs here are flattened and 
 - Deprecations: When we delete or deprecate a feature, purge its docs immediately.
 - Index hygiene: Update this README and the repo `INDEX.md` whenever docs change.
 
+## Cancellation Tokens
+
+- Optional parameter: Use `CancellationToken cancellationToken = default` as the last parameter on async APIs where cancellation is meaningful; avoid overload explosions.
+- Propagation: Always forward the token to downstream calls; do not use `CancellationToken.None`.
+- Background services: Honor the provided `stoppingToken` and pass it to all awaited operations.
+- Linked tokens: Only link when composing multiple sources or applying an internal upper bound; dispose the CTS.
+- Exceptions: Treat `OperationCanceledException` as cooperative shutdown; don’t log it as an error or wrap it.
+- I/O: Prefer token-aware APIs; if missing, use a cancel-aware pattern (avoid `WaitAsync` if a better token overload exists).
+- Blocks and builder: Lambdas registered via the builder use `Func<TIn, CancellationToken, Task<TOut>>`. Implement `IMagikBlock<TIn,TOut>.DoMagik(TIn, CancellationToken)`.
+- Push & Pull: `ICoven.Ritual`, `IBoard.PostWork`, and `IBoard.GetWork` are token-aware. Pull-mode propagation flows via `GetWorkRequest<TIn>` and compiled invokers.
+
 ## Components (overview)
 
 - Coven.Core: Core runtime (MagikBlocks, builder, routing, board).

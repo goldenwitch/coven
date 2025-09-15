@@ -13,6 +13,8 @@ We will go through each project one at a time with the user, and decide which it
 Use ls in the refactor/ folder and read the existing refactor docs to know where you left off.
 This means that we have to update the refactor docs each time we implement one of the items.
 
+When starting a new refactor document, copy `refactor/TEMPLATE.md` into a new file under `refactor/` (for example, `refactor/<topic>.md`) and follow the structure. Use the tag conventions from the template ([ok], [bug], [api], [internal], [tests], [docs], [cleanup], [redundant], [design]). The `refactor/cancellation-tokens.md` file is a good example of a completed document.
+
 ## New Feature
 Let's design a new feature together. We should:
 1. Make a design together.
@@ -21,6 +23,9 @@ Let's design a new feature together. We should:
 4. Repeatedly break off a piece of work from the design and implement it.
 
 Make sure to log work as you implement it so we can pick up where we left off.
+
+## Scrappy
+We are focused on a single small fix. Let's keep changes scoped to this fix.
 
 # Rules
 Always start by reading \README.md and \Architecture\README.md

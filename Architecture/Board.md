@@ -28,3 +28,10 @@ In Pull mode the orchestration loop repeatedly calls `GetWork<TIn>(request)`; th
 - Selection: Board picks the next block using Push scoring (`to:*` > capability overlap > registration order) against merged tags (board + request).
 - Execute: Board runs that block with `request.Input`, emits `by:*`, updates tags, and calls `Complete<TOut>(output)` back to the orchestrator.
 - No forward-only: Pull doesn’t enforce index monotonicity; a Roslyn analyzer ensures reachability.
+
+## Cancellation
+
+- Token-aware API: `IBoard.PostWork<T, TOut>(..., CancellationToken)` and `IBoard.GetWork<TIn>(..., CancellationToken)` accept and propagate tokens.
+- Push mode: Compiled pipelines are `Func<T, CancellationToken, Task<TOut>>`; the token flows through each block’s `DoMagik`.
+- Pull mode: Tokens pass via `GetWorkRequest<TIn>` to `Board.GetWorkPullAsync` and `PullOrchestrator`; invokers never use `CancellationToken.None`.
+- Logging: Treat `OperationCanceledException` as expected during shutdown; do not log as an error.
