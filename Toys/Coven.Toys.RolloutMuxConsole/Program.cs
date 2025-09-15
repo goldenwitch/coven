@@ -19,6 +19,8 @@ internal static class Program
         public const bool AugmentPathForCodex = false;
         public const char CommandEscape = '`';
         public const bool PrintStartupHelp = true;
+        // If true, do not redirect stdin; allow Codex TUI to take over this console directly.
+        public const bool CodexTakesConsole = true;
         // Command-line arguments to pass to the executable (computed at runtime).
         public static string[] ExecutableArgs = { };
     }
@@ -52,7 +54,8 @@ internal static class Program
             arguments: Config.ExecutableArgs,
             workingDirectory: ws,
             environment: env,
-            configurePsi: psi => { if (Config.AugmentPathForCodex) psi.AugmentPathForCodex(); });
+            configurePsi: psi => { if (Config.AugmentPathForCodex) psi.AugmentPathForCodex(); },
+            redirectStandardInput: !Config.CodexTakesConsole);
 
         await using DocumentTailSource tail = new(session.RolloutPath);
 
@@ -77,22 +80,52 @@ internal static class Program
         }, cts.Token);
 
         // Eagerly start Codex after tail is wired so rollout begins without initial input
-        await send.SafeWriteAsync(string.Empty, cts.Token).ConfigureAwait(false);
+        if (Config.CodexTakesConsole)
+        {
+            // No stdin redirection: just start the process so it owns the console.
+            try { await send.StartAsync(cts.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { }
+            catch (FileNotFoundException fnf) { Console.Error.WriteLine($"[codex-missing] {fnf.Message}"); }
+            catch (DirectoryNotFoundException dnf) { Console.Error.WriteLine($"[workspace-invalid] {dnf.Message}"); }
+            catch (Exception ex) { Console.Error.WriteLine($"[start-error] {ex.Message}"); }
+        }
+        else
+        {
+            // Stdin redirected: trigger lazy start via a safe, empty write.
+            await send.SafeWriteAsync(string.Empty, cts.Token).ConfigureAwait(false);
+        }
 
         // Console key pump -> Codex stdin (raw, with escape-hatch)
-        var pump = new ConsoleKeyPump(send, Config.CommandEscape);
-        Task inputTask = pump.RunAsync(cts.Token);
+        Task? inputTask = null;
+        if (!Config.CodexTakesConsole)
+        {
+            var pump = new ConsoleKeyPump(send, Config.CommandEscape);
+            inputTask = pump.RunAsync(cts.Token);
+        }
 
         // Print small help
         if (Config.PrintStartupHelp)
         {
             Console.WriteLine("RolloutMuxConsole ready.");
-            Console.WriteLine("- Raw key passthrough enabled (arrows, etc.)");
-            Console.WriteLine($"- Press {Config.CommandEscape} then type a command (help, exit, quit)");
-            Console.WriteLine($"- Ctrl+C exits the mux; use {Config.CommandEscape}exit to send Ctrl+C to child");
+            if (Config.CodexTakesConsole)
+            {
+                Console.WriteLine("- Codex TUI owns this console; type directly in Codex.");
+                Console.WriteLine("- This app tails rollout JSONL to stdout.");
+                Console.WriteLine("- Ctrl+C stops tailing and exits host.");
+            }
+            else
+            {
+                Console.WriteLine("- Raw key passthrough enabled (arrows, etc.)");
+                Console.WriteLine($"- Press {Config.CommandEscape} then type a command (help, exit, quit)");
+                Console.WriteLine($"- Ctrl+C exits the mux; use {Config.CommandEscape}exit to send Ctrl+C to child");
+            }
         }
 
-        try { await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false); }
+        try
+        {
+            if (inputTask is not null) await Task.WhenAll(tailTask, inputTask).ConfigureAwait(false);
+            else await tailTask.ConfigureAwait(false);
+        }
         catch (OperationCanceledException) { }
         return 0;
     }

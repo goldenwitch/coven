@@ -17,6 +17,7 @@ namespace Coven.Spellcasting.Agents.Tail;
     private readonly string? _workingDirectory;
     private readonly IReadOnlyDictionary<string, string?>? _environment;
     private readonly Action<ProcessStartInfo>? _configurePsi;
+    private readonly bool _redirectStandardInput;
 
     private readonly SemaphoreSlim _startGate = new(1, 1);
     private readonly SemaphoreSlim _writeLock = new(1, 1);
@@ -29,19 +30,24 @@ namespace Coven.Spellcasting.Agents.Tail;
         IReadOnlyList<string>? arguments = null,
         string? workingDirectory = null,
         IReadOnlyDictionary<string, string?>? environment = null,
-        Action<ProcessStartInfo>? configurePsi = null)
+        Action<ProcessStartInfo>? configurePsi = null,
+        bool redirectStandardInput = true)
     {
         _fileName = fileName;
         _arguments = arguments;
         _workingDirectory = workingDirectory;
         _environment = environment;
         _configurePsi = configurePsi;
+        _redirectStandardInput = redirectStandardInput;
     }
 
         public async Task WriteAsync(string data, CancellationToken ct = default)
         {
             ThrowIfDisposed();
             await EnsureStartedAsync(ct).ConfigureAwait(false);
+
+            if (!_redirectStandardInput)
+                throw new InvalidOperationException("Standard input is not redirected for this process; writes are not supported in this mode.");
 
             await _writeLock.WaitAsync(ct).ConfigureAwait(false);
             try
@@ -76,7 +82,7 @@ namespace Coven.Spellcasting.Agents.Tail;
             var psi = new ProcessStartInfo(_fileName)
             {
                 UseShellExecute = false,
-                RedirectStandardInput = true,
+                RedirectStandardInput = _redirectStandardInput,
                 RedirectStandardOutput = false,
                 RedirectStandardError = false
             };
@@ -127,6 +133,11 @@ namespace Coven.Spellcasting.Agents.Tail;
             _startGate.Release();
         }
     }
+
+    /// <summary>
+    /// Explicitly starts the configured process without performing any write. Useful when stdin is not redirected.
+    /// </summary>
+    public Task StartAsync(CancellationToken ct = default) => EnsureStartedAsync(ct);
 
     public async ValueTask DisposeAsync()
     {

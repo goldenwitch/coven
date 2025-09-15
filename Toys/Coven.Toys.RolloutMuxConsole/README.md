@@ -3,8 +3,9 @@
 Minimal console app demonstrating a simple mux without DI:
 
 - Tails Codex rollout JSONL from `<workspace>/.codex/log/codex.rollout.jsonl` to stdout.
-- Forwards console input to Codex process stdin.
-- Supports raw key passthrough (arrows, home/end, delete, page keys, tab, backspace, enter, ESC), plus an escape-hatch for control actions.
+- Two input modes:
+  - Takeover mode (default): Codex takes over the console; your keystrokes go directly to Codex’s TUI. No key pump.
+  - Mux mode: Forwards console input to Codex process stdin with raw key passthrough (arrows, home/end, delete, page keys, tab, backspace, enter, ESC), plus an escape-hatch for control actions.
 
 Behavior:
 
@@ -18,6 +19,13 @@ Behavior:
 - Starts Codex eagerly after wiring the rollout tail, so rollout begins without requiring initial input.
 
 Interactive input:
+
+Takeover mode (default):
+
+- Codex owns the console. Type directly into Codex’s TUI.
+- The app only tails rollout; Ctrl+C stops tailing and exits the host.
+
+Mux mode (set `CodexTakesConsole=false` in `Program.cs`):
 
 - Raw keys are sent immediately; modifiers for arrows use xterm-style CSI sequences (e.g., `ESC[1;5A` for Ctrl+Up).
 - Enter sends `Environment.NewLine` (platform default; CRLF on Windows, LF on Unix).
