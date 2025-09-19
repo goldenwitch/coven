@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core.Tricks;
 
 namespace Coven.Core.Routing;
 
@@ -35,14 +34,12 @@ internal sealed class SelectionEngine
         for (int i = 0; i < forward.Count; i++)
         {
             var rb = forward[i];
-            bool isTrick = rb.Descriptor.BlockInstance is IMagikTrick;
             projected.Add(new SelectionCandidate(
                 rb.RegistryIndex,
                 rb.InputType,
                 rb.OutputType,
                 rb.BlockTypeName,
-                rb.Capabilities is IReadOnlyCollection<string> rc ? rc : new List<string>(rb.Capabilities),
-                isTrick
+                rb.Capabilities is IReadOnlyCollection<string> rc ? rc : new List<string>(rb.Capabilities)
             ));
         }
         var chosen = strategy.SelectNext(projected);

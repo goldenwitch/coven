@@ -1,6 +1,6 @@
 # Architecture Guide
 
-Start with Overview, then explore by component. All docs here are flattened and named after their primary namespace for quick discovery.
+Explore by component. Standard patterns and integrations live in the root [README](../README.md). All docs here are flattened and named after their primary namespace for quick discovery.
 
 ## Standards
 
@@ -9,9 +9,11 @@ Start with Overview, then explore by component. All docs here are flattened and 
 - Scope: Component descriptions only; do not include detailed code that already exists in the codebase. Include only usage snippets that users must write.
 - Independence: Document components independently; wiring guides come later, once components stand alone.
 - Size: Keep docs focused and readable. Target ~240 lines to reduce the chance of missing key details.
-- Canonical patterns: If a pattern is required for all users, place it in the repo root `README.md` (not here).
+- Canonical patterns: If a pattern is required for all users, place it in the repo root [README](../README.md) (not here).
 - Deprecations: When we delete or deprecate a feature, purge its docs immediately.
-- Index hygiene: Update this README and the repo `INDEX.md` whenever docs change.
+- Index hygiene: Update this README and the repo [INDEX](../INDEX.md) whenever docs change.
+- All non-standard library dependencies must be isolated to integrations.
+- Only integrations may depend on integrations.
 
 ## Cancellation Tokens
 
@@ -21,46 +23,19 @@ Start with Overview, then explore by component. All docs here are flattened and 
 - Linked tokens: Only link when composing multiple sources or applying an internal upper bound; dispose the CTS.
 - Exceptions: Treat `OperationCanceledException` as cooperative shutdown; don’t log it as an error or wrap it.
 - I/O: Prefer token-aware APIs; if missing, use a cancel-aware pattern (avoid `WaitAsync` if a better token overload exists).
-- Blocks and builder: Lambdas registered via the builder use `Func<TIn, CancellationToken, Task<TOut>>`. Implement `IMagikBlock<TIn,TOut>.DoMagik(TIn, CancellationToken)`.
-- Push & Pull: `ICoven.Ritual`, `IBoard.PostWork`, and `IBoard.GetWork` are token-aware. Pull-mode propagation flows via `GetWorkRequest<TIn>` and compiled invokers.
 
-## Components (overview)
+## Core Components
+- [Coven.Core](Coven.Core.md): Core runtime (MagikBlocks, builder, routing, board, IScrivener, ITransmuter).
+- [Coven.Chat](Coven.Chat.md): Patterns for enabling conversation from external sources (Console or Discord for example)
+- [Coven.Daemonology](Coven.Daemonology.md): Describes core features for long running hosts.
+- [Coven.Spellcasting](Coven.Spellcasting.md): Spell contracts and schema conventions. This is how we wire in tools.
 
-- Coven.Core: Core runtime (MagikBlocks, builder, routing, board).
-- Coven.Spellcasting: Agent-facing primitives (Guidebook, Spellbook, Testbook, MagikUser).
-- Coven.Spellcasting.Spells: Spell contracts and schema conventions.
-- Coven.Spellcasting.Agents.Codex: Codex CLI agent integration (MCP tools + rollout tailing).
-- Coven.Spellcasting.Agents.Validation: Validates agent environment readiness.
-- Coven.Chat: Journaling contracts (IScrivener) and chat message patterns.
-- Coven.Analyzers: Roslyn analyzer pack for Coven architectural constraints.
-- Tags & Routing: Tag model and selection behavior.
-- Board: Push/Pull runtime and message flow.
-- Dependency Injection: DI patterns used across the stack.
+## Integrations
+- [Coven.Chat.Console](Coven.Chat.Console.md): Wires stdin/stdout into Coven as ChatEntry.
+- [Coven.Chat.Discord](Coven.Chat.Discord.md): Wires discord messages into Coven as ChatEntry.
+- [Coven.Codex](Coven.Codex.md): Implementation of Codex CLI Daemon.
+- [Coven.OpenAI](Coven.OpenAI.md): Implementation of OpenAI responses API as a Coven-style Daemon.
+- [Coven.Spellcasting.MCP](Coven.Spellcasting.MCP.md): Enables consumption of spells as MCP tools.
 
-## Getting Started
-- [Overview](./Overview.md): Architectural tour and orientation.
-
-## Core Concepts
-- [MagikBlocks & Builder](./MagikBlocks.md): Compose work as blocks; finalize immutable graphs with `.Done()`.
-- [Tags & Routing](./TagsAndRouting.md): Route work dynamically by tags/capabilities.
-- [MagikTrick (Fenced Routing)](./MagikTrick.md): Constrain routing with fences and scoped capabilities.
-
-## Runtime
-- [Board (Push & Pull)](./Board.md): Execution runtime with push/pull consumption, timeouts, and retries.
-- [Dependency Injection](./DependencyInjection.md): DI patterns and lifetimes used across components.
-
-## Spellcasting
-- [Coven.Spellcasting](./Coven.Spellcasting.md): Agent-facing primitives (Guidebook, Spellbook, Testbook, MagikUser).
-- [Coven.Spellcasting.Spells](./Coven.Spellcasting.Spells.md): Spell contracts, schema generation, and Spellbook source of truth.
-- [Coven.Spellcasting.Agents.Codex](./Coven.Spellcasting.Agents.Codex.md): Codex CLI integration (MCP tools, rollout tailing).
-- [Coven.Spellcasting.Agents.Validation](./Coven.Spellcasting.Agents.Validation.md): Validates environment readiness.
-
-## Chat Subsystem
-- [Coven.Chat](./Coven.Chat.md): Journaling contracts (IScrivener) and message patterns.
-
-## Tooling
-- [Coven.Analyzers](./Coven.Analyzers.md): Roslyn analyzers that enforce Coven architectural constraints.
-
-## Meta
-- [Contributing](./Contributing.md)
+## Meta/Misc
 - [Licensing](./Licensing.md)

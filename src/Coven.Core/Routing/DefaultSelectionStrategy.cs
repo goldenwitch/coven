@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core.Tags;
-using Coven.Core.Tricks;
 
 namespace Coven.Core.Routing;
 
@@ -18,35 +17,24 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
-            if (System.Linq.Enumerable.Contains(epochTags, $"to:#{c.RegistryIndex}")) return c;
+            if (Enumerable.Contains(epochTags, $"to:#{c.RegistryIndex}")) return c;
         }
 
         // 2) Explicit type name override: to:<BlockTypeName> (current-epoch only)
         for (int i = 0; i < forward.Count; i++)
         {
             var c = forward[i];
-            if (System.Linq.Enumerable.Contains(epochTags, $"to:{c.BlockTypeName}")) return c;
+            if (Enumerable.Contains(epochTags, $"to:{c.BlockTypeName}")) return c;
         }
 
-        // 3) After the first hop (epoch has by:*), prefer Tricks as forks to run first
-        bool afterFirstHop = false;
-        foreach (var t in epochTags) { if (t.StartsWith("by:", StringComparison.OrdinalIgnoreCase)) { afterFirstHop = true; break; } }
-        if (afterFirstHop)
-        {
-            for (int i = 0; i < forward.Count; i++)
-            {
-                var c = forward[i];
-                if (c.IsTrick) return c;
-            }
-        }
-
-        // 4) Capability overlap using current-epoch tags plus any persistent routing hints;
+        // 3) Capability overlap using current-epoch tags plus any persistent routing hints;
         // tie-break by registration order (smallest index wins)
         // Best fit rules: type already filtered; choose by total capability matches across all tags,
         // including forward-hint tags (next:*), then break ties by registration order.
         int bestTotalScore = int.MinValue;
         int bestIdx = int.MaxValue;
         SelectionCandidate? chosen = null;
+        
         // Union: epoch tags
         var effectiveTags = new HashSet<string>(epochTags, StringComparer.OrdinalIgnoreCase);
         for (int i = 0; i < forward.Count; i++)
@@ -57,7 +45,7 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
             {
                 foreach (var t in effectiveTags)
                 {
-                    if (System.Linq.Enumerable.Contains(c.Capabilities, t)) total++;
+                    if (Enumerable.Contains(c.Capabilities, t)) total++;
                 }
             }
             if (total > bestTotalScore || (total == bestTotalScore && c.RegistryIndex < bestIdx))

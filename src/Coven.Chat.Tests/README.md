@@ -1,2 +1,0 @@
-This test project is organized by scope: Common and implementation-specific. Common tests under `Common/` run against all `IScrivener<T>` implementations via simple factory providers. Implementation-specific tests live under subfolders (e.g., `InMemory/`) and are allowed to use internal hooks or reflection to validate unique behaviors. To add a new scrivener, append a factory to the appropriate Common factories and add a dedicated folder if it needs specialized tests.
-

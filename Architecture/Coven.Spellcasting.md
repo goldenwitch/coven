@@ -1,38 +1,22 @@
-# Coven.Spellcasting
+# Coven.Spellcasting.Spells
 
-> Provide three canonical “books” (Guide/Spell/Test) to agent code automatically, keeping the system **unopinionated**, **code‑first**, and **type‑safe**. Agents remain user‑owned; no external config files or orchestration in this layer. This doc reflects the simplified design **without composite factories**.
+Spells represent a tool call that the agent can intentionally invoke. They are implemented as well-typed .NET classes, unified under a single, shared contract for metadata.
 
----
+## Unified Contract
+- ISpell forms:
+  - `ISpell` (zero-arg): `Task CastSpell()`.
+  - `ISpell<TIn>` (unary): `Task CastSpell(TIn input)`.
+  - `ISpell<TIn,TOut>` (binary): `Task<TOut> CastSpell(TIn input)`.
+  - Defaults: The n-ary spell interfaces provide default `Definition` values:
+    - Zero: friendly name from the spell type; no schemas.
+    - Unary: friendly name + input schema from `TIn`.
+    - Binary: friendly name + input schema from `TIn`, output schema from `TOut`.
+  - Spellbooks remain the source of truth and may override names/schemas supplied to agents.
 
-## Goals
+## Spell Registration
+Because spells can be cast from outside a C# context, their shapes (name + JSON schemas) must be available:
+- The Spellbook is the source of truth for names and schemas. It supplies an `IReadOnlyList<ISpellContract>` to agents.
+- Schema generation occurs during Coven finalization (`.Done()`), ensuring deterministic names/schemas.
 
-- Treat **MagikUser** as a first‑class `IMagikBlock<TIn,TOut>` that users inherit to write their own agent logic.
-- Automatically build and pass **three canonical books** into `InvokeAsync`:
-  - **Guidebook** — usually Markdown guidance, but fully generic.
-  - **Spellbook** — typed structure describing recipes/instructions.
-  - **Testbook** — typed structure describing scenarios/invariants.
-- Keep the **public API tiny** and focused on what developers implement.
-- Keep **factories optional**. Typical developers get defaults; advanced teams can inject their own factories and typed payloads.
----
-
-## Design Notes & Trade‑offs
-
-- **Alignment with Coven:** `DoMagik(TIn)` satisfies `IMagikBlock<TIn,TOut>`; `InvokeMagik` handles MagikUser specific context.
-
----
-
-## Lifecycle & Guarantees
-
-- **Execution:** `DoMagik` constructs Guide/Spell/Test then calls `InvokeMagik` with all three plus the original input.
-- **Ownership:** This library does not define “the agent.” It is agnostic to transport (CLI/HTTP/RPC) and model family.
-- **Typing:** Payloads are fully generic; teams can evolve schemas without changing the core surface.
-
----
-
-## Agents Overview
-
-An `ICovenAgent<TMessage>` is responsible for:
-- Starting and controlling the agent runtime lifecycle.
-- Registering spells (via `ISpellContract`) so tools are available to the agent.
-
-For the Codex CLI implementation, see `Coven.Spellcasting.Agents.Codex`.
+## DI
+Spells are DI-friendly. Invocation constructs spells via the container so all dependencies are satisfied at call time.

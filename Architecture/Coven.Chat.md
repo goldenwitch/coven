@@ -1,30 +1,27 @@
 # Coven.Chat
 
-Lightweight journaling and chat abstractions for agent and adapter I/O. The journal is conceptual (append‑only log/stream); entry types are concrete and application‑defined.
+Lightweight chat abstractions for Daemon IO built on Coven.Scribing.
 
 - Namespace: `Coven.Chat`
-- Core: `IScrivener<TEntry>` (append, tail, wait), chat entry types (e.g., `ChatThought`, `ChatResponse`)
+- Core: `ChatScrivener` (append, tail, wait), chat entry types (e.g., `ChatThought`, `ChatResponse`)
 - Goal: Make message exchange deterministic and testable without prescribing a transport
 
 ---
 
 ## Principles
 
-- Typed entries: `TEntry` is the exact entry type your app exchanges (often a small union/base + derived records).
-- DI‑first: Resolve `IScrivener<TEntry>` and any hosts via your container. Implementations use constructor injection.
-- Append + Tail/Wait: All flows reduce to appending entries and awaiting the next matching entry; forward and backward reads are supported by concrete implementations.
-- Storage‑agnostic: Sequence numbers, timestamps, and I/O are implementation details; your code sees `TEntry` and returned positions for chaining.
+- Typed entries: `ChatEntry` is the exact entry type your app exchanges.
+- DI‑first: Resolve `IScrivener<ChatEntry>` and any hosts via your container. Implementations use constructor injection.
+- Storage‑agnostic: Sequence numbers, timestamps, and I/O are implementation details; your code sees `ChatEntry` and returned positions for chaining.
 
 ---
 
 ## Usage Patterns
 
-These examples show only code you write. Replace entry types with your own if not using `ChatEntry`.
-
 ### Send a message
 
 ```csharp
-// Given IScrivener<ChatEntry> via DI
+// Given ChatScrivener via DI
 await scrivener.WriteAsync(new ChatThought("agent", "Starting up..."), ct);
 ```
 
@@ -68,21 +65,4 @@ await foreach (var (_, entry) in scrivener.ReadBackwardAsync(long.MaxValue, ct))
 }
 items.Reverse(); // chronological
 ```
-
----
-
-## Agents and Adapters
-
-- Adapters own the client transport and bind to an `IScrivener<TEntry>`.
-- Agents read and write through `IScrivener<TEntry>` without knowing about the transport.
-- Separate scriveners (one per side) can safely share a journal if they use the same `TEntry`.
-
-See agent/adapter docs for their wiring; the journal remains the stable contract in the middle.
-
----
-
-## Testing
-
-- Use an in‑memory scrivener to assert ordering/contents and script responses.
-- Prefer matching by type and minimal text patterns; avoid coupling to storage details.
 
