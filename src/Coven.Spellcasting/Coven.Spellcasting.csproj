@@ -11,11 +11,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
   </ItemGroup>
 
-  <PropertyGroup>
-    <PackageLicenseFile>LICENSE</PackageLicenseFile>
-  </PropertyGroup>
-  <ItemGroup>
-    <None Include="LICENSE" Pack="true" PackagePath="" />
-  </ItemGroup>
+  
 
 </Project>
