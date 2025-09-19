@@ -26,9 +26,8 @@ Package manifest
 Prerelease change detection
 
 1) Determine changed files between the PR base and head SHAs.
-2) Mark a package as affected if any changed file is under its manifest `path` (recursive).
-3) If shared infra changes are detected (e.g., `build/`, `Build/`, `Directory.Build.*`, `global.json`, NuGet configs, or `.github/workflows/`), treat all manifest packages as affected.
-4) If none are affected, the workflow skips packing/publishing. Otherwise, only affected packages are packed and optionally published.
+2) Mark a package as affected only if a changed file is under its manifest `path` (recursive).
+3) Workflow-only or shared-infra edits do not force rebuilds; if no package paths changed, prerelease packing/publishing is skipped.
 
 Promotion to stable
 

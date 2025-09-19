@@ -42,7 +42,6 @@ Recommended scopes (substitute placeholders):
 - pwsh
 - powershell
 - cmd
-- bash
 - python
 - dotnet
 - find -exec

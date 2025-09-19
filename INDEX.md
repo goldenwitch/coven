@@ -8,77 +8,28 @@ Project overview: see [README](/README.md).
 
 ## Coven with Agents (Coven.Spellcasting)
 - [Coven.Spellcasting](/src/Coven.Spellcasting/)
-- [Coven.Spellcasting.Agents](/src/Coven.Spellcasting.Agents/)
-- [Coven.Spellcasting.Agents.Tests](/src/Coven.Spellcasting.Agents.Tests/)
-- [Coven.Spellcasting.Agents.Validation](/src/Coven.Spellcasting.Agents.Validation/)
-- [Coven.Spellcasting.Grimoire](/src/Coven.Spellcasting.Grimoire/)
-- [Coven.Spellcasting.Tests](/src/Coven.Spellcasting.Tests/)
-
-### Agent implementations
-- [Coven.Spellcasting.Agents.Codex](/src/Coven.Spellcasting.Agents.Codex/)
-- [Coven.Spellcasting.Agents.Codex.McpShim](/src/Coven.Spellcasting.Agents.Codex.McpShim/)
-
-### Agent implementation tests
-- [Coven.Spellcasting.Agents.Codex.Tests](/src/Coven.Spellcasting.Agents.Codex.Tests/)
 
 ## Coven Infrastructure for Chat
 - [Coven.Chat](/src/Coven.Chat/)
-- [Coven.Chat.Tests](/src/Coven.Chat.Tests/)
-
-## Analyzers
-- [Coven.Analyzers](/src/Coven.Analyzers/)
-- [Coven.Analyzers.CodeFixes](/src/Coven.Analyzers.CodeFixes/)
-- [Coven.Analyzers.Tests](/src/Coven.Analyzers.Tests/)
-
-## Durables
-- [Coven.Durables](/src/Coven.Durables/)
-- [Coven.Durables.Tests](/src/Coven.Durables.Tests/)
-
-## Sophia
-- [Coven.Sophia](/src/Coven.Sophia/)
-- [Coven.Sophia.Tests](/src/Coven.Sophia.Tests/)
-
-## Samples
-- [01.LocalCodexCLI](/samples/01.LocalCodexCLI/)
-- [01.LocalCodexCLI.Tests](/samples/01.LocalCodexCLI.Tests/)
-
-## Toys
-- [Coven.Toys.ConsoleEcho](/Toys/Coven.Toys.ConsoleEcho/)
-- [Coven.Toys.ConsoleAgentChat](/Toys/Coven.Toys.ConsoleAgentChat/)
-- [Coven.Toys.CodexConsole](/Toys/Coven.Toys.CodexConsole/)
-- [Coven.Toys.RolloutMuxConsole](/Toys/Coven.Toys.RolloutMuxConsole/)
 
 # Architecture Guide
 
-Start with Overview, then explore by topic. All paths below are under `/Architecture`.
+Explore by topic. All paths below are under `/architecture`.
 
-- [Architecture README](/Architecture/README.md)
+- [Architecture README](/architecture/README.md)
 
-## Getting Started
-- [Overview](/Architecture/Overview.md)
+## Core Components
+- [Coven.Core](/architecture/Coven.Core.md)
+- [Coven.Chat](/architecture/Coven.Chat.md)
+- [Coven.Daemonology](/architecture/Coven.Daemonology.md)
+- [Coven.Spellcasting](/architecture/Coven.Spellcasting.md)
 
-## Core Concepts
-- [MagikBlocks & Builder](/Architecture/MagikBlocks.md)
-- [Tags & Routing](/Architecture/TagsAndRouting.md)
-- [MagikTrick (Fenced Routing)](/Architecture/MagikTrick.md)
-
-## Runtime
-- [Board (Push & Pull)](/Architecture/Board.md)
-- [Dependency Injection](/Architecture/DependencyInjection.md)
- 
-
-## Spellcasting
-- [Coven.Spellcasting](/Architecture/Coven.Spellcasting.md)
-- [Coven.Spellcasting.Spells](/Architecture/Coven.Spellcasting.Spells.md)
-- [Coven.Spellcasting.Agents.Validation](/Architecture/Coven.Spellcasting.Agents.Validation.md)
-- [Coven.Spellcasting.Agents.Codex](/Architecture/Coven.Spellcasting.Agents.Codex.md)
-
-## Chat Subsystem
-- [Coven.Chat](/Architecture/Coven.Chat.md)
-
-## Tooling
-- [Coven.Analyzers](/Architecture/Coven.Analyzers.md)
+## Integrations
+- [Coven.Chat.Console](/architecture/Coven.Chat.Console.md)
+- [Coven.Chat.Discord](/architecture/Coven.Chat.Discord.md)
+- [Coven.Codex](/architecture/Coven.Codex.md)
+- [Coven.OpenAI](/architecture/Coven.OpenAI.md)
+- [Coven.Spellcasting.MCP](/architecture/Coven.Spellcasting.MCP.md)
 
 ## Meta
-- [Contributing](/Architecture/Contributing.md)
-- [Licensing](/Architecture/Licensing.md)
+- [Licensing](/architecture/Licensing.md)

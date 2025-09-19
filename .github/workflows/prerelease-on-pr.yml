@@ -59,7 +59,8 @@ jobs:
         run: |
           build/ci/prerelease/detect-changed.sh \
             --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}"
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --shared-regex '^$'
 
       - name: Stop early if nothing changed
         if: steps.affected.outputs.any != 'true'

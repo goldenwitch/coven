@@ -1,9 +1,9 @@
 # Coven.Chat
 
-Lightweight chat abstractions for Daemon IO built on Coven.Scribing.
+Lightweight chat abstractions for Daemon IO using Coven.Core journaling (`IScrivener`).
 
 - Namespace: `Coven.Chat`
-- Core: `ChatScrivener` (append, tail, wait), chat entry types (e.g., `ChatThought`, `ChatResponse`)
+- Core: `IScrivener<ChatEntry>` (append, tail, wait) and chat entry types (e.g., `ChatThought`, `ChatResponse`)
 - Goal: Make message exchange deterministic and testable without prescribing a transport
 
 ---
@@ -21,7 +21,7 @@ Lightweight chat abstractions for Daemon IO built on Coven.Scribing.
 ### Send a message
 
 ```csharp
-// Given ChatScrivener via DI
+// Given IScrivener<ChatEntry> via DI
 await scrivener.WriteAsync(new ChatThought("agent", "Starting up..."), ct);
 ```
 
@@ -65,4 +65,3 @@ await foreach (var (_, entry) in scrivener.ReadBackwardAsync(long.MaxValue, ct))
 }
 items.Reverse(); // chronological
 ```
-

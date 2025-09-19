@@ -80,7 +80,7 @@ internal sealed class PullOrchestrator : IOrchestratorSink
             }
         }
 
-        this.initialTags = initialTags as IReadOnlyCollection<string>;
+        this.initialTags = initialTags;
         this.usedInitialTags = false;
         this.expectedFinalType = typeof(TOut);
         finalTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
