@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-
-namespace Coven.Spellcasting.Spells;
+namespace Coven.Spellcasting;
 
 /// <summary>
 /// Represents the necessary details for a spell to be cast.

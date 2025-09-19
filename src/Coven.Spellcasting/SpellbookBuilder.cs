@@ -2,8 +2,6 @@
 
 namespace Coven.Spellcasting;
 
-using Coven.Spellcasting.Spells;
-
 public sealed class SpellbookBuilder
 {
     private readonly List<SpellDefinition> _definitions = new();

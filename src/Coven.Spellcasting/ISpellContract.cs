@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-namespace Coven.Spellcasting.Spells;
+namespace Coven.Spellcasting;
 
 /// <summary>
 /// Non-generic spell contract that exposes the canonical spell definition.

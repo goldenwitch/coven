@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-namespace Coven.Spellcasting.Spells;
+namespace Coven.Spellcasting;
 
 /// <summary>
 /// Represents a tool that is usable by any agent.
 /// Builds a definition from the input shape TIn
 /// Produces TOut during tool execution.
 /// </summary>
-public interface ISpell<TIn, TOut> : ISpellContract
+public interface ISpell<TIn, TOut> : ISpell
 {
     public new SpellDefinition Definition
     {
@@ -23,8 +23,7 @@ public interface ISpell<TIn, TOut> : ISpellContract
 /// Represents a tool that is usable by any agent.
 /// Builds a definition from the input shape TIn
 /// </summary>
-public interface ISpell<TIn>
-    : ISpellContract
+public interface ISpell<TIn> : ISpell
 {
     public new SpellDefinition Definition
     {
@@ -41,9 +40,8 @@ public interface ISpell<TIn>
 /// No input or output
 /// </summary>
 public interface ISpell
-    : ISpellContract
 {
-    public new SpellDefinition Definition
+    public SpellDefinition Definition
     {
         get => new SpellDefinition(SchemaGen.GetFriendlyName(GetType()));
     }

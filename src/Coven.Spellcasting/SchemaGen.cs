@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Schema;
 
 namespace Coven.Spellcasting;
 
-public static class SchemaGen
+internal static class SchemaGen
 {
     public static string GetFriendlyName(Type type)
     {
