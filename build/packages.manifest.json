@@ -2,13 +2,6 @@
   "packages": [
     { "id": "Coven.Core", "path": "src/Coven.Core" },
     { "id": "Coven.Spellcasting", "path": "src/Coven.Spellcasting" },
-    { "id": "Coven.Spellcasting.Agents", "path": "src/Coven.Spellcasting.Agents" },
-    { "id": "Coven.Spellcasting.Agents.Codex", "path": "src/Coven.Spellcasting.Agents.Codex" },
-    { "id": "Coven.Spellcasting.Agents.Validation", "path": "src/Coven.Spellcasting.Agents.Validation" },
-    { "id": "Coven.Chat", "path": "src/Coven.Chat" },
-    { "id": "Coven.Chat.Journal", "path": "src/Coven.Chat.Journal" },
-    { "id": "Coven.Chat.Adapter.Discord", "path": "src/Coven.Chat.Adapter.Discord" },
-    { "id": "Coven.Analyzers", "path": "src/Coven.Analyzers" }
+    { "id": "Coven.Chat", "path": "src/Coven.Chat" }
   ]
 }
-
