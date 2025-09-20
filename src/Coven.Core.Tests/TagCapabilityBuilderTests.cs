@@ -15,8 +15,8 @@ public class TagCapabilityBuilderTests
         using TestHost host = TestBed.BuildPush(c =>
         {
             _ = c.MagikBlock<string, int, EmitFastBlock>()
-                .MagikBlock(sp => new IntToDoubleBlock(), capabilities: ["fast"])
-                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
+                .MagikBlock<int, double, IntToDoubleBlock>(capabilities: ["fast"])
+                .LambdaBlock<int, double>((i, ct) => Task.FromResult(i + 1000d))
                 .Done();
         });
 

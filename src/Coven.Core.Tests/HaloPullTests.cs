@@ -23,7 +23,7 @@ public class HaloPullTests
         {
             c.MagikBlock<string, Doc, ParseAndTag>()
              .MagikBlock<Doc, Doc, AddSalutation>(capabilities: ["exclaim"])
-             .MagikBlock(sp => new UppercaseText(), capabilities: ["style:loud"])
+             .MagikBlock<Doc, Doc, UppercaseText>(capabilities: ["style:loud"])
              .MagikBlock<Doc, string, DocToOut>();
         }, options);
 

@@ -14,7 +14,7 @@ public class HaloE2ETests
         {
             _ = c.MagikBlock<string, Doc, ParseAndTag>()
                 .MagikBlock<Doc, Doc, AddSalutation>(capabilities: ["exclaim"])
-                .MagikBlock(sp => new UppercaseText(), capabilities: ["style:loud"])
+                .MagikBlock<Doc, Doc, UppercaseText>(capabilities: ["style:loud"])
                 .MagikBlock<Doc, string, DocToOut>()
                 .MagikBlock<Doc, Doc, LowercaseText>(capabilities: ["style:quiet"])
                 .Done();

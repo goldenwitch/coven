@@ -78,16 +78,6 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
-    public CovenServiceBuilder MagikBlock<TIn, TOut>(Func<IServiceProvider, IMagikBlock<TIn, TOut>> factory, IEnumerable<string>? capabilities = null)
-    {
-        ArgumentNullException.ThrowIfNull(factory);
-        EnsureNotFinalized();
-        FactoryActivator activator = new(sp => factory(sp));
-        object placeholder = new();
-        _registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, capabilities?.ToList(), null, activator));
-        return this;
-    }
-
     public CovenServiceBuilder LambdaBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         ArgumentNullException.ThrowIfNull(func);

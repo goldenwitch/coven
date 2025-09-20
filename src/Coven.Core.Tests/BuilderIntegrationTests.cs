@@ -69,7 +69,7 @@ public class BuilderIntegrationTests
         using TestHost host1 = TestBed.BuildPush(c =>
         {
             _ = c.MagikBlock<string, int, EmitFast>()
-                .MagikBlock(sp => new IntToDoubleA(), capabilities: ["fast"])
+                .MagikBlock<int, double, IntToDoubleA>(capabilities: ["fast"])
                 .MagikBlock<int, double, IntToDoubleB>()
                 .Done();
         });

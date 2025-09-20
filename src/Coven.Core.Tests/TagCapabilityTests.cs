@@ -46,10 +46,10 @@ public class TagCapabilityTests
         // Candidates: A supports {a}; B supports {a,b}; C supports {b}
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.MagikBlock(sp => new TagEmit("a", "b"))
-                .MagikBlock(sp => new CapBlock("A", "a"), capabilities: ["a"])
-                .MagikBlock(sp => new CapBlock("B", "a", "b"), capabilities: ["a", "b"])
-                .MagikBlock(sp => new CapBlock("C", "b"), capabilities: ["b"])
+            _ = c.LambdaBlock<Counter, Counter>((input, ct) => { Tag.Add("a"); Tag.Add("b"); return Task.FromResult(input); })
+                .LambdaBlock<Counter, Counter>((x, ct) => Task.FromResult(x), capabilities: ["a"])
+                .LambdaBlock<Counter, Counter>((x, ct) => Task.FromResult(x), capabilities: ["a", "b"])
+                .LambdaBlock<Counter, Counter>((x, ct) => Task.FromResult(x), capabilities: ["b"])
                 .MagikBlock<Counter, double, ToDouble>()
                 .Done();
         });

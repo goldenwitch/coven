@@ -15,7 +15,7 @@ public class BoardChainTests
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.MagikBlock(sp => new ObjectToIntBlock(999))
+            _ = c.LambdaBlock<object, int>((_, ct) => Task.FromResult(999))
             .MagikBlock<string, int, StringLengthBlock>()
             .MagikBlock<int, double, IntToDoubleBlock>()
             .Done();
@@ -108,8 +108,8 @@ public class BoardChainTests
         Stopwatch sw = Stopwatch.StartNew();
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.MagikBlock(sp => new AsyncDelayThenLength(50))
-            .MagikBlock(sp => new AsyncDelayThenToDouble(50))
+            _ = c.LambdaBlock<string, int>(async (s, ct) => { await Task.Delay(50, ct).ConfigureAwait(false); return s.Length; })
+            .LambdaBlock<int, double>(async (i, ct) => { await Task.Delay(50, ct).ConfigureAwait(false); return i; })
             .Done();
         });
 
@@ -125,8 +125,8 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.MagikBlock(sp => new ReturnConstInt(1))
-            .MagikBlock(sp => new ReturnConstInt(2))
+            _ = c.LambdaBlock<string, int>((_, ct) => Task.FromResult(1))
+            .LambdaBlock<string, int>((_, ct) => Task.FromResult(2))
             .MagikBlock<int, double, IntToDoubleBlock>()
             .Done();
         });

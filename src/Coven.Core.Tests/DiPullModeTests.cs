@@ -29,7 +29,7 @@ public class DiPullModeTests
         using TestHost host = TestBed.BuildPull(c =>
         {
             c.MagikBlock<string, int, EmitManyBlock>()
-             .MagikBlock(sp => new IntToDoubleAddBlock(1000)) // earlier registration
+             .LambdaBlock<int, double>((i, ct) => Task.FromResult(i + 1000d)) // earlier registration
              .MagikBlock<int, double, CapMergedBlock>(capabilities: ["ai"]); // builder + attribute + interface
         });
         double result = await host.Coven.Ritual<string, double>("abcd");

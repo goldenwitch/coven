@@ -14,7 +14,7 @@ public sealed class DiCapabilitiesDiscoveryTests
         {
             _ = c.MagikBlock<string, int, EmitFastBlock>()
                 .MagikBlock<int, double, CapFastBlock>()
-                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
+                .LambdaBlock<int, double>((i, ct) => Task.FromResult(i + 1000d))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
@@ -28,7 +28,7 @@ public sealed class DiCapabilitiesDiscoveryTests
         {
             _ = c.MagikBlock<string, int, EmitFastBlock>()
                 .MagikBlock<int, double, CapParamlessFastBlock>(capabilities: ["fast"])
-                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
+                .LambdaBlock<int, double>((i, ct) => Task.FromResult(i + 1000d))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
@@ -42,7 +42,7 @@ public sealed class DiCapabilitiesDiscoveryTests
         {
             _ = c.MagikBlock<string, int, EmitManyBlock>()
                 .MagikBlock<int, double, CapMergedBlock>(capabilities: ["ai"])
-                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
+                .LambdaBlock<int, double>((i, ct) => Task.FromResult(i + 1000d))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
