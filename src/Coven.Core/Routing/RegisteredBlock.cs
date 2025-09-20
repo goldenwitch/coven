@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core.Activation;
+
 namespace Coven.Core.Routing;
 
 internal sealed class RegisteredBlock
@@ -13,5 +15,5 @@ internal sealed class RegisteredBlock
     public required string BlockTypeName { get; init; }
     public required ISet<string> Capabilities { get; init; }
     public required IBlockActivator Activator { get; init; }
-    public IReadOnlyList<string> ForwardNextTags { get; set; } = Array.Empty<string>();
+    public IReadOnlyList<string> ForwardNextTags { get; set; } = [];
 }

@@ -1,9 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Threading.Tasks;
-using Coven.Core;
-using Coven.Core.Builder;
-using Coven.Core.Di;
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tests.Infrastructure;
 using Coven.Core.Tags;
@@ -14,15 +10,15 @@ namespace Coven.Core.Tests;
 public class BuilderIntegrationTests
 {
     [Fact]
-    public async Task Builder_Done_ReturnsCoven_ThatExecutesPipeline()
+    public async Task BuilderDoneReturnsCovenThatExecutesPipeline()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, StringLength>();
-            c.Done();
+            _ = c.AddBlock<string, int, StringLengthBlock>()
+                .Done();
         });
 
-        var result = await host.Coven.Ritual<string, int>("hello");
+        int result = await host.Coven.Ritual<string, int>("hello");
         Assert.Equal(5, result);
     }
 
@@ -53,56 +49,52 @@ public class BuilderIntegrationTests
 
 
     [Fact]
-    public async Task Di_Order_Is_Preserved_And_Pipeline_Works_E2E()
+    public async Task DiOrderIsPreservedAndPipelineWorksE2E()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, StringToInt>();
-            c.AddBlock<int, double, IntToDoubleA>();
-            c.AddBlock<int, double, IntToDoubleB>();
-            c.Done();
+            _ = c.AddBlock<string, int, StringToInt>()
+                .AddBlock<int, double, IntToDoubleA>()
+                .AddBlock<int, double, IntToDoubleB>()
+                .Done();
         });
 
-        var result = await host.Coven.Ritual<string, double>("abcd");
+        double result = await host.Coven.Ritual<string, double>("abcd");
         Assert.Equal(5d, result); // 4 + 1
     }
 
     [Fact]
-    public async Task Di_Routing_Follows_Capabilities()
+    public async Task DiRoutingFollowsCapabilities()
     {
-        using var host1 = TestBed.BuildPush(c =>
+        using TestHost host1 = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, EmitFast>();
-            c.AddBlock<int, double>(sp => new IntToDoubleA(), capabilities: new[] { "fast" });
-            c.AddBlock<int, double, IntToDoubleB>();
-            c.Done();
+            _ = c.AddBlock<string, int, EmitFast>()
+                .AddBlock(sp => new IntToDoubleA(), capabilities: ["fast"])
+                .AddBlock<int, double, IntToDoubleB>()
+                .Done();
         });
 
-        var out1 = await host1.Coven.Ritual<string, double>("abc");
+        double out1 = await host1.Coven.Ritual<string, double>("abc");
         Assert.Equal(3d + 1d, out1);
     }
 
     [Fact]
-    public async Task Di_Done_Precompiles_All_Pipelines_No_Lazy_Compiles()
+    public async Task DiDonePrecompilesAllPipelinesNoLazyCompiles()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, StringToInt>();
-            c.AddBlock<int, double, IntToDoubleA>();
-            c.AddBlock<int, double, IntToDoubleB>();
-            c.Done();
+            _ = c.AddBlock<string, int, StringToInt>()
+                .AddBlock<int, double, IntToDoubleA>()
+                .AddBlock<int, double, IntToDoubleB>()
+                .Done();
         });
-        var board = host.Services.GetRequiredService<IBoard>();
-
-        var boardType = board.GetType();
-        var field = boardType.GetField("pipelineCache", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        Assert.NotNull(field);
-        var cache = (System.Collections.IDictionary)field!.GetValue(board)!;
-        var preCount = cache.Count;
+        IBoard iboard = host.Services.GetRequiredService<IBoard>();
+        Board board = Assert.IsType<Board>(iboard);
+        int preCount = board.Status.CompiledPipelinesCount;
         Assert.True(preCount > 0);
 
-        var _ = await host.Coven.Ritual<string, double>("abcd");
-        var postCount = ((System.Collections.IDictionary)field.GetValue(board)!).Count;
+        await host.Coven.Ritual<string, double>("abcd");
+        int postCount = board.Status.CompiledPipelinesCount;
         Assert.Equal(preCount, postCount);
     }
 }

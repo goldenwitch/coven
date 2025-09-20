@@ -8,16 +8,10 @@ namespace Coven.Core.Tests;
 
 public class CapabilitiesSanityTests
 {
-    private int blockSteps = 0;
-    internal sealed class StringAppendBlock : IMagikBlock<string, string>
+    private int blockSteps;
+    internal sealed class StringAppendBlock(Action blockStepIncrementer) : IMagikBlock<string, string>
     {
         private static string Appended = "";
-        private readonly Action blockStepIncrementer;
-
-        public StringAppendBlock(Action blockStepIncrementer)
-        {
-            this.blockStepIncrementer = blockStepIncrementer;
-        }
 
         public Task<string> DoMagik(string input, CancellationToken cancellationToken = default)
         {
@@ -35,24 +29,25 @@ public class CapabilitiesSanityTests
     }
 
     [Fact]
-    public async Task Selection_Prefers_More_Total_Even_If_NextTag_Points_Elsewhere()
+    public async Task SelectionPrefersMoreTotalEvenIfNextTagPointsElsewhere()
     {
         // Use a normal builder. Emit tags favoring the weaker block but include
         // an extra capability tag only the stronger block supports.
-        var incrementer = new Action(() => blockSteps++);
+        Action incrementer = new(() => blockSteps++);
 
-        var options = new PullOptions
+        PullOptions options = new()
+
         {
             ShouldComplete = o => o is string s && s.Length >= 4
         };
-        using var host = TestBed.BuildPull(c =>
+        using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock(sp => new StringAppendBlock(incrementer));
-            c.AddBlock(sp => new StringAppendBlock(incrementer));
-            c.AddBlock(sp => new StringAppendBlock(incrementer));
-            c.AddBlock(sp => new StringAppendBlock(incrementer));
-            c.AddBlock(sp => new StringAppendBlock(incrementer));
-            c.AddBlock(sp => new StringAppendBlock(incrementer), capabilities: new[] { "t1", "t2" });
+            c.AddBlock(sp => new StringAppendBlock(incrementer))
+             .AddBlock(sp => new StringAppendBlock(incrementer))
+             .AddBlock(sp => new StringAppendBlock(incrementer))
+             .AddBlock(sp => new StringAppendBlock(incrementer))
+             .AddBlock(sp => new StringAppendBlock(incrementer))
+             .AddBlock(sp => new StringAppendBlock(incrementer), capabilities: ["t1", "t2"]);
         }, options);
 
         string result = await host.Coven.Ritual<string, string>("a");

@@ -1,20 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Microsoft.Extensions.DependencyInjection;
-using Coven.Core;
 using Coven.Core.Di;
 
 namespace Coven.Core.Tests.Infrastructure;
 
-internal sealed class TestHost : IDisposable
+internal sealed class TestHost(ServiceProvider services) : IDisposable
 {
-    public ServiceProvider Services { get; }
+    public ServiceProvider Services { get; } = services;
     public ICoven Coven => Services.GetRequiredService<ICoven>();
-
-    public TestHost(ServiceProvider services)
-    {
-        Services = services;
-    }
 
     public void Dispose()
     {
@@ -31,10 +25,10 @@ internal static class TestBed
 
     public static TestHost BuildPush(Action<CovenServiceBuilder> build, Action<IServiceCollection>? configureServices)
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         configureServices?.Invoke(services);
         services.BuildCoven(build); // auto-finalizes if Done() omitted
-        var sp = services.BuildServiceProvider();
+        ServiceProvider sp = services.BuildServiceProvider();
         return new TestHost(sp);
     }
 
@@ -43,14 +37,14 @@ internal static class TestBed
 
     public static TestHost BuildPull(Action<CovenServiceBuilder> build, PullOptions? options, Action<IServiceCollection>? configureServices)
     {
-        var services = new ServiceCollection();
+        ServiceCollection services = new();
         configureServices?.Invoke(services);
         services.BuildCoven(c =>
         {
             build(c);
             c.Done(pull: true, pullOptions: options);
         });
-        var sp = services.BuildServiceProvider();
+        ServiceProvider sp = services.BuildServiceProvider();
         return new TestHost(sp);
     }
 }

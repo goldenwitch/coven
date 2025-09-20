@@ -3,6 +3,11 @@
     <!-- Ensure all packable projects include the repository LICENSE -->
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+  
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Include the root LICENSE in the package at the top level -->
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />

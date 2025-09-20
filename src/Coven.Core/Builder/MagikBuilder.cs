@@ -6,19 +6,18 @@ namespace Coven.Core.Builder;
 
 internal class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 {
-    private readonly List<MagikBlockDescriptor> registry = new();
-    private ISelectionStrategy? selectionStrategy;
+    private readonly MagikRegistry _registry = new();
 
     public IMagikBuilder<T, TOutput> UseSelectionStrategy(ISelectionStrategy strategy)
     {
-        selectionStrategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        _registry.SetSelectionStrategy(strategy);
         return this;
     }
 
     // Heterogeneous registration (with optional capabilities)
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block, IEnumerable<string>? capabilities = null)
     {
-        registry.Add(new MagikBlockDescriptor(
+        _registry.Add(new MagikBlockDescriptor(
             typeof(TIn),
             typeof(TOut),
             block,
@@ -29,8 +28,8 @@ internal class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
-        var mb = new MagikBlock<TIn, TOut>(func);
-        registry.Add(new MagikBlockDescriptor(
+        MagikBlock<TIn, TOut> mb = new(func);
+        _registry.Add(new MagikBlockDescriptor(
             typeof(TIn),
             typeof(TOut),
             mb,
@@ -43,9 +42,7 @@ internal class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 
     public ICoven Done(bool pull, PullOptions? pullOptions = null)
     {
-        var mode = pull ? Board.BoardMode.Pull : Board.BoardMode.Push;
-        // Always precompile pipelines at Done() time for consistent performance
-        var board = new Board(mode, registry.AsReadOnly(), pullOptions: pullOptions, selectionStrategy: selectionStrategy);
+        Board board = _registry.BuildBoard(pull, pullOptions);
         return new Coven(board);
     }
 }

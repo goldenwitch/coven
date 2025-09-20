@@ -7,20 +7,20 @@ namespace Coven.Core;
 // the produced value is assignable to the requested TOut.
 internal sealed class PullOrchestrator : IOrchestratorSink
 {
-    private readonly Board board;
-    private readonly string branchId;
+    private readonly Board _board;
+    private readonly string _branchId;
     private TaskCompletionSource<object>? finalTcs;
     private IReadOnlyCollection<string>? initialTags;
     private bool usedInitialTags;
     private Type? expectedFinalType;
-    private readonly PullOptions? options;
+    private readonly PullOptions? _options;
     private CancellationToken token;
 
     internal PullOrchestrator(Board board, PullOptions? options = null, string branchId = "main")
     {
-        this.board = board;
-        this.options = options;
-        this.branchId = branchId;
+        _board = board;
+        _options = options;
+        _branchId = branchId;
     }
 
     public void Complete<TStepOut>(TStepOut output, string? branchId = null)
@@ -29,9 +29,9 @@ internal sealed class PullOrchestrator : IOrchestratorSink
         // If the step's declared TStepOut is assignable to the requested final type, consult completion policy.
         if (expectedFinalType is not null && expectedFinalType.IsAssignableFrom(typeof(TStepOut)))
         {
-            if (options?.ShouldComplete is not null)
+            if (_options?.ShouldComplete is not null)
             {
-                if (options.ShouldComplete(output!))
+                if (_options.ShouldComplete(output!))
                 {
                     CompletedFinal(output!);
                 }
@@ -52,27 +52,35 @@ internal sealed class PullOrchestrator : IOrchestratorSink
 
     public void CompletedFinal<TFinal>(TFinal result)
     {
-        finalTcs?.TrySetResult((object)result!);
+        _ = (finalTcs?.TrySetResult(result!));
     }
 
     internal async Task<TOut> Run<TIn, TOut>(TIn input, List<string>? initialTags = null, CancellationToken cancellationToken = default)
     {
-        this.token = cancellationToken;
+        token = cancellationToken;
         // Initial finality is also based on declared types: is TIn assignable to TOut?
         if (typeof(TOut).IsAssignableFrom(typeof(TIn)))
         {
             // Consult per-step policy first; then fallback to initial-input policy; default is to complete immediately
-            if (options?.ShouldComplete is not null)
+            if (_options?.ShouldComplete is not null)
             {
-                if (options.ShouldComplete(input!))
+                if (_options.ShouldComplete(input!))
+                {
+
                     return (TOut)(object)input!;
+                }
                 // else fall through and start stepping
+
             }
-            else if (options?.IsInitialComplete is not null)
+            else if (_options?.IsInitialComplete is not null)
             {
-                if (options.IsInitialComplete(input!))
+                if (_options.IsInitialComplete(input!))
+                {
+
                     return (TOut)(object)input!;
+                }
                 // else fall through and start stepping
+
             }
             else
             {
@@ -81,13 +89,13 @@ internal sealed class PullOrchestrator : IOrchestratorSink
         }
 
         this.initialTags = initialTags;
-        this.usedInitialTags = false;
-        this.expectedFinalType = typeof(TOut);
+        usedInitialTags = false;
+        expectedFinalType = typeof(TOut);
         finalTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
 
         _ = NextAsync(input);
 
-        var result = await finalTcs.Task.ConfigureAwait(false);
+        object result = await finalTcs.Task.ConfigureAwait(false);
         return (TOut)result;
     }
 
@@ -95,13 +103,13 @@ internal sealed class PullOrchestrator : IOrchestratorSink
     {
         try
         {
-            var tags = usedInitialTags ? null : initialTags;
+            IReadOnlyCollection<string>? tags = usedInitialTags ? null : initialTags;
             usedInitialTags = true;
-            await board.GetWork(new GetWorkRequest<TCur>(current, tags, branchId, token), this, token).ConfigureAwait(false);
+            await _board.GetWork(new GetWorkRequest<TCur>(current, tags, _branchId, token), this, token).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            finalTcs?.TrySetException(ex);
+            _ = (finalTcs?.TrySetException(ex));
         }
     }
 }

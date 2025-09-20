@@ -1,80 +1,93 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Core;
 
 internal class Coven : ICoven
 {
-    private readonly IBoard board;
-    private readonly IServiceProvider? rootProvider;
+    private readonly IBoard _board;
+    private readonly IServiceProvider? _rootProvider;
 
     internal Coven(IBoard board)
     {
-        this.board = board;
+        _board = board;
     }
 
     internal Coven(IBoard board, IServiceProvider rootProvider)
     {
-        this.board = board;
-        this.rootProvider = rootProvider;
+        _board = board;
+        _rootProvider = rootProvider;
     }
 
     public async Task<TOutput> Ritual<T, TOutput>(T input, CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post
-        if (!board.WorkSupported<T>(new List<string>()))
+        if (!_board.WorkSupported<T>([]))
         {
             throw new InvalidOperationException("Board does not support this work.");
         }
 
         // Open DI scope (if available) for the duration of the ritual
-        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
         try
         {
-            return await board.PostWork<T, TOutput>(input, null, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<T, TOutput>(input, null, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+            if (_rootProvider is not null)
+            {
+                CovenExecutionScope.EndScope(scope);
+            }
+
         }
     }
 
     public async Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags, CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post with tags
-        if (!board.WorkSupported<T>(tags ?? new List<string>()))
+        if (!_board.WorkSupported<T>(tags ?? []))
         {
             throw new InvalidOperationException("Board does not support this work.");
         }
 
-        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
         try
         {
-            return await board.PostWork<T, TOutput>(input, tags, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<T, TOutput>(input, tags, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+            if (_rootProvider is not null)
+            {
+                CovenExecutionScope.EndScope(scope);
+            }
+
         }
     }
 
     public async Task<TOutput> Ritual<TOutput>(CancellationToken cancellationToken = default)
     {
         // Ask the board if it's okay to post with no input
-        if (!board.WorkSupported<Empty>(new List<string>()))
+        if (!_board.WorkSupported<Empty>([]))
         {
             throw new InvalidOperationException("Board does not support this work.");
         }
 
-        var scope = rootProvider is not null ? CovenExecutionScope.BeginScope(rootProvider) : null;
+        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
         try
         {
-            return await board.PostWork<Empty, TOutput>(Empty.Value, null, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<Empty, TOutput>(new Empty(), null, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            if (rootProvider is not null) CovenExecutionScope.EndScope(scope);
+            if (_rootProvider is not null)
+            {
+                CovenExecutionScope.EndScope(scope);
+            }
+
         }
     }
 }

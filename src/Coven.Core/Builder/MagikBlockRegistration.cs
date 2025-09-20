@@ -6,38 +6,38 @@ namespace Coven.Core.Builder;
 
 internal class MagikBlockRegistration<T, TOutput> : IMagikBuilder<T, TOutput>
 {
-    private readonly IMagikBuilder<T, TOutput> magikBuilder;
+    private readonly IMagikBuilder<T, TOutput> _magikBuilder;
 
     internal MagikBlockRegistration(IMagikBuilder<T, TOutput> magikBuilder)
     {
-        this.magikBuilder = magikBuilder;
+        _magikBuilder = magikBuilder;
     }
 
     public IMagikBuilder<T, TOutput> UseSelectionStrategy(ISelectionStrategy strategy)
     {
-        magikBuilder.UseSelectionStrategy(strategy);
+        _magikBuilder.UseSelectionStrategy(strategy);
         return this;
     }
 
     public ICoven Done()
     {
-        return magikBuilder.Done();
+        return _magikBuilder.Done();
     }
 
     public ICoven Done(bool pull, PullOptions? pullOptions)
     {
-        return magikBuilder.Done(pull, pullOptions);
+        return _magikBuilder.Done(pull, pullOptions);
     }
 
     // Heterogeneous registration passthroughs (with optional capabilities)
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(IMagikBlock<TIn, TOut> block, IEnumerable<string>? capabilities = null)
     {
-        return magikBuilder.MagikBlock(block, capabilities);
+        return _magikBuilder.MagikBlock(block, capabilities);
     }
 
     public IMagikBuilder<T, TOutput> MagikBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
-        return magikBuilder.MagikBlock(func, capabilities);
+        return _magikBuilder.MagikBlock(func, capabilities);
     }
 
 }

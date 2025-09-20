@@ -42,7 +42,7 @@ public interface IScrivener<TJournalEntryType> where TJournalEntryType : notnull
     /// <param name="match">Predicate to select the desired entry.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>The first matching (journalPosition, entry) pair.</returns>
-    Task<(long journalPosition, TJournalEntryType entry)> WaitForAsync(long afterPosition, System.Func<TJournalEntryType, bool> match, CancellationToken ct = default);
+    Task<(long journalPosition, TJournalEntryType entry)> WaitForAsync(long afterPosition, Func<TJournalEntryType, bool> match, CancellationToken ct = default);
 
     /// <summary>
     /// Convenience overload: wait for the next entry of a specific derived type.

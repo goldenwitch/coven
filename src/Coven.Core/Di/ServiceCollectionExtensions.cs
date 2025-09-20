@@ -2,6 +2,10 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
+using System.Reflection;
+using Coven.Core.Activation;
+using Coven.Core.Builder;
+using Coven.Core.Routing;
 
 namespace Coven.Core.Di;
 
@@ -9,10 +13,10 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection BuildCoven(this IServiceCollection services, Action<CovenServiceBuilder> build)
     {
-        if (services is null) throw new ArgumentNullException(nameof(services));
-        if (build is null) throw new ArgumentNullException(nameof(build));
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(build);
 
-        var builder = new CovenServiceBuilder(services);
+        CovenServiceBuilder builder = new(services);
         build(builder);
         // Idempotent finalize if user forgot to call Done()
         builder.Done();
@@ -21,20 +25,20 @@ public static class ServiceCollectionExtensions
 
     public static CovenServiceBuilder BuildCoven(this IServiceCollection services)
     {
-        if (services is null) throw new ArgumentNullException(nameof(services));
+        ArgumentNullException.ThrowIfNull(services);
         return new CovenServiceBuilder(services);
     }
 }
 
 public sealed class CovenServiceBuilder
 {
-    private readonly IServiceCollection services;
-    private readonly List<MagikBlockDescriptor> registry = new();
+    private readonly IServiceCollection _services;
+    private readonly MagikRegistry _registry = new();
     private bool finalized;
 
     internal CovenServiceBuilder(IServiceCollection services)
     {
-        this.services = services;
+        _services = services;
     }
 
     public CovenServiceBuilder AddBlock<TIn, TOut, TBlock>(ServiceLifetime lifetime = ServiceLifetime.Transient, IEnumerable<string>? capabilities = null)
@@ -42,32 +46,41 @@ public sealed class CovenServiceBuilder
     {
         EnsureNotFinalized();
         bool already = false;
-        foreach (var sd in services)
+        foreach (ServiceDescriptor sd in _services)
         {
             if (sd.ServiceType == typeof(TBlock)) { already = true; break; }
         }
         if (!already)
         {
-            services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
+            _services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
         }
         // Merge capabilities from caller, attribute, and optional parameterless-ctor ITagCapabilities instance
-        var mergedCaps = new List<string>();
-        if (capabilities is not null) mergedCaps.AddRange(capabilities);
-        var t = typeof(TBlock);
-        var attr = (Tags.TagCapabilitiesAttribute?)Attribute.GetCustomAttribute(t, typeof(Tags.TagCapabilitiesAttribute));
+        List<string> mergedCaps = [];
+        if (capabilities is not null)
+        {
+            mergedCaps.AddRange(capabilities);
+        }
+
+
+        Type t = typeof(TBlock);
+        TagCapabilitiesAttribute? attr = (TagCapabilitiesAttribute?)Attribute.GetCustomAttribute(t, typeof(TagCapabilitiesAttribute));
         if (attr is not null && attr.Tags is not null)
         {
             mergedCaps.AddRange(attr.Tags);
         }
         if (typeof(ITagCapabilities).IsAssignableFrom(t))
         {
-            var ctor = t.GetConstructor(Type.EmptyTypes);
+            ConstructorInfo? ctor = t.GetConstructor(Type.EmptyTypes);
             if (ctor is not null)
             {
                 try
                 {
-                    var tmp = (ITagCapabilities?)Activator.CreateInstance(t);
-                    if (tmp?.SupportedTags is not null) mergedCaps.AddRange(tmp.SupportedTags);
+                    ITagCapabilities? tmp = (ITagCapabilities?)Activator.CreateInstance(t);
+                    if (tmp?.SupportedTags is not null)
+                    {
+                        mergedCaps.AddRange(tmp.SupportedTags);
+                    }
+
                 }
                 catch
                 {
@@ -76,56 +89,78 @@ public sealed class CovenServiceBuilder
             }
         }
         // Register with a DI activator; no proxy instance.
-        var activator = new DiTypeActivator(typeof(TBlock));
-        var placeholder = new object();
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, mergedCaps, typeof(TBlock).Name, activator));
+        DiTypeActivator activator = new(typeof(TBlock));
+        object placeholder = new();
+        _registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, mergedCaps, typeof(TBlock).Name, activator));
+        return this;
+    }
+
+    public CovenServiceBuilder UseSelectionStrategy(ISelectionStrategy strategy)
+    {
+        _registry.SetSelectionStrategy(strategy);
         return this;
     }
 
     public CovenServiceBuilder AddBlock<TIn, TOut>(Func<IServiceProvider, IMagikBlock<TIn, TOut>> factory, IEnumerable<string>? capabilities = null)
     {
-        if (factory is null) throw new ArgumentNullException(nameof(factory));
+        ArgumentNullException.ThrowIfNull(factory);
         EnsureNotFinalized();
-        var activator = new FactoryActivator(sp => factory(sp));
-        var placeholder = new object();
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, capabilities?.ToList(), null, activator));
+        FactoryActivator activator = new(sp => factory(sp));
+        object placeholder = new();
+        _registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), placeholder, capabilities?.ToList(), null, activator));
         return this;
     }
 
     public CovenServiceBuilder AddLambda<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
-        if (func is null) throw new ArgumentNullException(nameof(func));
+        ArgumentNullException.ThrowIfNull(func);
         EnsureNotFinalized();
-        var mb = new MagikBlock<TIn, TOut>(func);
-        registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), mb, capabilities?.ToList(), typeof(MagikBlock<TIn, TOut>).Name, null));
+        MagikBlock<TIn, TOut> mb = new(func);
+        _registry.Add(new MagikBlockDescriptor(typeof(TIn), typeof(TOut), mb, capabilities?.ToList(), typeof(MagikBlock<TIn, TOut>).Name, null));
         return this;
     }
 
     public IServiceCollection Done()
     {
-        if (finalized) return services; // idempotent
+        if (finalized)
+        {
+            return _services; // idempotent
+        }
+
+
         finalized = true;
 
-        var board = new Board(Board.BoardMode.Push, registry);
-        services.AddSingleton<IBoard>(_ => board);
-        services.AddSingleton<ICoven>(sp => new Coven(board, sp));
-        return services;
+        Board board = _registry.BuildBoard(pull: false, pullOptions: null);
+        _services.AddSingleton<IBoard>(_ => board);
+        _services.AddSingleton<ICoven>(sp => new Coven(board, sp));
+        return _services;
     }
+
+
+
 
     public IServiceCollection Done(bool pull, PullOptions? pullOptions = null)
     {
-        if (finalized) return services; // idempotent
+        if (finalized)
+        {
+            return _services; // idempotent
+        }
+
+
         finalized = true;
 
-        var mode = pull ? Board.BoardMode.Pull : Board.BoardMode.Push;
-        var board = pull ? new Board(mode, registry, pullOptions) : new Board(mode, registry);
-        services.AddSingleton<IBoard>(_ => board);
-        services.AddSingleton<ICoven>(sp => new Coven(board, sp));
-        return services;
+        Board board = _registry.BuildBoard(pull, pullOptions);
+        _services.AddSingleton<IBoard>(_ => board);
+        _services.AddSingleton<ICoven>(sp => new Coven(board, sp));
+        return _services;
     }
 
     private void EnsureNotFinalized()
     {
-        if (finalized) throw new InvalidOperationException("Cannot modify CovenServiceBuilder after Done().");
+        if (finalized)
+        {
+            throw new InvalidOperationException("Cannot modify CovenServiceBuilder after Done().");
+        }
+
     }
 }

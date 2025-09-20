@@ -1,13 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using Xunit;
-using Coven.Core;
-using Coven.Core.Builder;
 using Coven.Core.Tags;
-using Coven.Core.Di;
 using Coven.Core.Tests.Infrastructure;
 
 namespace Coven.Core.Tests;
@@ -16,7 +10,7 @@ public class TagScopeTests
 {
 
     [Fact]
-    public void Tag_Methods_OutsideScope_Throw()
+    public void TagMethodsOutsideScopeThrow()
     {
         Assert.Throws<InvalidOperationException>(() => Tag.Add("x"));
         Assert.Throws<InvalidOperationException>(() => Tag.Contains("x"));
@@ -24,14 +18,14 @@ public class TagScopeTests
     }
 
     [Fact]
-    public async Task Tag_Methods_Available_WithinBoardScope()
+    public async Task TagMethodsAvailableWithinBoardScope()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, string, ProbeTag>();
-            c.Done();
+            _ = c.AddBlock<string, string, ProbeTagBlock>()
+                .Done();
         });
-        var result = await host.Coven.Ritual<string, string>("ignored");
+        string result = await host.Coven.Ritual<string, string>("ignored");
         Assert.Equal("ok", result);
     }
 }

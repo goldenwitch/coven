@@ -3,8 +3,10 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using Microsoft.Extensions.Logging;
+using Coven.Core.Logging;
 using Coven.Core.Routing;
 using Coven.Core.Tags;
+using Coven.Core.Activation;
 
 namespace Coven.Core;
 
@@ -16,68 +18,90 @@ public class Board : IBoard
         Pull
     }
 
-    private readonly BoardMode currentMode = BoardMode.Push;
+    private readonly BoardMode _currentMode = BoardMode.Push;
     internal IReadOnlyList<MagikBlockDescriptor> Registry { get; }
-    private readonly IReadOnlyList<RegisteredBlock> registeredBlocks;
-    private readonly PipelineCompiler compiler;
-    private readonly ConcurrentDictionary<string, HashSet<string>> pullBranchTags = new(StringComparer.Ordinal);
-    private readonly PullOptions? pullOptions;
-    private readonly ISelectionStrategy? selectionStrategy;
+    private readonly IReadOnlyList<RegisteredBlock> _registeredBlocks;
+    private readonly PipelineCompiler _compiler;
+    private readonly ConcurrentDictionary<string, HashSet<string>> _pullBranchTags = new(StringComparer.Ordinal);
+    private readonly PullOptions? _pullOptions;
+    private readonly ISelectionStrategy? _selectionStrategy;
 
     internal Board(BoardMode mode, IReadOnlyList<MagikBlockDescriptor> registry, PullOptions? pullOptions = null, ISelectionStrategy? selectionStrategy = null)
     {
-        currentMode = mode;
+        _currentMode = mode;
         Registry = registry;
-        registeredBlocks = BuildRegisteredBlocks(registry);
-        this.selectionStrategy = selectionStrategy;
-        compiler = new PipelineCompiler(registeredBlocks, selectionStrategy);
-        this.pullOptions = pullOptions;
+        _registeredBlocks = BuildRegisteredBlocks(registry);
+        _selectionStrategy = selectionStrategy;
+        _compiler = new PipelineCompiler(_registeredBlocks, selectionStrategy);
+        _pullOptions = pullOptions;
+
         // Always precompile pipelines regardless of mode for consistency
         PrecompileAllPipelines();
     }
 
-    private readonly ConcurrentDictionary<(Type start, Type target), Delegate> pipelineCache = new();
+    private readonly ConcurrentDictionary<(Type start, Type target), Delegate> _pipelineCache = new();
+
+    // Minimal internal status snapshot for tests and diagnostics.
+    internal BoardStatus Status => new(_pipelineCache.Count);
 
     // Internal non-generic step for orchestrators; merges tags, selects, executes, persists tags, returns output.
     internal async Task GetWorkPullAsync(object input, string? branchId, IReadOnlyCollection<string>? extraTags, IOrchestratorSink sink, CancellationToken cancellationToken)
     {
-        if (currentMode != BoardMode.Pull)
-            throw new NotSupportedException("GetWork is only available in pull mode.");
-
-        var bid = branchId ?? string.Empty;
-        var baseTags = pullBranchTags.GetOrAdd(bid, _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
-        var merged = new HashSet<string>(baseTags, StringComparer.OrdinalIgnoreCase);
-        if (extraTags is not null)
+        if (_currentMode != BoardMode.Pull)
         {
-            foreach (var t in extraTags) merged.Add(t);
+            throw new NotSupportedException("GetWork is only available in pull mode.");
         }
 
-        var scopePrev = Tag.BeginScope(Tag.NewScope(merged));
+
+        string bid = branchId ?? string.Empty;
+        HashSet<string> baseTags = _pullBranchTags.GetOrAdd(bid, _ => new HashSet<string>(StringComparer.OrdinalIgnoreCase));
+        HashSet<string> merged = new(baseTags, StringComparer.OrdinalIgnoreCase);
+        if (extraTags is not null)
+        {
+            foreach (string t in extraTags)
+            {
+                _ = merged.Add(t);
+            }
+
+        }
+
+        ITagScope? scopePrev = Tag.BeginScope(Tag.NewScope(merged));
         try
         {
             ILogger? logger = null;
+            IDisposable? ritualScope = null;
             try
             {
-                var sp = Di.CovenExecutionScope.CurrentProvider;
-                var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+                IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+                ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
                 logger = lf?.CreateLogger("Coven.Ritual.Pull");
-                var rid = Guid.NewGuid().ToString("N");
-                using var scope = logger?.BeginScope($"ritual:{rid}");
-                logger?.LogInformation("Pull begin rid={RitualId}: input={InputType} branch={Branch}", rid, input.GetType().Name, bid);
+                string rid = Guid.NewGuid().ToString("N");
+                if (logger is not null && logger.IsEnabled(LogLevel.Information))
+                {
+                    ritualScope = logger.BeginScope("ritual:" + rid);
+                    CoreLog.PullBegin(logger, rid, input.GetType().Name, bid);
+                }
             }
             catch { }
 
-            var selector = selectionStrategy ?? new DefaultSelectionStrategy();
-            var engine = new SelectionEngine(registeredBlocks, selector);
-            var fence = Tag.GetFenceForCurrentEpoch();
-            var chosen = engine.SelectNext(input, fence, lastIndex: -1, forwardOnly: false)
+            ISelectionStrategy selector = _selectionStrategy ?? new DefaultSelectionStrategy();
+            SelectionEngine engine = new(_registeredBlocks, selector);
+            IReadOnlyCollection<object>? fence = Tag.GetFenceForCurrentEpoch();
+            RegisteredBlock chosen = engine.SelectNext(input, fence, lastIndex: -1, forwardOnly: false)
                 ?? throw new InvalidOperationException($"No next step available from type {input.GetType().Name}.");
 
-            logger?.LogInformation("Pull select {Block} idx={Idx}", chosen.BlockTypeName, chosen.RegistryIndex);
+            if (logger is not null && logger.IsEnabled(LogLevel.Information))
+            {
+                CoreLog.PullSelect(logger, chosen.BlockTypeName, chosen.RegistryIndex);
+            }
             Tag.IncrementEpoch();
             // Invoke wrapped pull delegate which will finalize via Board.FinalizePullStep<T>
             await chosen.InvokePull(this, sink, bid, input, cancellationToken).ConfigureAwait(false);
-            logger?.LogInformation("Pull dispatched {Block}", chosen.BlockTypeName);
+            if (logger is not null && logger.IsEnabled(LogLevel.Information))
+            {
+                CoreLog.PullDispatched(logger, chosen.BlockTypeName);
+            }
+            ritualScope?.Dispose();
         }
         finally
         {
@@ -85,32 +109,41 @@ public class Board : IBoard
         }
     }
 
-    private static IReadOnlyList<RegisteredBlock> BuildRegisteredBlocks(IReadOnlyList<MagikBlockDescriptor> registry)
+    private static List<RegisteredBlock> BuildRegisteredBlocks(IReadOnlyList<MagikBlockDescriptor> registry)
     {
-        var list = new List<RegisteredBlock>(registry.Count);
+        List<RegisteredBlock> list = new(registry.Count);
         for (int idx = 0; idx < registry.Count; idx++)
         {
-            var d = registry[idx];
-            var block = d.BlockInstance;
-            var activator = d.Activator;
-            var name = d.DisplayBlockTypeName ?? activator?.DisplayName ?? block.GetType().Name;
+            MagikBlockDescriptor d = registry[idx];
+            object block = d.BlockInstance;
+            IBlockActivator? activator = d.Activator;
+            string name = d.DisplayBlockTypeName ?? activator?.DisplayName ?? block.GetType().Name;
 
-            var caps = (block as ITagCapabilities)?.SupportedTags ?? Array.Empty<string>();
+            IReadOnlyCollection<string> caps = (block as ITagCapabilities)?.SupportedTags ?? [];
             IEnumerable<string> merged = caps;
             if (d.Capabilities is not null && d.Capabilities.Count > 0)
             {
-                merged = System.Linq.Enumerable.Concat(caps, d.Capabilities);
+                merged = Enumerable.Concat(caps, d.Capabilities);
             }
-            var set = new HashSet<string>(merged, StringComparer.OrdinalIgnoreCase);
-            // Soft self-capability to enable forward-motion hints via next:<BlockTypeName>
-            set.Add($"next:{name}");
+            HashSet<string> set = new(merged, StringComparer.OrdinalIgnoreCase)
+            {
+                // Soft self-capability to enable forward-motion hints via next:<BlockTypeName>
+                $"next:{name}"
+            };
 
             if (activator is null)
             {
-                var implementsMagik = block.GetType().GetInterfaces()
+                bool implementsMagik = block.GetType().GetInterfaces()
                     .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMagikBlock<,>));
-                if (implementsMagik) activator = new ConstantInstanceActivator(block);
-                else throw new InvalidOperationException($"Coven configuration error: Missing activator for block entry at index {idx} ({name}). Either provide an IMagikBlock instance or an IBlockActivator.");
+                if (implementsMagik)
+                {
+                    activator = new ConstantInstanceActivator(block);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Coven configuration error: Missing activator for block entry at index {idx} ({name}). Either provide an IMagikBlock instance or an IBlockActivator.");
+                }
+
             }
 
             list.Add(new RegisteredBlock
@@ -129,11 +162,11 @@ public class Board : IBoard
         // Compute forward-next hint tags per block and compile pull wrappers using them
         for (int i = 0; i < list.Count; i++)
         {
-            var cur = list[i];
-            var tags = new List<string>();
+            RegisteredBlock cur = list[i];
+            List<string> tags = [];
             for (int j = i + 1; j < list.Count; j++)
             {
-                var cand = list[j];
+                RegisteredBlock cand = list[j];
                 if (cand.InputType.IsAssignableFrom(cur.OutputType))
                 {
                     tags.Add($"next:{cand.BlockTypeName}");
@@ -144,17 +177,17 @@ public class Board : IBoard
 
         for (int i = 0; i < list.Count; i++)
         {
-            var cur = list[i];
+            RegisteredBlock cur = list[i];
             // Compile a pull wrapper that resolves the instance via activator, invokes, then finalizes with generic TOut.
-            var finalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic)!;
-            var finalizeClosed = finalize.MakeGenericMethod(cur.OutputType);
+            MethodInfo finalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            MethodInfo finalizeClosed = finalize.MakeGenericMethod(cur.OutputType);
             cur.InvokePull = async (board, sink, branchId, input, cancellationToken) =>
             {
-                var cache = new Dictionary<int, object>();
-                var sp = Di.CovenExecutionScope.CurrentProvider;
-                var instance = cur.Activator.GetInstance(sp, cache, cur);
-                var result = await cur.Invoke(instance, input, cancellationToken).ConfigureAwait(false);
-                finalizeClosed.Invoke(board, new object?[] { sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags });
+                Dictionary<int, object> cache = [];
+                IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+                object instance = cur.Activator.GetInstance(sp, cache, cur);
+                object result = await cur.Invoke(instance, input, cancellationToken).ConfigureAwait(false);
+                _ = finalizeClosed.Invoke(board, [sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags]);
             };
         }
         return list;
@@ -169,9 +202,14 @@ public class Board : IBoard
 
     public Task GetWork<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink, CancellationToken cancellationToken = default)
     {
-        if (currentMode != BoardMode.Pull)
+        if (_currentMode != BoardMode.Pull)
+        {
+
             throw new NotSupportedException("GetWork<TIn>(request) is only available in pull mode.");
-        if (sink is null) throw new ArgumentNullException(nameof(sink));
+        }
+
+
+        ArgumentNullException.ThrowIfNull(sink);
 
         // Execute exactly one step using Push selection semantics, no forward-only constraint.
         return ExecutePullStepAsync(request, sink, cancellationToken);
@@ -179,23 +217,23 @@ public class Board : IBoard
 
     private async Task ExecutePullStepAsync<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink, CancellationToken cancellationToken)
     {
-        var branchId = request.BranchId ?? string.Empty;
+        string branchId = request.BranchId ?? string.Empty;
         await GetWorkPullAsync(request.Input!, branchId, request.Tags, sink, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<TOutput> PostWork<T, TOutput>(T input, List<string>? tags = null, CancellationToken cancellationToken = default)
     {
-        var startType = typeof(T);
-        var targetType = typeof(TOutput);
+        Type startType = typeof(T);
+        Type targetType = typeof(TOutput);
 
-        if (currentMode == BoardMode.Push)
+        if (_currentMode == BoardMode.Push)
         {
-            var pipeline = (Func<T, CancellationToken, Task<TOutput>>)pipelineCache.GetOrAdd(
+            Func<T, CancellationToken, Task<TOutput>> pipeline = (Func<T, CancellationToken, Task<TOutput>>)_pipelineCache.GetOrAdd(
                 (startType, targetType),
-                _ => compiler.Compile<T, TOutput>(startType, targetType)
+                _ => _compiler.Compile<T, TOutput>(startType, targetType)
             );
 
-            var prev = Tag.BeginScope(Tag.NewScope(tags));
+            ITagScope? prev = Tag.BeginScope(Tag.NewScope(tags));
             try
             {
                 return await pipeline(input, cancellationToken);
@@ -207,30 +245,39 @@ public class Board : IBoard
         }
 
         // Pull mode: delegate to the concrete orchestrator using GetWork<T> steps.
-        var orchestrator = new PullOrchestrator(this, pullOptions);
+        PullOrchestrator orchestrator = new(this, _pullOptions);
         return await orchestrator.Run<T, TOutput>(input, tags, cancellationToken);
     }
 
     internal void PrecompileAllPipelines()
     {
-        var types = new HashSet<Type>();
-        foreach (var d in Registry)
+        HashSet<Type> types = [];
+        foreach (MagikBlockDescriptor d in Registry)
         {
-            types.Add(d.InputType);
-            types.Add(d.OutputType);
+            _ = types.Add(d.InputType);
+            _ = types.Add(d.OutputType);
         }
 
-        var compileMethod = typeof(PipelineCompiler).GetMethod("Compile", BindingFlags.NonPublic | BindingFlags.Instance);
-        if (compileMethod is null) return;
-
-        foreach (var start in types)
+        MethodInfo? compileMethod = typeof(PipelineCompiler).GetMethod("Compile", BindingFlags.NonPublic | BindingFlags.Instance);
+        if (compileMethod is null)
         {
-            foreach (var target in types)
+            return;
+        }
+
+
+        foreach (Type start in types)
+        {
+            foreach (Type target in types)
             {
-                if (!compiler.PathExists(start, target)) continue;
-                var gm = compileMethod.MakeGenericMethod(start, target);
-                var del = (Delegate)gm.Invoke(compiler, new object[] { start, target })!;
-                pipelineCache.TryAdd((start, target), del);
+                if (!_compiler.PathExists(start, target))
+                {
+                    continue;
+                }
+
+
+                MethodInfo gm = compileMethod.MakeGenericMethod(start, target);
+                Delegate del = (Delegate)gm.Invoke(_compiler, [start, target])!;
+                _ = _pipelineCache.TryAdd((start, target), del);
             }
         }
     }
@@ -241,34 +288,55 @@ public class Board : IBoard
         Tag.Add($"by:{blockTypeName}");
         if (forwardNextTags is not null)
         {
-            foreach (var t in forwardNextTags) Tag.Add(t);
+            foreach (string t in forwardNextTags)
+            {
+                Tag.Add(t);
+            }
+
         }
-        var bid = branchId ?? string.Empty;
+        string bid = branchId ?? string.Empty;
         // Persist tags for the next selection using only tags emitted during this step
         // plus fresh forward-next hints.
         // - Keep only current-epoch tags, excluding observational or computed hints (by:*, next:*)
         // - Re-add the newly computed forwardNextTags (next:*) for default forward bias
-        var persisted = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var epoch = Tag.CurrentEpochTags();
-        foreach (var t in epoch)
+        HashSet<string> persisted = new(StringComparer.OrdinalIgnoreCase);
+        IReadOnlyList<string> epoch = Tag.CurrentEpochTags();
+        foreach (string t in epoch)
         {
-            if (t.StartsWith("by:", StringComparison.OrdinalIgnoreCase)) continue;
-            if (t.StartsWith("next:", StringComparison.OrdinalIgnoreCase)) continue;
-            persisted.Add(t);
+            if (t.StartsWith("by:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+
+            if (t.StartsWith("next:", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+
+            _ = persisted.Add(t);
         }
         if (forwardNextTags is not null)
         {
-            foreach (var t in forwardNextTags) persisted.Add(t);
+            foreach (string t in forwardNextTags)
+            {
+                _ = persisted.Add(t);
+            }
+
         }
-        pullBranchTags[bid] = persisted;
+        _pullBranchTags[bid] = persisted;
         try
         {
-            var sp = Di.CovenExecutionScope.CurrentProvider;
-            var lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-            var logger = lf?.CreateLogger("Coven.Ritual.Pull");
-            logger?.LogInformation("Pull complete {Block} => {OutputType} branch={Branch}", blockTypeName, output?.GetType().Name ?? "null", bid);
+            IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+            ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            ILogger? logger = lf?.CreateLogger("Coven.Ritual.Pull");
+            if (logger is not null && logger.IsEnabled(LogLevel.Information))
+            {
+                CoreLog.PullComplete(logger, blockTypeName, output?.GetType().Name ?? "null", bid);
+            }
         }
         catch { }
-        sink.Complete<TOut>(output, branchId);
+        sink.Complete(output, branchId);
     }
 }

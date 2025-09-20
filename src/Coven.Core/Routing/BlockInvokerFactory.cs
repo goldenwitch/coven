@@ -1,9 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace Coven.Core.Routing;
 
@@ -12,24 +10,24 @@ internal static class BlockInvokerFactory
     // Builds an invoker: (object instance, object input, CancellationToken ct) => Task<object>
     public static Func<object, object, CancellationToken, Task<object>> Create(MagikBlockDescriptor d)
     {
-        var ifaceType = typeof(IMagikBlock<,>).MakeGenericType(d.InputType, d.OutputType);
-        var doMagik = ifaceType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+        Type ifaceType = typeof(IMagikBlock<,>).MakeGenericType(d.InputType, d.OutputType);
+        MethodInfo doMagik = ifaceType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
             ?? throw new InvalidOperationException("IMagikBlock.DoMagik not found.");
 
-        var instParam = Expression.Parameter(typeof(object), "instance");
-        var inParam = Expression.Parameter(typeof(object), "input");
-        var ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
-        var castInst = Expression.Convert(instParam, ifaceType);
-        var castArg = Expression.Convert(inParam, d.InputType);
-        var call = Expression.Call(castInst, doMagik, castArg, ctParam); // Task<Out>
+        ParameterExpression instParam = Expression.Parameter(typeof(object), "instance");
+        ParameterExpression inParam = Expression.Parameter(typeof(object), "input");
+        ParameterExpression ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+        UnaryExpression castInst = Expression.Convert(instParam, ifaceType);
+        UnaryExpression castArg = Expression.Convert(inParam, d.InputType);
+        MethodCallExpression call = Expression.Call(castInst, doMagik, castArg, ctParam); // Task<Out>
 
-        var taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
-        var tParam = Expression.Parameter(taskOutType, "t");
-        var resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
-        var toObj = Expression.Convert(resultProp, typeof(object));
-        var mapLambda = Expression.Lambda(toObj, tParam);
+        Type taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
+        ParameterExpression tParam = Expression.Parameter(taskOutType, "t");
+        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
+        UnaryExpression toObj = Expression.Convert(resultProp, typeof(object));
+        LambdaExpression mapLambda = Expression.Lambda(toObj, tParam);
 
-        var continueWith = taskOutType
+        MethodInfo continueWith = taskOutType
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Where(m => m.Name == "ContinueWith" && m.IsGenericMethodDefinition)
             .Select(m => new { m, ps = m.GetParameters() })
@@ -37,9 +35,9 @@ internal static class BlockInvokerFactory
             .Select(x => x.m)
             .First();
 
-        var contCall = Expression.Call(call, continueWith.MakeGenericMethod(typeof(object)), mapLambda); // Task<object>
+        MethodCallExpression contCall = Expression.Call(call, continueWith.MakeGenericMethod(typeof(object)), mapLambda); // Task<object>
 
-        var lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<object>>>(contCall, instParam, inParam, ctParam);
+        Expression<Func<object, object, CancellationToken, Task<object>>> lambda = Expression.Lambda<Func<object, object, CancellationToken, Task<object>>>(contCall, instParam, inParam, ctParam);
         return lambda.Compile();
     }
 
@@ -47,57 +45,51 @@ internal static class BlockInvokerFactory
     // Signature: (Board board, IOrchestratorSink sink, string? branchId, object input, CancellationToken ct) => Task
     public static Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task> CreatePull(MagikBlockDescriptor d, IReadOnlyList<string> forwardTags)
     {
-        var block = d.BlockInstance;
-        var blockType = block.GetType();
-        var doMagik = blockType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-        if (doMagik is null)
-            throw new InvalidOperationException($"Block {blockType.Name} does not implement DoMagik.");
+        object block = d.BlockInstance;
+        Type blockType = block.GetType();
+        MethodInfo? doMagik = blockType.GetMethod("DoMagik", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic) ?? throw new InvalidOperationException($"Block {blockType.Name} does not implement DoMagik.");
 
-        var boardParam = Expression.Parameter(typeof(Board), "board");
-        var sinkParam = Expression.Parameter(typeof(IOrchestratorSink), "sink");
-        var branchParam = Expression.Parameter(typeof(string), "branchId");
-        var inputParam = Expression.Parameter(typeof(object), "input");
-        var ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
+        ParameterExpression boardParam = Expression.Parameter(typeof(Board), "board");
+        ParameterExpression sinkParam = Expression.Parameter(typeof(IOrchestratorSink), "sink");
+        ParameterExpression branchParam = Expression.Parameter(typeof(string), "branchId");
+        ParameterExpression inputParam = Expression.Parameter(typeof(object), "input");
+        ParameterExpression ctParam = Expression.Parameter(typeof(CancellationToken), "cancellationToken");
 
-        var castArg = Expression.Convert(inputParam, d.InputType);
-        var blockConst = Expression.Constant(block);
+        UnaryExpression castArg = Expression.Convert(inputParam, d.InputType);
+        ConstantExpression blockConst = Expression.Constant(block);
         // For pull flow, pass through the provided cancellationToken.
-        var call = Expression.Call(blockConst, doMagik, castArg, ctParam); // Task<TOut>
+        MethodCallExpression call = Expression.Call(blockConst, doMagik, castArg, ctParam); // Task<TOut>
 
-        var taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
+        Type taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
 
         // Build continuation: t => board.FinalizePullStep<TOut>(sink, t.Result, branchId, blockTypeName)
-        var tParam = Expression.Parameter(taskOutType, "t");
-        var resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
-        var boardFinalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic);
-        if (boardFinalize is null)
-            throw new InvalidOperationException("Board.FinalizePullStep not found.");
-        var finalizeClosed = boardFinalize.MakeGenericMethod(d.OutputType);
+        ParameterExpression tParam = Expression.Parameter(taskOutType, "t");
+        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
+        MethodInfo? boardFinalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException("Board.FinalizePullStep not found.");
 
-        var blockNameConst = Expression.Constant(blockType.Name, typeof(string));
+        MethodInfo finalizeClosed = boardFinalize.MakeGenericMethod(d.OutputType);
+
+        ConstantExpression blockNameConst = Expression.Constant(blockType.Name, typeof(string));
         // Build constant string[] for forward tags
-        var tagConsts = forwardTags.Select(t => Expression.Constant(t, typeof(string)));
-        var tagsArray = Expression.NewArrayInit(typeof(string), tagConsts);
+        IEnumerable<ConstantExpression> tagConsts = forwardTags.Select(t => Expression.Constant(t, typeof(string)));
+        NewArrayExpression tagsArray = Expression.NewArrayInit(typeof(string), tagConsts);
 
-        var finalizeCall = Expression.Call(boardParam, finalizeClosed, sinkParam, resultProp, branchParam, blockNameConst, tagsArray);
-        var contLambdaType = typeof(Action<>).MakeGenericType(taskOutType);
-        var contLambda = Expression.Lambda(contLambdaType, finalizeCall, tParam); // Action<Task<TOut>>
+        MethodCallExpression finalizeCall = Expression.Call(boardParam, finalizeClosed, sinkParam, resultProp, branchParam, blockNameConst, tagsArray);
+        Type contLambdaType = typeof(Action<>).MakeGenericType(taskOutType);
+        LambdaExpression contLambda = Expression.Lambda(contLambdaType, finalizeCall, tParam); // Action<Task<TOut>>
 
         // Find ContinueWith(Action<Task<TOut>>)
-        var continueWith = taskOutType
+        MethodInfo? continueWith = taskOutType
             .GetMethods(BindingFlags.Instance | BindingFlags.Public)
             .Where(m => m.Name == "ContinueWith")
             .Select(m => new { m, ps = m.GetParameters() })
             .Where(x => x.ps.Length == 1 && x.ps[0].ParameterType.IsGenericType && x.ps[0].ParameterType.GetGenericTypeDefinition() == typeof(Action<>))
             .Select(x => x.m)
-            .FirstOrDefault();
+            .FirstOrDefault() ?? throw new InvalidOperationException("Suitable ContinueWith overload not found.");
 
-        if (continueWith is null)
-            throw new InvalidOperationException("Suitable ContinueWith overload not found.");
+        MethodCallExpression contCall = Expression.Call(call, continueWith, contLambda); // Task
 
-        var contCall = Expression.Call(call, continueWith, contLambda); // Task
-
-        var lambda = Expression.Lambda<Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task>>(contCall, boardParam, sinkParam, branchParam, inputParam, ctParam);
+        Expression<Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task>> lambda = Expression.Lambda<Func<Board, IOrchestratorSink, string?, object, CancellationToken, Task>>(contCall, boardParam, sinkParam, branchParam, inputParam, ctParam);
         return lambda.Compile();
     }
 }

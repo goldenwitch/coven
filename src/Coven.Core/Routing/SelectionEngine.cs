@@ -6,47 +6,70 @@ namespace Coven.Core.Routing;
 // Small helper to centralize candidate filtering + strategy selection for a single step.
 internal sealed class SelectionEngine
 {
-    private readonly IReadOnlyList<RegisteredBlock> registry;
-    private readonly ISelectionStrategy strategy;
+    private readonly IReadOnlyList<RegisteredBlock> _registry;
+    private readonly ISelectionStrategy _strategy;
 
     internal SelectionEngine(IReadOnlyList<RegisteredBlock> registry, ISelectionStrategy strategy)
     {
-        this.registry = registry;
-        this.strategy = strategy;
+        _registry = registry;
+        _strategy = strategy;
     }
 
     internal RegisteredBlock? SelectNext(object currentValue, IReadOnlyCollection<object>? fence, int lastIndex, bool forwardOnly)
     {
-        var forward = new List<RegisteredBlock>();
-        for (int i = 0; i < registry.Count; i++)
+        List<RegisteredBlock> forward = [];
+        for (int i = 0; i < _registry.Count; i++)
         {
-            var c = registry[i];
-            if (forwardOnly && c.RegistryIndex <= lastIndex) continue;
-            if (!c.InputType.IsInstanceOfType(currentValue)) continue;
-            if (fence is not null && !fence.Contains(c.Descriptor.BlockInstance)) continue;
+            RegisteredBlock c = _registry[i];
+            if (forwardOnly && c.RegistryIndex <= lastIndex)
+            {
+                continue;
+            }
+
+
+            if (!c.InputType.IsInstanceOfType(currentValue))
+            {
+                continue;
+            }
+
+
+            if (fence is not null && !fence.Contains(c.Descriptor.BlockInstance))
+            {
+                continue;
+            }
+
+
             forward.Add(c);
         }
 
-        if (forward.Count == 0) return null;
+        if (forward.Count == 0)
+        {
+            return null;
+        }
 
         // Project to public-facing candidates for the strategy
-        var projected = new List<SelectionCandidate>(forward.Count);
+
+        List<SelectionCandidate> projected = new(forward.Count);
         for (int i = 0; i < forward.Count; i++)
         {
-            var rb = forward[i];
+            RegisteredBlock rb = forward[i];
             projected.Add(new SelectionCandidate(
                 rb.RegistryIndex,
                 rb.InputType,
                 rb.OutputType,
                 rb.BlockTypeName,
-                rb.Capabilities is IReadOnlyCollection<string> rc ? rc : new List<string>(rb.Capabilities)
+                rb.Capabilities is IReadOnlyCollection<string> rc ? rc : [.. rb.Capabilities]
             ));
         }
-        var chosen = strategy.SelectNext(projected);
+        SelectionCandidate chosen = _strategy.SelectNext(projected);
         // Map back by registry index
         for (int i = 0; i < forward.Count; i++)
         {
-            if (forward[i].RegistryIndex == chosen.RegistryIndex) return forward[i];
+            if (forward[i].RegistryIndex == chosen.RegistryIndex)
+            {
+                return forward[i];
+            }
+
         }
         throw new InvalidOperationException("SelectionStrategy returned an unknown candidate (registry index not in forward set).");
     }

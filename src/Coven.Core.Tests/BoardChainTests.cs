@@ -1,67 +1,65 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
 using System.Diagnostics;
-using Coven.Core;
-using Coven.Core.Builder;
-using Coven.Core.Di;
-using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tests.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
 
 public class BoardChainTests
 {
-
-    
-
     [Fact]
-    public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
+    public async Task PostWorkComposesChainDefaultsToNextRegistered()
     {
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<object, int>(sp => new ObjectToIntBlock(999));
-            c.AddBlock<string, int, StringLengthBlock>();
-            c.AddBlock<int, double, IntToDoubleBlock>();
-            c.Done();
+            _ = c.AddBlock(sp => new ObjectToIntBlock(999))
+            .AddBlock<string, int, StringLengthBlock>()
+            .AddBlock<int, double, IntToDoubleBlock>()
+            .Done();
         });
 
-        var result = await host.Coven.Ritual<string, double>("abcd");
+        double result = await host.Coven.Ritual<string, double>("abcd");
         // Expect generic first (999) -> 999d, proving order preference.
         Assert.Equal(999d, result);
     }
 
     [Fact]
-    public async Task PostWork_DirectAssignable_ReturnsInput()
+    public async Task PostWorkDirectAssignableReturnsInput()
     {
-        using var host = TestBed.BuildPush(c => c.Done());
-        var result = await host.Coven.Ritual<string, object>("hello");
+        using TestHost host = TestBed.BuildPush(c => c.Done());
+        // With empty registry, no precompiled pipelines
+        Board board0 = Assert.IsType<Board>(host.Services.GetRequiredService<IBoard>());
+        Assert.Equal(0, board0.Status.CompiledPipelinesCount);
+        object result = await host.Coven.Ritual<string, object>("hello");
         Assert.Equal("hello", result);
     }
 
     [Fact]
-    public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
+    public async Task PostWorkEmptyRegistryNotAssignableThrows()
     {
-        using var host = TestBed.BuildPush(c => c.Done());
+        using TestHost host = TestBed.BuildPush(c => c.Done());
+        // No entries -> no precompiled pipelines
+        Board board = Assert.IsType<Board>(host.Services.GetRequiredService<IBoard>());
+        Assert.Equal(0, board.Status.CompiledPipelinesCount);
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("hello"));
     }
 
     [Fact]
-    public async Task PostWork_NoChain_Throws()
+    public async Task PostWorkNoChainThrows()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, StringLengthBlock>();
-            c.Done();
+            _ = c.AddBlock<string, int, StringLengthBlock>()
+                .Done();
         });
+        // With one block, some pipelines should be precompiled
+        Board board1 = Assert.IsType<Board>(host.Services.GetRequiredService<IBoard>());
+        Assert.True(board1.Status.CompiledPipelinesCount > 0);
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, double>("abcd"));
     }
-
-    
 
     private sealed class StringLengthBlock : IMagikBlock<string, int>
     {
@@ -73,51 +71,49 @@ public class BoardChainTests
         public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
-    private sealed class ObjectToIntBlock : IMagikBlock<object, int>
+    private sealed class ObjectToIntBlock(int value) : IMagikBlock<object, int>
     {
-        private readonly int value;
-        public ObjectToIntBlock(int value) { this.value = value; }
         public Task<int> DoMagik(object input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 
     [Fact]
-    public async Task PostWork_Composes_AsyncBlocks_PropagatesAwait()
+    public async Task PostWorkComposesAsyncBlocksPropagatesAwait()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, AsyncStringLengthBlock>();
-            c.AddBlock<int, double, AsyncIntToDoubleAddOne>();
-            c.Done();
+            _ = c.AddBlock<string, int, AsyncStringLengthBlock>()
+                .AddBlock<int, double, AsyncIntToDoubleAddOne>()
+                .Done();
         });
-        var result = await host.Coven.Ritual<string, double>("abcd");
+        double result = await host.Coven.Ritual<string, double>("abcd");
         Assert.Equal(5d, result);
     }
 
     [Fact]
-    public async Task PostWork_FinalSubtype_IsMappedToRequestedBase()
+    public async Task PostWorkFinalSubtypeIsMappedToRequestedBase()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, StringLengthBlock>();
-            c.AddBlock<int, BaseAnimal, IntToDogBlock>();
-            c.Done();
+            _ = c.AddBlock<string, int, StringLengthBlock>()
+                .AddBlock<int, BaseAnimal, IntToDogBlock>()
+                .Done();
         });
         BaseAnimal result = await host.Coven.Ritual<string, BaseAnimal>("abc");
         Assert.IsType<Dog>(result);
     }
 
     [Fact]
-    public async Task PostWork_Awaits_AsyncDelays_BeforeCompletion()
+    public async Task PostWorkAwaitsAsyncDelaysBeforeCompletion()
     {
-        var sw = Stopwatch.StartNew();
-        using var host = TestBed.BuildPush(c =>
+        Stopwatch sw = Stopwatch.StartNew();
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int>(sp => new AsyncDelayThenLength(50));
-            c.AddBlock<int, double>(sp => new AsyncDelayThenToDouble(50));
-            c.Done();
+            _ = c.AddBlock(sp => new AsyncDelayThenLength(50))
+            .AddBlock(sp => new AsyncDelayThenToDouble(50))
+            .Done();
         });
 
-        var result = await host.Coven.Ritual<string, double>("abcd");
+        double result = await host.Coven.Ritual<string, double>("abcd");
         sw.Stop();
 
         Assert.Equal(4d, result); // length 4 then cast to double
@@ -125,26 +121,26 @@ public class BoardChainTests
     }
 
     [Fact]
-    public async Task PostWork_TieBreaksByRegistrationOrder_WhenSpecificityEqual()
+    public async Task PostWorkTieBreaksByRegistrationOrderWhenSpecificityEqual()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int>(sp => new ReturnConstInt(1));
-            c.AddBlock<string, int>(sp => new ReturnConstInt(2));
-            c.AddBlock<int, double, IntToDoubleBlock>();
-            c.Done();
+            _ = c.AddBlock(sp => new ReturnConstInt(1))
+            .AddBlock(sp => new ReturnConstInt(2))
+            .AddBlock<int, double, IntToDoubleBlock>()
+            .Done();
         });
-        var result = await host.Coven.Ritual<string, double>("ignored");
+        double result = await host.Coven.Ritual<string, double>("ignored");
         Assert.Equal(1d, result);
     }
 
     [Fact]
-    public async Task PostWork_PropagatesBlockException()
+    public async Task PostWorkPropagatesBlockException()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, ThrowingBlock>();
-            c.Done();
+            _ = c.AddBlock<string, int, ThrowingBlock>()
+                .Done();
         });
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("x"));
     }
@@ -168,10 +164,8 @@ public class BoardChainTests
         }
     }
 
-    private sealed class AsyncDelayThenLength : IMagikBlock<string, int>
+    private sealed class AsyncDelayThenLength(int delayMs) : IMagikBlock<string, int>
     {
-        private readonly int delayMs;
-        public AsyncDelayThenLength(int delayMs) { this.delayMs = delayMs; }
         public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
         {
             await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
@@ -179,14 +173,12 @@ public class BoardChainTests
         }
     }
 
-    private sealed class AsyncDelayThenToDouble : IMagikBlock<int, double>
+    private sealed class AsyncDelayThenToDouble(int delayMs) : IMagikBlock<int, double>
     {
-        private readonly int delayMs;
-        public AsyncDelayThenToDouble(int delayMs) { this.delayMs = delayMs; }
         public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
         {
             await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
-            return (double)input;
+            return input;
         }
     }
 
@@ -199,10 +191,8 @@ public class BoardChainTests
         public Task<BaseAnimal> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult<BaseAnimal>(new Dog { From = input });
     }
 
-    private sealed class ReturnConstInt : IMagikBlock<string, int>
+    private sealed class ReturnConstInt(int value) : IMagikBlock<string, int>
     {
-        private readonly int value;
-        public ReturnConstInt(int value) { this.value = value; }
         public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 

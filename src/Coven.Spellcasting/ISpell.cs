@@ -9,14 +9,14 @@ namespace Coven.Spellcasting;
 /// </summary>
 public interface ISpell<TIn, TOut> : ISpell
 {
-    public new SpellDefinition Definition
+    new SpellDefinition Definition
     {
-        get => new SpellDefinition(
+        get => new(
             SchemaGen.GetFriendlyName(typeof(TIn)),
             SchemaGen.GenerateSchema(typeof(TIn)),
             SchemaGen.GenerateSchema(typeof(TOut)));
     }
-    public Task<TOut> CastSpell(TIn Input);
+    Task<TOut> CastSpell(TIn Input);
 }
 
 /// <summary>
@@ -25,13 +25,13 @@ public interface ISpell<TIn, TOut> : ISpell
 /// </summary>
 public interface ISpell<TIn> : ISpell
 {
-    public new SpellDefinition Definition
+    new SpellDefinition Definition
     {
-        get => new SpellDefinition(
+        get => new(
             SchemaGen.GetFriendlyName(typeof(TIn)),
             SchemaGen.GenerateSchema(typeof(TIn)));
     }
-    public Task CastSpell(TIn Input);
+    Task CastSpell(TIn Input);
 }
 
 
@@ -41,9 +41,9 @@ public interface ISpell<TIn> : ISpell
 /// </summary>
 public interface ISpell
 {
-    public SpellDefinition Definition
+    SpellDefinition Definition
     {
-        get => new SpellDefinition(SchemaGen.GetFriendlyName(GetType()));
+        get => new(SchemaGen.GetFriendlyName(GetType()));
     }
-    public Task CastSpell();
+    Task CastSpell();
 }

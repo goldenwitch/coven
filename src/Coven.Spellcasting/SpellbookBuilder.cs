@@ -4,12 +4,12 @@ namespace Coven.Spellcasting;
 
 public sealed class SpellbookBuilder
 {
-    private readonly List<SpellDefinition> _definitions = new();
-    private readonly List<object> _spells = new();
+    private readonly List<SpellDefinition> _definitions = [];
+    private readonly List<object> _spells = [];
 
     public SpellbookBuilder AddSpell(ISpell spell)
     {
-        if (spell is null) throw new ArgumentNullException(nameof(spell));
+        ArgumentNullException.ThrowIfNull(spell);
         _spells.Add(spell);
         _definitions.Add(spell.Definition);
         return this;
@@ -17,7 +17,7 @@ public sealed class SpellbookBuilder
 
     public SpellbookBuilder AddSpell<TIn>(ISpell<TIn> spell)
     {
-        if (spell is null) throw new ArgumentNullException(nameof(spell));
+        ArgumentNullException.ThrowIfNull(spell);
         _spells.Add(spell);
         _definitions.Add(spell.Definition);
         return this;
@@ -25,7 +25,7 @@ public sealed class SpellbookBuilder
 
     public SpellbookBuilder AddSpell<TIn, TOut>(ISpell<TIn, TOut> spell)
     {
-        if (spell is null) throw new ArgumentNullException(nameof(spell));
+        ArgumentNullException.ThrowIfNull(spell);
         _spells.Add(spell);
         _definitions.Add(spell.Definition);
         return this;

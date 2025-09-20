@@ -1,6 +1,60 @@
 # Root editorconfig for Coven
 root = true
 
-[*.cs]
-dotnet_diagnostic.COV002.severity = warning
+# Analyzer severity baseline
+[*.{cs,vb}]
+dotnet_analyzer_diagnostic.severity = warning
 
+# 1) Unnecessary usings
+dotnet_diagnostic.IDE0005.severity = error
+
+# 2) Simplify names (prefer usings/aliases over FQNs)
+dotnet_diagnostic.IDE0001.severity = error
+
+# 3) No var
+csharp_style_var_for_built_in_types = false:error
+csharp_style_var_when_type_is_apparent = false:error
+csharp_style_var_elsewhere = false:error
+dotnet_diagnostic.IDE0008.severity = error
+
+# 4) Target-typed new
+csharp_style_implicit_object_creation_when_type_is_apparent = true:error
+dotnet_diagnostic.IDE0090.severity = error
+
+# 5) Public naming (PascalCase)
+dotnet_naming_rule.public_members_must_be_pascal.severity = error
+dotnet_naming_rule.public_members_must_be_pascal.symbols  = public_members
+dotnet_naming_rule.public_members_must_be_pascal.style    = pascal_case
+dotnet_naming_symbols.public_members.applicable_accessibilities = public, protected, protected_internal
+dotnet_naming_symbols.public_members.applicable_kinds = property, method, field, event, delegate
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# 6) Readonly field naming (e.g., _camelCase; tweak to taste)
+dotnet_naming_rule.readonly_fields_underscore.severity = error
+dotnet_naming_rule.readonly_fields_underscore.symbols  = readonly_fields
+dotnet_naming_rule.readonly_fields_underscore.style    = underscore_camel
+dotnet_naming_symbols.readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.readonly_fields.required_modifiers = readonly
+dotnet_naming_style.underscore_camel.capitalization = camel_case
+dotnet_naming_style.underscore_camel.required_prefix = _
+
+# 8) Unused private members
+dotnet_diagnostic.IDE0051.severity = error
+
+# 10) File-scoped namespaces
+csharp_style_namespace_declarations = file_scoped:error
+dotnet_diagnostic.IDE0160.severity = error
+
+# 11) Using statements
+dotnet_diagnostic.IDE0063.severity = warning
+
+# 13) Async must await
+# (compiler) treat as error in your Directory.Build.props:
+# <WarningsAsErrors>CS1998</WarningsAsErrors>
+
+# Disabled list
+
+# 1) Expression value is never used (disabling because existing libraries produce a lot of _ )
+
+# IDE0058: Expression value is never used
+dotnet_diagnostic.IDE0058.severity = none

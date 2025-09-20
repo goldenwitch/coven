@@ -8,15 +8,15 @@ public static class HostApplicationBuilderExtensions
 {
     public static IHostApplicationBuilder BuildCoven(this IHostApplicationBuilder builder, Action<CovenServiceBuilder> build)
     {
-        if (builder is null) throw new ArgumentNullException(nameof(builder));
-        if (build is null) throw new ArgumentNullException(nameof(build));
+        ArgumentNullException.ThrowIfNull(builder);
+        ArgumentNullException.ThrowIfNull(build);
         builder.Services.BuildCoven(build);
         return builder;
     }
 
     public static CovenServiceBuilder BuildCoven(this IHostApplicationBuilder builder)
     {
-        if (builder is null) throw new ArgumentNullException(nameof(builder));
+        ArgumentNullException.ThrowIfNull(builder);
         return new CovenServiceBuilder(builder.Services);
     }
 }

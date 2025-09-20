@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Coven.Core.Di;
 using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
@@ -22,29 +18,27 @@ public class DiScopeLifecycleTests
         public static void Reset() { Created = 0; Disposed = 0; }
     }
 
-    private sealed class UsesTracker : IMagikBlock<string, string>
+    private sealed class UsesTracker(Tracker tracker) : IMagikBlock<string, string>
     {
-        private readonly Tracker tracker;
-        public UsesTracker(Tracker tracker) { this.tracker = tracker; }
         public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult($"{input}:{tracker.Id}");
     }
 
     [Fact]
-    public async Task Scoped_Dependency_Is_New_Per_Ritual_And_Disposed_After()
+    public async Task ScopedDependencyIsNewPerRitualAndDisposedAfter()
     {
         Tracker.Reset();
 
-        using var host = TestBed.BuildPush(
+        using TestHost host = TestBed.BuildPush(
             build: c =>
             {
-                c.AddBlock<string, string, UsesTracker>(ServiceLifetime.Transient);
-                c.Done();
+                _ = c.AddBlock<string, string, UsesTracker>(ServiceLifetime.Transient)
+                    .Done();
             },
             configureServices: s => s.AddScoped<Tracker>()
         );
 
-        var r1 = await host.Coven.Ritual<string, string>("x");
-        var r2 = await host.Coven.Ritual<string, string>("y");
+        string r1 = await host.Coven.Ritual<string, string>("x");
+        string r2 = await host.Coven.Ritual<string, string>("y");
 
         // Each ritual should get a new scoped Tracker
         Assert.NotEqual(r1.Split(':')[1], r2.Split(':')[1]);
@@ -56,22 +50,27 @@ public class DiScopeLifecycleTests
 
     private interface IMissing { }
 
-    private sealed class NeedsMissing : IMagikBlock<string, int>
+    private sealed class NeedsMissing(IMissing missing) : IMagikBlock<string, int>
     {
-        public NeedsMissing(IMissing missing) { }
-        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
+        private readonly IMissing _missing = missing;
+
+        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
+        {
+            _ = _missing is null; // read to satisfy analyzers; resolution fails earlier
+            return Task.FromResult(input.Length);
+        }
     }
 
     [Fact]
-    public async Task Missing_Dependency_Throws_Clear_Error()
+    public async Task MissingDependencyThrowsClearError()
     {
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, int, NeedsMissing>();
-            c.Done();
+            _ = c.AddBlock<string, int, NeedsMissing>()
+                .Done();
         });
 
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("abc"));
+        InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("abc"));
         Assert.Contains("Unable to resolve", ex.Message);
     }
 
@@ -86,16 +85,16 @@ public class DiScopeLifecycleTests
     }
 
     [Fact]
-    public async Task Transient_Block_Instance_Disposed_When_Scope_Ends()
+    public async Task TransientBlockInstanceDisposedWhenScopeEnds()
     {
         DisposableBlock.Reset();
-        using var host = TestBed.BuildPush(c =>
+        using TestHost host = TestBed.BuildPush(c =>
         {
-            c.AddBlock<string, string, DisposableBlock>(ServiceLifetime.Transient);
-            c.Done();
+            _ = c.AddBlock<string, string, DisposableBlock>(ServiceLifetime.Transient)
+                .Done();
         });
 
-        var _ = await host.Coven.Ritual<string, string>("z");
+        await host.Coven.Ritual<string, string>("z");
 
         Assert.Equal(1, DisposableBlock.Created);
         Assert.Equal(1, DisposableBlock.Disposed);
@@ -111,29 +110,27 @@ public class DiScopeLifecycleTests
         public static void Reset() { Created = 0; Disposed = 0; }
     }
 
-    private sealed class UsesSingleton : IMagikBlock<string, string>
+    private sealed class UsesSingleton(SingletonTracker tracker) : IMagikBlock<string, string>
     {
-        private readonly SingletonTracker tracker;
-        public UsesSingleton(SingletonTracker tracker) { this.tracker = tracker; }
         public Task<string> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult($"{input}:{tracker.Id}");
     }
 
     [Fact]
-    public async Task Singleton_Dependency_Is_Reused_Across_Rituals_And_Disposed_When_Provider_Disposes()
+    public async Task SingletonDependencyIsReusedAcrossRitualsAndDisposedWhenProviderDisposes()
     {
         SingletonTracker.Reset();
 
         string id1, id2;
-        using (var host = TestBed.BuildPush(
+        using (TestHost host = TestBed.BuildPush(
             build: c =>
             {
-                c.AddBlock<string, string, UsesSingleton>(ServiceLifetime.Transient);
-                c.Done();
+                _ = c.AddBlock<string, string, UsesSingleton>(ServiceLifetime.Transient)
+                    .Done();
             },
             configureServices: s => s.AddSingleton<SingletonTracker>()))
         {
-            var r1 = await host.Coven.Ritual<string, string>("one");
-            var r2 = await host.Coven.Ritual<string, string>("two");
+            string r1 = await host.Coven.Ritual<string, string>("one");
+            string r2 = await host.Coven.Ritual<string, string>("two");
             id1 = r1.Split(':')[1];
             id2 = r2.Split(':')[1];
             Assert.Equal(id1, id2); // same singleton instance id across rituals

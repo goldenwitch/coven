@@ -1,15 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-
 namespace Coven.Core.Tags;
 
 [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-internal sealed class TagCapabilitiesAttribute : Attribute
+internal sealed class TagCapabilitiesAttribute(params string[] tags) : Attribute
 {
-    public IReadOnlyCollection<string> Tags { get; }
-    public TagCapabilitiesAttribute(params string[] tags)
-    {
-        Tags = tags ?? Array.Empty<string>();
-    }
+    public IReadOnlyCollection<string> Tags { get; } = tags ?? [];
 }

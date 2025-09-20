@@ -11,9 +11,13 @@ internal static class SchemaGen
     public static string GetFriendlyName(Type type)
     {
         if (!type.IsGenericType)
-            return type.Name;
+        {
 
-        string name = type.Name.Substring(0, type.Name.IndexOf('`'));
+            return type.Name;
+        }
+
+
+        string name = type.Name[..type.Name.IndexOf('`')];
         string args = string.Join(", ", type.GetGenericArguments()
                                             .Select(GetFriendlyName));
         return $"{name}<{args}>";
@@ -33,10 +37,10 @@ internal static class SchemaGen
         Action<JsonSchemaExporterOptions>? configureExporter = null,
         bool writeIndented = true)
     {
-        var serializerOptions = new JsonSerializerOptions(JsonSerializerOptions.Default);
+        JsonSerializerOptions serializerOptions = new(JsonSerializerOptions.Default);
         configureSerializer?.Invoke(serializerOptions);
 
-        var exporterOptions = new JsonSchemaExporterOptions();
+        JsonSchemaExporterOptions exporterOptions = new();
         configureExporter?.Invoke(exporterOptions);
 
         JsonNode schemaNode = serializerOptions.GetJsonSchemaAsNode(type, exporterOptions);

@@ -5,56 +5,46 @@ using Microsoft.Extensions.Logging;
 
 namespace Coven.Core.Tests.Infrastructure;
 
-internal sealed class InMemoryLoggerProvider : ILoggerProvider, ISupportExternalScope
+internal sealed class InMemoryLoggerProvider : ILoggerProvider
 {
-    private IExternalScopeProvider? scopeProvider;
-    private readonly ConcurrentQueue<string> entries = new();
+    private readonly ConcurrentQueue<string> _entries = new();
     private bool disposed;
 
-    public IReadOnlyCollection<string> Entries => entries.ToArray();
+    public IReadOnlyCollection<string> Entries => [.. _entries];
 
     public ILogger CreateLogger(string categoryName)
     {
-        if (disposed) throw new ObjectDisposedException(nameof(InMemoryLoggerProvider));
-        return new InMemoryLogger(categoryName, this);
-    }
-
-    public void SetScopeProvider(IExternalScopeProvider scopeProvider)
-    {
-        this.scopeProvider = scopeProvider;
+        return disposed ? throw new ObjectDisposedException(nameof(InMemoryLoggerProvider)) : (ILogger)new InMemoryLogger(categoryName, this);
     }
 
     public void Dispose()
     {
         disposed = true;
-        while (entries.TryDequeue(out _)) { }
+        while (_entries.TryDequeue(out _)) { }
     }
 
-    private sealed class InMemoryLogger : ILogger
+    private sealed class InMemoryLogger(string category, InMemoryLoggerProvider owner) : ILogger
     {
-        private readonly string category;
-        private readonly InMemoryLoggerProvider owner;
 
-        public InMemoryLogger(string category, InMemoryLoggerProvider owner)
-        {
-            this.category = category;
-            this.owner = owner;
-        }
-
-        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope.Instance;
+        public IDisposable BeginScope<TState>(TState state) where TState : notnull => NullScope._instance;
         public bool IsEnabled(LogLevel logLevel) => true;
 
         public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
         {
-            var msg = formatter is not null ? formatter(state, exception) : state?.ToString() ?? string.Empty;
-            var line = $"[{logLevel}] {category} :: {msg}";
-            if (exception is not null) line += $" | ex={exception.GetType().Name}";
-            owner.entries.Enqueue(line);
+            string msg = formatter is not null ? formatter(state, exception) : state?.ToString() ?? string.Empty;
+            string line = $"[{logLevel}] {category} :: {msg}";
+            if (exception is not null)
+            {
+                line += $" | ex={exception.GetType().Name}";
+            }
+
+
+            owner._entries.Enqueue(line);
         }
 
         private sealed class NullScope : IDisposable
         {
-            public static readonly NullScope Instance = new();
+            public static readonly NullScope _instance = new();
             public void Dispose() { }
         }
     }

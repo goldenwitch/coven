@@ -2,16 +2,11 @@
 
 namespace Coven.Core;
 
-public class MagikBlock<T, TOutput> : IMagikBlock<T, TOutput>
+public class MagikBlock<T, TOutput>(Func<T, CancellationToken, Task<TOutput>> func) : IMagikBlock<T, TOutput>
 {
-    private readonly Func<T, CancellationToken, Task<TOutput>> Magik;
-    public MagikBlock(Func<T, CancellationToken, Task<TOutput>> func)
-    {
-        Magik = func;
-    }
 
     public async Task<TOutput> DoMagik(T input, CancellationToken cancellationToken = default)
     {
-        return await Magik(input, cancellationToken);
+        return await func(input, cancellationToken);
     }
 }

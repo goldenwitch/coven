@@ -4,46 +4,54 @@ namespace Coven.Core.Tags;
 
 internal sealed class BoardTagScope : ITagScope
 {
-    private readonly ISet<string> set;
-    private readonly List<(string Tag, int Epoch)> journal = new();
-    private readonly List<string> logs = new();
+    private readonly List<(string Tag, int Epoch)> _journal = [];
+    private readonly List<string> _logs = [];
 
-    internal int Epoch { get; private set; } = 0;
+    internal int Epoch { get; private set; }
+
 
     internal BoardTagScope(IEnumerable<string>? initial = null)
     {
-        set = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+        TagSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (initial is not null)
         {
-            foreach (var t in initial)
+            foreach (string t in initial)
             {
-                if (set.Add(t)) journal.Add((t, Epoch));
+                if (TagSet.Add(t))
+                {
+                    _journal.Add((t, Epoch));
+                }
+
             }
         }
     }
 
-    public ISet<string> Set => set;
+    public ISet<string> TagSet { get; }
 
     public void Add(string tag)
     {
-        if (set.Add(tag)) journal.Add((tag, Epoch));
+        if (TagSet.Add(tag))
+        {
+            _journal.Add((tag, Epoch));
+        }
+
     }
 
-    public bool Contains(string tag) => set.Contains(tag);
+    public bool Contains(string tag) => TagSet.Contains(tag);
 
-    public IEnumerable<string> Enumerate() => set;
+    public IEnumerable<string> Enumerate() => TagSet;
 
     internal void IncrementEpoch() => Epoch++;
 
     internal IReadOnlyList<string> GetCurrentEpochTags()
-        => journal.Count == 0
+        => _journal.Count == 0
             ? Array.Empty<string>()
-            : journal.Where(e => e.Epoch == Epoch)
+            : _journal.Where(e => e.Epoch == Epoch)
                      .Select(e => e.Tag)
                      .ToList();
 
     internal void AddLog(string message)
-        => logs.Add($"[e{Epoch}] {message}");
+        => _logs.Add($"[e{Epoch}] {message}");
 
-    internal IReadOnlyList<string> GetLogs() => logs;
+    internal IReadOnlyList<string> GetLogs() => _logs;
 }

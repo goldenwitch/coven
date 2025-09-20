@@ -1,10 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Threading.Tasks;
-using Coven.Core;
-using Coven.Core.Builder;
-using Coven.Core.Di;
-using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
@@ -18,29 +13,29 @@ public class PullCompletionAssessorTests
     }
 
     [Fact]
-    public async Task Pull_IsInitialComplete_True_Completes_Without_Steps()
+    public async Task PullIsInitialCompleteTrueCompletesWithoutSteps()
     {
-        var options = new PullOptions { ShouldComplete = _ => true };
-        using var host = TestBed.BuildPull(c =>
+        PullOptions options = new() { ShouldComplete = _ => true };
+        using TestHost host = TestBed.BuildPull(c =>
         {
             c.AddBlock<string, string, AppendRan>();
         }, options);
 
-        var result = await host.Coven.Ritual<string, string>("hello");
+        string result = await host.Coven.Ritual<string, string>("hello");
         Assert.Equal("hello", result); // no step executed
     }
 
     [Fact]
-    public async Task Pull_IsInitialComplete_False_Forces_At_Least_One_Step()
+    public async Task PullIsInitialCompleteFalseForcesAtLeastOneStep()
     {
         // Complete only after at least one step (when output contains the marker)
-        var options = new PullOptions { ShouldComplete = o => o is string s && s.Contains("|ran") };
-        using var host = TestBed.BuildPull(c =>
+        PullOptions options = new() { ShouldComplete = o => o is string s && s.Contains("|ran") };
+        using TestHost host = TestBed.BuildPull(c =>
         {
             c.AddBlock<string, string, AppendRan>();
         }, options);
 
-        var result = await host.Coven.Ritual<string, string>("hello");
+        string result = await host.Coven.Ritual<string, string>("hello");
         Assert.Equal("hello|ran", result); // step executed
     }
 }
