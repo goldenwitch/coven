@@ -3,7 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -27,10 +30,15 @@ public class PullBehaviorTests
     [Fact]
     public async Task Pull_DeclaredType_Drives_Finality_Not_Runtime()
     {
-        var coven = new MagikBuilder<Start, string>()
-            .MagikBlock(new ToObject())                           // Start -> object (runtime is string)
-            .MagikBlock<object, string>(new ObjectToStringPlus()) // object -> string (must still run)
-            .Done(pull: true);
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<Start, object, ToObject>();
+            c.AddBlock<object, string, ObjectToStringPlus>();
+            c.Done(pull: true);
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<Start, string>(new Start { Value = "x" });
         Assert.Equal("x|b2", result);

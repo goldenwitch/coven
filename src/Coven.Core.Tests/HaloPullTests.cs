@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Coven.Core;
-using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -45,20 +42,23 @@ public class HaloPullTests
     [Fact]
     public async Task Halo_Pull_EndToEnd_WithBuilderAndRitual()
     {
-        // Build Coven in Pull mode using the MagikBuilder
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new ParseAndTag())
-            .MagikBlock(new AddSalutation())
-            .MagikBlock(new UppercaseText(), new[] { "style:loud" })
-            .MagikBlock(new ToOut())
-            .Done(pull: true, pullOptions: new PullOptions
+        // Build Coven in Pull mode via DI
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, Doc, ParseAndTag>();
+            c.AddBlock<Doc, Doc, AddSalutation>();
+            c.AddBlock<Doc, Doc>(sp => new UppercaseText(), capabilities: new[] { "style:loud" });
+            c.AddBlock<Doc, string, ToOut>();
+            c.Done(pull: true, pullOptions: new PullOptions
             {
-                // Only consider the ritual complete upfront if the input already
-                // matches the intended final form (contains the salutation and is uppercase).
                 ShouldComplete = o => o is string s &&
                                          s.Contains("PRAISE THE SUN", StringComparison.OrdinalIgnoreCase) &&
                                          s == s.ToUpperInvariant()
             });
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var input = "hello coven!!! let's test tags";
         var output = await coven.Ritual<string, string>(input);

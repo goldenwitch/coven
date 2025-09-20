@@ -2,8 +2,11 @@
 
 using System;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
 using Coven.Core.Tags;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -41,19 +44,22 @@ public class CapabilitiesSanityTests
         // an extra capability tag only the stronger block supports.
         var incrementer = new Action(() => blockSteps++);
 
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new StringAppendBlock(incrementer))
-            .MagikBlock(new StringAppendBlock(incrementer))
-            .MagikBlock(new StringAppendBlock(incrementer))
-            .MagikBlock(new StringAppendBlock(incrementer))
-            .MagikBlock(new StringAppendBlock(incrementer))
-            .MagikBlock(new StringAppendBlock(incrementer), ["t1", "t2"])
-            .Done(true, new PullOptions
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
+            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer), capabilities: new[] { "t1", "t2" });
+            c.Done(pull: true, pullOptions: new PullOptions
             {
-                // Only consider the ritual complete upfront if the input already
-                // matches the intended final form (length of 4).
                 ShouldComplete = o => o is string s && s.Length >= 4
             });
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         string result = await coven.Ritual<string, string>("a");
         Assert.Equal(3, blockSteps);

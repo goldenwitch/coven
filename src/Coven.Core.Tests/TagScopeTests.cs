@@ -4,8 +4,11 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
+using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Core.Tests;
 
@@ -33,9 +36,14 @@ public class TagScopeTests
     [Fact]
     public async Task Tag_Methods_Available_WithinBoardScope()
     {
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new ProbeBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, string, ProbeBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         var result = await coven.Ritual<string, string>("ignored");
         Assert.Equal("ok", result);
     }

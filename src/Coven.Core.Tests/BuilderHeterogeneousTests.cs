@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -22,10 +25,15 @@ public class BuilderHeterogeneousTests
     public async Task Builder_Registers_HeterogeneousBlocks_AndExecutesChain()
     {
         // Desired builder call pattern: allow adding blocks with varying TIn/TOut types
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock(new StringToInt())
-            .MagikBlock(new IntToDouble())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, StringToInt>();
+            c.AddBlock<int, double, IntToDouble>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, double>("abcd");
         Assert.Equal(4d, result);
@@ -34,10 +42,15 @@ public class BuilderHeterogeneousTests
     [Fact]
     public async Task Builder_Registers_HeterogeneousFuncs_AndExecutesChain()
     {
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock((string s, CancellationToken ct) => Task.FromResult(s.Length))
-            .MagikBlock((int i, CancellationToken ct) => Task.FromResult((double)i + 0.5))
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddLambda<string, int>((s, ct) => Task.FromResult(s.Length));
+            c.AddLambda<int, double>((i, ct) => Task.FromResult((double)i + 0.5));
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, double>("abc");
         Assert.Equal(3.5d, result);

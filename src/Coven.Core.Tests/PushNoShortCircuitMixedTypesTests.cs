@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -13,14 +16,19 @@ public class PushNoShortCircuitMixedTypesTests
     {
         int finalRan = 0;
 
-        var coven = new MagikBuilder<string, string>()
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
             // Step 1: string -> int
-            .MagikBlock<string, int>((s, ct) => Task.FromResult(s.Length))
+            c.AddLambda<string, int>((s, ct) => Task.FromResult(s.Length));
             // Step 2: int -> string (now assignable to TOut)
-            .MagikBlock<int, string>((i, ct) => Task.FromResult($"len:{i}"))
+            c.AddLambda<int, string>((i, ct) => Task.FromResult($"len:{i}"));
             // Step 3: string -> string (should still run; no short-circuit)
-            .MagikBlock<string, string>((s, ct) => { finalRan++; return Task.FromResult(s + "|final"); })
-            .Done(); // push mode
+            c.AddLambda<string, string>((s, ct) => { finalRan++; return Task.FromResult(s + "|final"); });
+            c.Done(); // push mode
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, string>("abcd");
 

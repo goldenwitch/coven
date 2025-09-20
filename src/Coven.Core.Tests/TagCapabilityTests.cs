@@ -3,8 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -44,13 +47,18 @@ public class TagCapabilityTests
     {
         // Emit tags: a, b; expect B due to overlap=2.
         // Candidates: A supports {a}; B supports {a,b}; C supports {b}
-        var coven = new MagikBuilder<Counter, double>()
-            .MagikBlock(new TagEmit("a", "b")) // idx 0
-            .MagikBlock<Counter, Counter>(new CapBlock("A", "a")) // idx 1
-            .MagikBlock<Counter, Counter>(new CapBlock("B", "a", "b")) // idx 2
-            .MagikBlock<Counter, Counter>(new CapBlock("C", "b")) // idx 3
-            .MagikBlock<Counter, double>(new ToDouble()) // idx 4
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<Counter, Counter>(sp => new TagEmit("a", "b"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("A", "a"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("B", "a", "b"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("C", "b"));
+            c.AddBlock<Counter, double, ToDouble>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<Counter, double>(new Counter { Value = 7 });
         // Router should choose B (max overlap=2) as the next step after TagEmit
@@ -61,13 +69,18 @@ public class TagCapabilityTests
     public async Task Explicit_To_Overrides_Capability_Scoring()
     {
         // Even though B would be chosen by capability, we direct to C by index
-        var coven = new MagikBuilder<Counter, double>()
-            .MagikBlock(new TagEmit("x", "y")) // idx 0
-            .MagikBlock<Counter, Counter>(new CapBlock("A", "x")) // idx 1
-            .MagikBlock<Counter, Counter>(new CapBlock("B", "x", "y")) // idx 2
-            .MagikBlock<Counter, Counter>(new CapBlock("C", "y")) // idx 3
-            .MagikBlock<Counter, double>(new ToDouble()) // idx 4
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<Counter, Counter>(sp => new TagEmit("x", "y"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("A", "x"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("B", "x", "y"));
+            c.AddBlock<Counter, Counter>(sp => new CapBlock("C", "y"));
+            c.AddBlock<Counter, double, ToDouble>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<Counter, double>(new Counter { Value = 5 }, new List<string> { "to:#3" });
         Assert.Equal(5d, result);

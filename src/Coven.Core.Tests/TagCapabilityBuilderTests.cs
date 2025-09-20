@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -33,11 +36,16 @@ public class TagCapabilityBuilderTests
     {
         // Build: string->int (emits 'fast'), then two int->double candidates.
         // We assign capability 'fast' to A via builder; router should pick A.
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock(new EmitFast())
-            .MagikBlock<int, double>(new IntToDoubleA(), new[] { "fast" })
-            .MagikBlock<int, double>(new IntToDoubleB())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, EmitFast>();
+            c.AddBlock<int, double>(sp => new IntToDoubleA(), capabilities: new[] { "fast" });
+            c.AddBlock<int, double, IntToDoubleB>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, double>("abc");
         Assert.Equal(3d, result); // Chooses A due to capability match

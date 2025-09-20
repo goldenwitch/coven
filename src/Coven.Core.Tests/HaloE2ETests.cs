@@ -3,8 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -54,13 +57,18 @@ public class HaloE2ETests
     [Fact]
     public async Task Halo_EndToEnd_CapabilityRouting_UppercaseSalutation()
     {
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new ParseAndTag())                       // idx 0: string -> Doc (emits exclaim, style:loud)
-            .MagikBlock<Doc, Doc>(new AddSalutation())           // idx 1: Doc -> Doc (cap: exclaim)
-            .MagikBlock<Doc, Doc>(new UppercaseText(), new[] { "style:loud" }) // idx 2: Doc -> Doc (builder cap: loud)
-            .MagikBlock<Doc, string>(new ToOut())                // idx 3: Doc -> string (placed before Lowercase to stop)
-            .MagikBlock<Doc, Doc>(new LowercaseText())           // idx 4: Doc -> Doc (cap: quiet)
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, Doc, ParseAndTag>();
+            c.AddBlock<Doc, Doc, AddSalutation>();
+            c.AddBlock<Doc, Doc>(sp => new UppercaseText(), capabilities: new[] { "style:loud" });
+            c.AddBlock<Doc, string, ToOut>();
+            c.AddBlock<Doc, Doc, LowercaseText>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var input = "hello coven!!! let's test tags";
         var output = await coven.Ritual<string, string>(input);
@@ -74,13 +82,18 @@ public class HaloE2ETests
     [Fact]
     public async Task Halo_EndToEnd_ExplicitOverride_ToLowercase()
     {
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new ParseAndTag())                      // idx 0
-            .MagikBlock<Doc, Doc>(new AddSalutation())          // idx 1
-            .MagikBlock<Doc, Doc>(new UppercaseText(), new[] { "style:loud" }) // idx 2
-            .MagikBlock<Doc, Doc>(new LowercaseText())          // idx 3
-            .MagikBlock<Doc, string>(new ToOut())               // idx 4 (after lowercase to allow override path)
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, Doc, ParseAndTag>();
+            c.AddBlock<Doc, Doc, AddSalutation>();
+            c.AddBlock<Doc, Doc>(sp => new UppercaseText(), capabilities: new[] { "style:loud" });
+            c.AddBlock<Doc, Doc, LowercaseText>();
+            c.AddBlock<Doc, string, ToOut>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var input = "Hello Coven!!!";
         var output = await coven.Ritual<string, string>(input, new List<string> { "to:AddSalutation", "to:LowercaseText" });

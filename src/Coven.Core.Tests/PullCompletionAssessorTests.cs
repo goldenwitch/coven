@@ -3,6 +3,8 @@
 using System.Threading.Tasks;
 using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -19,9 +21,14 @@ public class PullCompletionAssessorTests
     {
         var options = new PullOptions { ShouldComplete = _ => true };
 
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new AppendRan())
-            .Done(pull: true, pullOptions: options);
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, string, AppendRan>();
+            c.Done(pull: true, pullOptions: options);
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, string>("hello");
         Assert.Equal("hello", result); // no step executed
@@ -33,9 +40,14 @@ public class PullCompletionAssessorTests
         // Complete only after at least one step (when output contains the marker)
         var options = new PullOptions { ShouldComplete = o => o is string s && s.Contains("|ran") };
 
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock(new AppendRan())
-            .Done(pull: true, pullOptions: options);
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, string, AppendRan>();
+            c.Done(pull: true, pullOptions: options);
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, string>("hello");
         Assert.Equal("hello|ran", result); // step executed

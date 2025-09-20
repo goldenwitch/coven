@@ -4,7 +4,7 @@ using Coven.Core.Routing;
 
 namespace Coven.Core.Builder;
 
-public class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
+internal class MagikBuilder<T, TOutput> : IMagikBuilder<T, TOutput>
 {
     private readonly List<MagikBlockDescriptor> registry = new();
     private ISelectionStrategy? selectionStrategy;

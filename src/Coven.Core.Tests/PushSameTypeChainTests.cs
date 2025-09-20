@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -13,11 +16,16 @@ public class PushSameTypeChainTests
     {
         int ran = 0;
 
-        var coven = new MagikBuilder<string, string>()
-            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); })
-            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); })
-            .MagikBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); })
-            .Done(); // push mode
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); });
+            c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); });
+            c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); });
+            c.Done(); // push mode
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, string>("hi");
 

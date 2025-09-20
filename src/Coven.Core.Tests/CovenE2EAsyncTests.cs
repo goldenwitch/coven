@@ -3,7 +3,10 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -13,10 +16,15 @@ public class CovenE2EAsyncTests
     [Fact]
     public async Task Ritual_Awaits_MultipleAsyncBlocks_EndToEnd()
     {
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock<string, int>(new AsyncDelayThenLength(40))
-            .MagikBlock<int, double>(new AsyncDelayThenToDouble(40))
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int>(sp => new AsyncDelayThenLength(40));
+            c.AddBlock<int, double>(sp => new AsyncDelayThenToDouble(40));
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var sw = Stopwatch.StartNew();
         var result = await coven.Ritual<string, double>("abcd");

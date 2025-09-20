@@ -4,7 +4,7 @@ using Coven.Core.Routing;
 
 namespace Coven.Core.Builder;
 
-public interface IMagikBuilder<T, TOutput>
+internal interface IMagikBuilder<T, TOutput>
 {
     // Allow callers to provide a custom routing strategy
     public IMagikBuilder<T, TOutput> UseSelectionStrategy(ISelectionStrategy strategy);

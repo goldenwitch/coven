@@ -3,8 +3,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Tags;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -49,13 +52,18 @@ public class TagIncrementTests
     public async Task Sequential_Default_NextByRegistrationOrder()
     {
         // Order: Inc -> IncAndSignalCopy2 -> Copy1 -> Copy2 -> ToDouble
-        var coven = new MagikBuilder<Counter, double>()
-            .MagikBlock(new Inc())                 // idx 0
-            .MagikBlock<Counter, Counter>(new IncAndSignalCopy2())   // idx 1
-            .MagikBlock<Counter, Counter>(new Copy1())               // idx 2
-            .MagikBlock<Counter, Counter>(new Copy2())               // idx 3
-            .MagikBlock<Counter, double>(new ToDouble())              // idx 4
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<Counter, Counter, Inc>();                 // idx 0
+            c.AddBlock<Counter, Counter, IncAndSignalCopy2>();   // idx 1
+            c.AddBlock<Counter, Counter, Copy1>();               // idx 2
+            c.AddBlock<Counter, Counter, Copy2>();               // idx 3
+            c.AddBlock<Counter, double, ToDouble>();              // idx 4
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<Counter, double>(new Counter { Value = 0 });
         // 0 -> 1 (Inc) -> 2 (IncAndSignalCopy2) emits tag to Copy2 -> Copy1 would be next by order, but tag points to Copy2
@@ -66,13 +74,18 @@ public class TagIncrementTests
     [Fact]
     public async Task Sequential_InitialTag_SkipsFirst_ToSpecificIndex()
     {
-        var coven = new MagikBuilder<Counter, double>()
-            .MagikBlock(new Inc())                 // idx 0
-            .MagikBlock<Counter, Counter>(new IncAndSignalCopy2())   // idx 1
-            .MagikBlock<Counter, Counter>(new Copy1())               // idx 2
-            .MagikBlock<Counter, Counter>(new Copy2())               // idx 3
-            .MagikBlock<Counter, double>(new ToDouble())              // idx 4
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<Counter, Counter, Inc>();                 // idx 0
+            c.AddBlock<Counter, Counter, IncAndSignalCopy2>();   // idx 1
+            c.AddBlock<Counter, Counter, Copy1>();               // idx 2
+            c.AddBlock<Counter, Counter, Copy2>();               // idx 3
+            c.AddBlock<Counter, double, ToDouble>();              // idx 4
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<Counter, double>(new Counter { Value = 0 }, new List<string> { "to:#1" });
         // Start at idx1 due to tag: 0 -> 1 (IncAndSignalCopy2, emits to:Copy2) -> Copy2 -> 1d

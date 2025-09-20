@@ -4,7 +4,10 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Di;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -18,11 +21,16 @@ public class BoardChainTests
     public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
     {
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock<object, int>(new ObjectToIntBlock(999))
-            .MagikBlock<string, int>(new StringLengthBlock())
-            .MagikBlock<int, double>(new IntToDoubleBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<object, int>(sp => new ObjectToIntBlock(999));
+            c.AddBlock<string, int, StringLengthBlock>();
+            c.AddBlock<int, double, IntToDoubleBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
 
         var result = await coven.Ritual<string, double>("abcd");
         // Expect generic first (999) -> 999d, proving order preference.
@@ -32,8 +40,10 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_DirectAssignable_ReturnsInput()
     {
-        var coven = new MagikBuilder<string, object>()
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c => c.Done());
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         var result = await coven.Ritual<string, object>("hello");
         Assert.Equal("hello", result);
     }
@@ -41,17 +51,24 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
     {
-        var coven = new MagikBuilder<string, int>()
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c => c.Done());
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, int>("hello"));
     }
 
     [Fact]
     public async Task PostWork_NoChain_Throws()
     {
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock<string, int>(new StringLengthBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, StringLengthBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, double>("abcd"));
     }
 
@@ -77,10 +94,15 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_Composes_AsyncBlocks_PropagatesAwait()
     {
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock<string, int>(new AsyncStringLengthBlock())
-            .MagikBlock<int, double>(new AsyncIntToDoubleAddOne())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, AsyncStringLengthBlock>();
+            c.AddBlock<int, double, AsyncIntToDoubleAddOne>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         var result = await coven.Ritual<string, double>("abcd");
         Assert.Equal(5d, result);
     }
@@ -88,10 +110,15 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_FinalSubtype_IsMappedToRequestedBase()
     {
-        var coven = new MagikBuilder<string, BaseAnimal>()
-            .MagikBlock<string, int>(new StringLengthBlock())
-            .MagikBlock<int, BaseAnimal>(new IntToDogBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, StringLengthBlock>();
+            c.AddBlock<int, BaseAnimal, IntToDogBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         BaseAnimal result = await coven.Ritual<string, BaseAnimal>("abc");
         Assert.IsType<Dog>(result);
     }
@@ -100,10 +127,15 @@ public class BoardChainTests
     public async Task PostWork_Awaits_AsyncDelays_BeforeCompletion()
     {
         var sw = Stopwatch.StartNew();
-        var covenDelay = new MagikBuilder<string, double>()
-            .MagikBlock<string, int>(new AsyncDelayThenLength(50))
-            .MagikBlock<int, double>(new AsyncDelayThenToDouble(50))
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int>(sp => new AsyncDelayThenLength(50));
+            c.AddBlock<int, double>(sp => new AsyncDelayThenToDouble(50));
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var covenDelay = sp.GetRequiredService<ICoven>();
 
         var result = await covenDelay.Ritual<string, double>("abcd");
         sw.Stop();
@@ -115,11 +147,16 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_TieBreaksByRegistrationOrder_WhenSpecificityEqual()
     {
-        var coven = new MagikBuilder<string, double>()
-            .MagikBlock<string, int>(new ReturnConstInt(1))
-            .MagikBlock<string, int>(new ReturnConstInt(2))
-            .MagikBlock<int, double>(new IntToDoubleBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int>(sp => new ReturnConstInt(1));
+            c.AddBlock<string, int>(sp => new ReturnConstInt(2));
+            c.AddBlock<int, double, IntToDoubleBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var coven = sp.GetRequiredService<ICoven>();
         var result = await coven.Ritual<string, double>("ignored");
         Assert.Equal(1d, result);
     }
@@ -127,9 +164,14 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_PropagatesBlockException()
     {
-        var covenFail = new MagikBuilder<string, int>()
-            .MagikBlock<string, int>(new ThrowingBlock())
-            .Done();
+        var services = new ServiceCollection();
+        services.BuildCoven(c =>
+        {
+            c.AddBlock<string, int, ThrowingBlock>();
+            c.Done();
+        });
+        using var sp = services.BuildServiceProvider();
+        var covenFail = sp.GetRequiredService<ICoven>();
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await covenFail.Ritual<string, int>("x"));
     }
 
