@@ -120,26 +120,7 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
-    public IServiceCollection Done()
-    {
-        if (finalized)
-        {
-            return _services; // idempotent
-        }
-
-
-        finalized = true;
-
-        Board board = _registry.BuildBoard(pull: false, pullOptions: null);
-        _services.AddSingleton<IBoard>(_ => board);
-        _services.AddSingleton<ICoven>(sp => new Coven(board, sp));
-        return _services;
-    }
-
-
-
-
-    public IServiceCollection Done(bool pull, PullOptions? pullOptions = null)
+    public IServiceCollection Done(bool pull = false, PullOptions? pullOptions = null)
     {
         if (finalized)
         {

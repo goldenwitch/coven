@@ -4,7 +4,7 @@ using Coven.Core.Routing;
 
 namespace Coven.Core.Builder;
 
-// Shared registry used by both MagikBuilder and the DI builder
+// Shared registry used by the DI builder
 internal sealed class MagikRegistry
 {
     private readonly List<MagikBlockDescriptor> _registry = [];
@@ -29,4 +29,3 @@ internal sealed class MagikRegistry
         return new Board(mode, Snapshot(), pullOptions: pullOptions, selectionStrategy: _selectionStrategy);
     }
 }
-
