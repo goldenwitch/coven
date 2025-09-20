@@ -14,9 +14,9 @@ public class TagCapabilityBuilderTests
         // We assign capability 'fast' to A via builder; router should pick A.
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, EmitFastBlock>()
-                .AddBlock(sp => new IntToDoubleBlock(), capabilities: ["fast"])
-                .AddBlock(sp => new IntToDoubleAddBlock(1000))
+            _ = c.MagikBlock<string, int, EmitFastBlock>()
+                .MagikBlock(sp => new IntToDoubleBlock(), capabilities: ["fast"])
+                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
                 .Done();
         });
 

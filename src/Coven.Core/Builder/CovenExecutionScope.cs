@@ -2,7 +2,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Coven.Core.Di;
+namespace Coven.Core.Builder;
 
 // Ambient access to the current ritual's IServiceProvider. Scoped per ritual via AsyncLocal.
 internal static class CovenExecutionScope

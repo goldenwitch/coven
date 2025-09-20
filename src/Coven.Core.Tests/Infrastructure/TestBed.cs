@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Microsoft.Extensions.DependencyInjection;
-using Coven.Core.Di;
+using Coven.Core.Builder;
 
 namespace Coven.Core.Tests.Infrastructure;
 

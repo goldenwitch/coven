@@ -14,8 +14,8 @@ public class PullBehaviorTests
     {
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock<Start, object, ToObjectBlock>()
-             .AddBlock<object, string, ObjectToStringPlus>();
+            c.MagikBlock<Start, object, ToObjectBlock>()
+             .MagikBlock<object, string, ObjectToStringPlus>();
         });
 
         string result = await host.Coven.Ritual<Start, string>(new Start { Value = "x" });

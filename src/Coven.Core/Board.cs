@@ -7,6 +7,7 @@ using Coven.Core.Logging;
 using Coven.Core.Routing;
 using Coven.Core.Tags;
 using Coven.Core.Activation;
+using Coven.Core.Builder;
 
 namespace Coven.Core;
 
@@ -72,7 +73,7 @@ public class Board : IBoard
             IDisposable? ritualScope = null;
             try
             {
-                IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+                IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
                 ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
                 logger = lf?.CreateLogger("Coven.Ritual.Pull");
                 string rid = Guid.NewGuid().ToString("N");
@@ -175,7 +176,7 @@ public class Board : IBoard
             cur.InvokePull = async (board, sink, branchId, input, cancellationToken) =>
             {
                 Dictionary<int, object> cache = [];
-                IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+                IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
                 object instance = cur.Activator.GetInstance(sp, cache, cur);
                 object result = await cur.Invoke(instance, input, cancellationToken).ConfigureAwait(false);
                 _ = finalizeClosed.Invoke(board, [sink, result, branchId, cur.BlockTypeName, cur.ForwardNextTags]);
@@ -319,7 +320,7 @@ public class Board : IBoard
         _pullBranchTags[bid] = persisted;
         try
         {
-            IServiceProvider? sp = Di.CovenExecutionScope.CurrentProvider;
+            IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
             ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
             ILogger? logger = lf?.CreateLogger("Coven.Ritual.Pull");
             if (logger is not null && logger.IsEnabled(LogLevel.Information))

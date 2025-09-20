@@ -15,9 +15,9 @@ public class BoardChainTests
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock(sp => new ObjectToIntBlock(999))
-            .AddBlock<string, int, StringLengthBlock>()
-            .AddBlock<int, double, IntToDoubleBlock>()
+            _ = c.MagikBlock(sp => new ObjectToIntBlock(999))
+            .MagikBlock<string, int, StringLengthBlock>()
+            .MagikBlock<int, double, IntToDoubleBlock>()
             .Done();
         });
 
@@ -52,7 +52,7 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, StringLengthBlock>()
+            _ = c.MagikBlock<string, int, StringLengthBlock>()
                 .Done();
         });
         // With one block, some pipelines should be precompiled
@@ -81,8 +81,8 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, AsyncStringLengthBlock>()
-                .AddBlock<int, double, AsyncIntToDoubleAddOne>()
+            _ = c.MagikBlock<string, int, AsyncStringLengthBlock>()
+                .MagikBlock<int, double, AsyncIntToDoubleAddOne>()
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
@@ -94,8 +94,8 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, StringLengthBlock>()
-                .AddBlock<int, BaseAnimal, IntToDogBlock>()
+            _ = c.MagikBlock<string, int, StringLengthBlock>()
+                .MagikBlock<int, BaseAnimal, IntToDogBlock>()
                 .Done();
         });
         BaseAnimal result = await host.Coven.Ritual<string, BaseAnimal>("abc");
@@ -108,8 +108,8 @@ public class BoardChainTests
         Stopwatch sw = Stopwatch.StartNew();
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock(sp => new AsyncDelayThenLength(50))
-            .AddBlock(sp => new AsyncDelayThenToDouble(50))
+            _ = c.MagikBlock(sp => new AsyncDelayThenLength(50))
+            .MagikBlock(sp => new AsyncDelayThenToDouble(50))
             .Done();
         });
 
@@ -125,9 +125,9 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock(sp => new ReturnConstInt(1))
-            .AddBlock(sp => new ReturnConstInt(2))
-            .AddBlock<int, double, IntToDoubleBlock>()
+            _ = c.MagikBlock(sp => new ReturnConstInt(1))
+            .MagikBlock(sp => new ReturnConstInt(2))
+            .MagikBlock<int, double, IntToDoubleBlock>()
             .Done();
         });
         double result = await host.Coven.Ritual<string, double>("ignored");
@@ -139,7 +139,7 @@ public class BoardChainTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, ThrowingBlock>()
+            _ = c.MagikBlock<string, int, ThrowingBlock>()
                 .Done();
         });
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("x"));

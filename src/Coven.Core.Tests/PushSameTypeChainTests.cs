@@ -14,9 +14,9 @@ public class PushSameTypeChainTests
 
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); })
-                .AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); })
-                .AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); })
+            _ = c.LambdaBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); })
+                .LambdaBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); })
+                .LambdaBlock<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); })
                 .Done();
         });
 

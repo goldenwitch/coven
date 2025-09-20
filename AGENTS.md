@@ -8,6 +8,8 @@ Use these patterns to explore the repo efficiently within the CLI constraints. A
 - Output limit: Command output truncates at ~10 KB or 256 lines per command. Use chunking patterns below to page through results.
 - Update policy: The only command allowed for writing files is `apply_patch`.
 
+Commands available through bash.
+
 ## Search (grep)
 - Filter by extension: Always restrict recursive greps.
   - Pattern: `grep -R --include=*.EXT --exclude-dir=bin --exclude-dir=obj -n 'PATTERN' PATH`

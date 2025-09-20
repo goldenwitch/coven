@@ -17,9 +17,9 @@ public class BreadcrumbLoggingTests(ITestOutputHelper output)
         using TestHost host = TestBed.BuildPush(
             build: c =>
             {
-                _ = c.AddBlock<string, int, StringLengthBlock>(ServiceLifetime.Transient, capabilities: ["calc:length"])
-                    .AddBlock<string, int, StringHashBlock>(ServiceLifetime.Transient, capabilities: ["calc:hash"])
-                    .AddBlock<int, double, IntToDoubleBlock>(ServiceLifetime.Transient)
+                _ = c.MagikBlock<string, int, StringLengthBlock>(ServiceLifetime.Transient, capabilities: ["calc:length"])
+                    .MagikBlock<string, int, StringHashBlock>(ServiceLifetime.Transient, capabilities: ["calc:hash"])
+                    .MagikBlock<int, double, IntToDoubleBlock>(ServiceLifetime.Transient)
                     .Done();
             },
             configureServices: s => s.AddLogging(b => b.AddProvider(provider))

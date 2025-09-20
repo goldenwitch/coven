@@ -14,9 +14,9 @@ public class PushNoShortCircuitMixedTypesTests
 
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddLambda<string, int>((s, ct) => Task.FromResult(s.Length))
-                .AddLambda<int, string>((i, ct) => Task.FromResult($"len:{i}"))
-                .AddLambda<string, string>((s, ct) => { finalRan++; return Task.FromResult(s + "|final"); })
+            _ = c.LambdaBlock<string, int>((s, ct) => Task.FromResult(s.Length))
+                .LambdaBlock<int, string>((i, ct) => Task.FromResult($"len:{i}"))
+                .LambdaBlock<string, string>((s, ct) => { finalRan++; return Task.FromResult(s + "|final"); })
                 .Done();
         });
 

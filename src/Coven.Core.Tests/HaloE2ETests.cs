@@ -12,11 +12,11 @@ public class HaloE2ETests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, Doc, ParseAndTag>()
-                .AddBlock<Doc, Doc, AddSalutation>(capabilities: ["exclaim"])
-                .AddBlock(sp => new UppercaseText(), capabilities: ["style:loud"])
-                .AddBlock<Doc, string, DocToOut>()
-                .AddBlock<Doc, Doc, LowercaseText>(capabilities: ["style:quiet"])
+            _ = c.MagikBlock<string, Doc, ParseAndTag>()
+                .MagikBlock<Doc, Doc, AddSalutation>(capabilities: ["exclaim"])
+                .MagikBlock(sp => new UppercaseText(), capabilities: ["style:loud"])
+                .MagikBlock<Doc, string, DocToOut>()
+                .MagikBlock<Doc, Doc, LowercaseText>(capabilities: ["style:quiet"])
                 .Done();
         });
 

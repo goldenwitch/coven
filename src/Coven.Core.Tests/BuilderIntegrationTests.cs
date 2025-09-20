@@ -14,7 +14,7 @@ public class BuilderIntegrationTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, StringLengthBlock>()
+            _ = c.MagikBlock<string, int, StringLengthBlock>()
                 .Done();
         });
 
@@ -53,9 +53,9 @@ public class BuilderIntegrationTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, StringToInt>()
-                .AddBlock<int, double, IntToDoubleA>()
-                .AddBlock<int, double, IntToDoubleB>()
+            _ = c.MagikBlock<string, int, StringToInt>()
+                .MagikBlock<int, double, IntToDoubleA>()
+                .MagikBlock<int, double, IntToDoubleB>()
                 .Done();
         });
 
@@ -68,9 +68,9 @@ public class BuilderIntegrationTests
     {
         using TestHost host1 = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, EmitFast>()
-                .AddBlock(sp => new IntToDoubleA(), capabilities: ["fast"])
-                .AddBlock<int, double, IntToDoubleB>()
+            _ = c.MagikBlock<string, int, EmitFast>()
+                .MagikBlock(sp => new IntToDoubleA(), capabilities: ["fast"])
+                .MagikBlock<int, double, IntToDoubleB>()
                 .Done();
         });
 
@@ -83,9 +83,9 @@ public class BuilderIntegrationTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, StringToInt>()
-                .AddBlock<int, double, IntToDoubleA>()
-                .AddBlock<int, double, IntToDoubleB>()
+            _ = c.MagikBlock<string, int, StringToInt>()
+                .MagikBlock<int, double, IntToDoubleA>()
+                .MagikBlock<int, double, IntToDoubleB>()
                 .Done();
         });
         IBoard iboard = host.Services.GetRequiredService<IBoard>();

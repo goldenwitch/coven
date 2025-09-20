@@ -31,7 +31,7 @@ public class DiScopeLifecycleTests
         using TestHost host = TestBed.BuildPush(
             build: c =>
             {
-                _ = c.AddBlock<string, string, UsesTracker>(ServiceLifetime.Transient)
+                _ = c.MagikBlock<string, string, UsesTracker>(ServiceLifetime.Transient)
                     .Done();
             },
             configureServices: s => s.AddScoped<Tracker>()
@@ -66,7 +66,7 @@ public class DiScopeLifecycleTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, NeedsMissing>()
+            _ = c.MagikBlock<string, int, NeedsMissing>()
                 .Done();
         });
 
@@ -90,7 +90,7 @@ public class DiScopeLifecycleTests
         DisposableBlock.Reset();
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, string, DisposableBlock>(ServiceLifetime.Transient)
+            _ = c.MagikBlock<string, string, DisposableBlock>(ServiceLifetime.Transient)
                 .Done();
         });
 
@@ -124,7 +124,7 @@ public class DiScopeLifecycleTests
         using (TestHost host = TestBed.BuildPush(
             build: c =>
             {
-                _ = c.AddBlock<string, string, UsesSingleton>(ServiceLifetime.Transient)
+                _ = c.MagikBlock<string, string, UsesSingleton>(ServiceLifetime.Transient)
                     .Done();
             },
             configureServices: s => s.AddSingleton<SingletonTracker>()))

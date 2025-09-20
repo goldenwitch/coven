@@ -13,8 +13,8 @@ public class DiPullModeTests
     {
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock<string, int, StringLengthBlock>()
-             .AddBlock<int, double, IntToDoubleAddOneBlock>();
+            c.MagikBlock<string, int, StringLengthBlock>()
+             .MagikBlock<int, double, IntToDoubleAddOneBlock>();
         });
         Board board = Assert.IsType<Board>(host.Services.GetRequiredService<IBoard>());
         int pre = board.Status.CompiledPipelinesCount;
@@ -28,9 +28,9 @@ public class DiPullModeTests
     {
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock<string, int, EmitManyBlock>()
-             .AddBlock(sp => new IntToDoubleAddBlock(1000)) // earlier registration
-             .AddBlock<int, double, CapMergedBlock>(capabilities: ["ai"]); // builder + attribute + interface
+            c.MagikBlock<string, int, EmitManyBlock>()
+             .MagikBlock(sp => new IntToDoubleAddBlock(1000)) // earlier registration
+             .MagikBlock<int, double, CapMergedBlock>(capabilities: ["ai"]); // builder + attribute + interface
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
 

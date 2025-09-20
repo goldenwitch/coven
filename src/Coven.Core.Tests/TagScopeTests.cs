@@ -22,7 +22,7 @@ public class TagScopeTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, string, ProbeTagBlock>()
+            _ = c.MagikBlock<string, string, ProbeTagBlock>()
                 .Done();
         });
         string result = await host.Coven.Ritual<string, string>("ignored");

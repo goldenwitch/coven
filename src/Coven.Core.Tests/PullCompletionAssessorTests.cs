@@ -18,7 +18,7 @@ public class PullCompletionAssessorTests
         PullOptions options = new() { ShouldComplete = _ => true };
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock<string, string, AppendRan>();
+            c.MagikBlock<string, string, AppendRan>();
         }, options);
 
         string result = await host.Coven.Ritual<string, string>("hello");
@@ -32,7 +32,7 @@ public class PullCompletionAssessorTests
         PullOptions options = new() { ShouldComplete = o => o is string s && s.Contains("|ran") };
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock<string, string, AppendRan>();
+            c.MagikBlock<string, string, AppendRan>();
         }, options);
 
         string result = await host.Coven.Ritual<string, string>("hello");

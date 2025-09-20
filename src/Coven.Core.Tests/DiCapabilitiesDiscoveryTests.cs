@@ -12,9 +12,9 @@ public sealed class DiCapabilitiesDiscoveryTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, EmitFastBlock>()
-                .AddBlock<int, double, CapFastBlock>()
-                .AddBlock(sp => new IntToDoubleAddBlock(1000))
+            _ = c.MagikBlock<string, int, EmitFastBlock>()
+                .MagikBlock<int, double, CapFastBlock>()
+                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
@@ -26,9 +26,9 @@ public sealed class DiCapabilitiesDiscoveryTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, EmitFastBlock>()
-                .AddBlock<int, double, CapParamlessFastBlock>(capabilities: ["fast"])
-                .AddBlock(sp => new IntToDoubleAddBlock(1000))
+            _ = c.MagikBlock<string, int, EmitFastBlock>()
+                .MagikBlock<int, double, CapParamlessFastBlock>(capabilities: ["fast"])
+                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
@@ -40,9 +40,9 @@ public sealed class DiCapabilitiesDiscoveryTests
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
-            _ = c.AddBlock<string, int, EmitManyBlock>()
-                .AddBlock<int, double, CapMergedBlock>(capabilities: ["ai"])
-                .AddBlock(sp => new IntToDoubleAddBlock(1000))
+            _ = c.MagikBlock<string, int, EmitManyBlock>()
+                .MagikBlock<int, double, CapMergedBlock>(capabilities: ["ai"])
+                .MagikBlock(sp => new IntToDoubleAddBlock(1000))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");

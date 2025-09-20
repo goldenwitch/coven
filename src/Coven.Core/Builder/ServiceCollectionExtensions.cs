@@ -3,10 +3,9 @@
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
 using Coven.Core.Activation;
-using Coven.Core.Builder;
 using Coven.Core.Routing;
 
-namespace Coven.Core.Di;
+namespace Coven.Core.Builder;
 
 public static class ServiceCollectionExtensions
 {
@@ -40,7 +39,7 @@ public sealed class CovenServiceBuilder
         _services = services;
     }
 
-    public CovenServiceBuilder AddBlock<TIn, TOut, TBlock>(ServiceLifetime lifetime = ServiceLifetime.Transient, IEnumerable<string>? capabilities = null)
+    public CovenServiceBuilder MagikBlock<TIn, TOut, TBlock>(ServiceLifetime lifetime = ServiceLifetime.Transient, IEnumerable<string>? capabilities = null)
         where TBlock : class, IMagikBlock<TIn, TOut>
     {
         EnsureNotFinalized();
@@ -79,7 +78,7 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
-    public CovenServiceBuilder AddBlock<TIn, TOut>(Func<IServiceProvider, IMagikBlock<TIn, TOut>> factory, IEnumerable<string>? capabilities = null)
+    public CovenServiceBuilder MagikBlock<TIn, TOut>(Func<IServiceProvider, IMagikBlock<TIn, TOut>> factory, IEnumerable<string>? capabilities = null)
     {
         ArgumentNullException.ThrowIfNull(factory);
         EnsureNotFinalized();
@@ -89,7 +88,7 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
-    public CovenServiceBuilder AddLambda<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
+    public CovenServiceBuilder LambdaBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         ArgumentNullException.ThrowIfNull(func);
         EnsureNotFinalized();

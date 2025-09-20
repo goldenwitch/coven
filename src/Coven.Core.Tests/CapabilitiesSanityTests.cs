@@ -42,12 +42,12 @@ public class CapabilitiesSanityTests
         };
         using TestHost host = TestBed.BuildPull(c =>
         {
-            c.AddBlock(sp => new StringAppendBlock(incrementer))
-             .AddBlock(sp => new StringAppendBlock(incrementer))
-             .AddBlock(sp => new StringAppendBlock(incrementer))
-             .AddBlock(sp => new StringAppendBlock(incrementer))
-             .AddBlock(sp => new StringAppendBlock(incrementer))
-             .AddBlock(sp => new StringAppendBlock(incrementer), capabilities: ["t1", "t2"]);
+            c.MagikBlock(sp => new StringAppendBlock(incrementer))
+             .MagikBlock(sp => new StringAppendBlock(incrementer))
+             .MagikBlock(sp => new StringAppendBlock(incrementer))
+             .MagikBlock(sp => new StringAppendBlock(incrementer))
+             .MagikBlock(sp => new StringAppendBlock(incrementer))
+             .MagikBlock(sp => new StringAppendBlock(incrementer), capabilities: ["t1", "t2"]);
         }, options);
 
         string result = await host.Coven.Ritual<string, string>("a");
