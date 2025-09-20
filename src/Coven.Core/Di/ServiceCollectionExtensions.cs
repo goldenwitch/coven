@@ -2,7 +2,6 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
-using System.Reflection;
 using Coven.Core.Activation;
 using Coven.Core.Builder;
 using Coven.Core.Routing;
@@ -54,39 +53,18 @@ public sealed class CovenServiceBuilder
         {
             _services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
         }
-        // Merge capabilities from caller, attribute, and optional parameterless-ctor ITagCapabilities instance
+        // Merge capabilities from caller and attribute only (DI-level source of truth)
         List<string> mergedCaps = [];
         if (capabilities is not null)
         {
             mergedCaps.AddRange(capabilities);
         }
 
-
         Type t = typeof(TBlock);
         TagCapabilitiesAttribute? attr = (TagCapabilitiesAttribute?)Attribute.GetCustomAttribute(t, typeof(TagCapabilitiesAttribute));
         if (attr is not null && attr.Tags is not null)
         {
             mergedCaps.AddRange(attr.Tags);
-        }
-        if (typeof(ITagCapabilities).IsAssignableFrom(t))
-        {
-            ConstructorInfo? ctor = t.GetConstructor(Type.EmptyTypes);
-            if (ctor is not null)
-            {
-                try
-                {
-                    ITagCapabilities? tmp = (ITagCapabilities?)Activator.CreateInstance(t);
-                    if (tmp?.SupportedTags is not null)
-                    {
-                        mergedCaps.AddRange(tmp.SupportedTags);
-                    }
-
-                }
-                catch
-                {
-                    // Ignore failures; rely on attr or builder-provided caps
-                }
-            }
         }
         // Register with a DI activator; no proxy instance.
         DiTypeActivator activator = new(typeof(TBlock));

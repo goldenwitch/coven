@@ -22,17 +22,17 @@ public sealed class DiCapabilitiesDiscoveryTests
     }
 
     [Fact]
-    public async Task ParamlessITagCapabilitiesAreRespectedInDI()
+    public async Task ExplicitBuilderCapabilitiesAreRespectedInDI()
     {
         using TestHost host = TestBed.BuildPush(c =>
         {
             _ = c.AddBlock<string, int, EmitFastBlock>()
-                .AddBlock<int, double, CapParamlessFastBlock>()
+                .AddBlock<int, double, CapParamlessFastBlock>(capabilities: ["fast"])
                 .AddBlock(sp => new IntToDoubleAddBlock(1000))
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
-        Assert.Equal(2004d, result); // routes to C due to fast
+        Assert.Equal(2004d, result); // routes to C due to explicit fast
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public sealed class DiCapabilitiesDiscoveryTests
                 .Done();
         });
         double result = await host.Coven.Ritual<string, double>("abcd");
-        // MergedCaps should win with 3 matches: fast (attr) + gpu (interface) + ai (builder)
+        // MergedCaps should win via attr+builder: fast (attr) + ai (builder)
         Assert.Equal(3004d, result);
     }
 }

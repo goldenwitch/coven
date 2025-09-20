@@ -2,6 +2,8 @@
 Always start by reading \README.md and \Architecture\README.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
+Don't leave any explanation behind when removing an entire chunk of code. It defeats the purpose to add a line when we were trying to remove one.
+
 Use these patterns to explore the repo efficiently within the CLI constraints. Avoid long, unscoped outputs.
 - Output limit: Command output truncates at ~10 KB or 256 lines per command. Use chunking patterns below to page through results.
 - Update policy: The only command allowed for writing files is `apply_patch`.

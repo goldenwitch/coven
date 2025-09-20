@@ -47,9 +47,9 @@ public class TagCapabilityTests
         using TestHost host = TestBed.BuildPush(c =>
         {
             _ = c.AddBlock(sp => new TagEmit("a", "b"))
-                .AddBlock(sp => new CapBlock("A", "a"))
-                .AddBlock(sp => new CapBlock("B", "a", "b"))
-                .AddBlock(sp => new CapBlock("C", "b"))
+                .AddBlock(sp => new CapBlock("A", "a"), capabilities: ["a"])
+                .AddBlock(sp => new CapBlock("B", "a", "b"), capabilities: ["a", "b"])
+                .AddBlock(sp => new CapBlock("C", "b"), capabilities: ["b"])
                 .AddBlock<Counter, double, ToDouble>()
                 .Done();
         });

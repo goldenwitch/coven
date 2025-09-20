@@ -119,12 +119,8 @@ public class Board : IBoard
             IBlockActivator? activator = d.Activator;
             string name = d.DisplayBlockTypeName ?? activator?.DisplayName ?? block.GetType().Name;
 
-            IReadOnlyCollection<string> caps = (block as ITagCapabilities)?.SupportedTags ?? [];
-            IEnumerable<string> merged = caps;
-            if (d.Capabilities is not null && d.Capabilities.Count > 0)
-            {
-                merged = Enumerable.Concat(caps, d.Capabilities);
-            }
+            // Capabilities come solely from descriptor (set at DI registration)
+            IEnumerable<string> merged = d.Capabilities ?? Enumerable.Empty<string>();
             HashSet<string> set = new(merged, StringComparer.OrdinalIgnoreCase)
             {
                 // Soft self-capability to enable forward-motion hints via next:<BlockTypeName>
@@ -135,14 +131,9 @@ public class Board : IBoard
             {
                 bool implementsMagik = block.GetType().GetInterfaces()
                     .Any(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMagikBlock<,>));
-                if (implementsMagik)
-                {
-                    activator = new ConstantInstanceActivator(block);
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Coven configuration error: Missing activator for block entry at index {idx} ({name}). Either provide an IMagikBlock instance or an IBlockActivator.");
-                }
+                activator = implementsMagik
+                    ? (IBlockActivator)new ConstantInstanceActivator(block)
+                    : throw new InvalidOperationException($"Coven configuration error: Missing activator for block entry at index {idx} ({name}). Either provide an IMagikBlock instance or an IBlockActivator.");
 
             }
 

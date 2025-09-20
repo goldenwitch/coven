@@ -22,7 +22,7 @@ public class HaloPullTests
         using TestHost host = TestBed.BuildPull(c =>
         {
             c.AddBlock<string, Doc, ParseAndTag>()
-             .AddBlock<Doc, Doc, AddSalutation>()
+             .AddBlock<Doc, Doc, AddSalutation>(capabilities: ["exclaim"])
              .AddBlock(sp => new UppercaseText(), capabilities: ["style:loud"])
              .AddBlock<Doc, string, DocToOut>();
         }, options);
