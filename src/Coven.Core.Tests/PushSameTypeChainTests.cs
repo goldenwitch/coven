@@ -5,6 +5,7 @@ using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Di;
 using Microsoft.Extensions.DependencyInjection;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -16,18 +17,15 @@ public class PushSameTypeChainTests
     {
         int ran = 0;
 
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|1"); });
             c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|2"); });
             c.AddLambda<string, string>((s, ct) => { ran++; return Task.FromResult(s + "|3"); });
-            c.Done(); // push mode
+            c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
 
-        var result = await coven.Ritual<string, string>("hi");
+        var result = await host.Coven.Ritual<string, string>("hi");
 
         Assert.Equal(3, ran);
         Assert.Equal("hi|1|2|3", result);

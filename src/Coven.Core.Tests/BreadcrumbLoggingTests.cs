@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Coven.Core.Di;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -16,42 +17,27 @@ public class BreadcrumbLoggingTests
 {
     private readonly ITestOutputHelper output;
     public BreadcrumbLoggingTests(ITestOutputHelper output) { this.output = output; }
-    private sealed class LengthBlock : IMagikBlock<string, int>
-    {
-        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
-    }
-    private sealed class HashBlock : IMagikBlock<string, int>
-    {
-        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.GetHashCode());
-    }
-    private sealed class IntToDouble : IMagikBlock<int, double>
-    {
-        public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
-    }
-
     [Fact]
     public async Task Breadcrumbs_Reflect_Capability_Routing_Order()
     {
         var provider = new Infrastructure.InMemoryLoggerProvider();
-        var services = new ServiceCollection();
-        services.AddLogging(b => b.AddProvider(provider));
-        services.BuildCoven(c =>
-        {
-            c.AddBlock<string, int, LengthBlock>(ServiceLifetime.Transient, capabilities: new[] { "calc:length" });
-            c.AddBlock<string, int, HashBlock>(ServiceLifetime.Transient, capabilities: new[] { "calc:hash" });
-            c.AddBlock<int, double, IntToDouble>(ServiceLifetime.Transient);
-            c.Done();
-        });
-
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
+        using var host = TestBed.BuildPush(
+            build: c =>
+            {
+                c.AddBlock<string, int, StringLength>(ServiceLifetime.Transient, capabilities: new[] { "calc:length" });
+                c.AddBlock<string, int, StringHash>(ServiceLifetime.Transient, capabilities: new[] { "calc:hash" });
+                c.AddBlock<int, double, IntToDouble>(ServiceLifetime.Transient);
+                c.Done();
+            },
+            configureServices: s => s.AddLogging(b => b.AddProvider(provider))
+        );
 
         var tags = new List<string> { "calc:length" };
-        var result = await coven.Ritual<string, double>("abcd", tags);
+        var result = await host.Coven.Ritual<string, double>("abcd", tags);
         Assert.Equal(4d, result);
 
         // Snapshot log lines
-        var lines = ((Infrastructure.InMemoryLoggerProvider)provider).Entries.ToList();
+        var lines = provider.Entries.ToList();
         // Find this ritual id from the begin line
         var beginLine = lines.FirstOrDefault(l => l.Contains("Coven.Ritual", StringComparison.Ordinal) && l.Contains("Ritual begin rid=", StringComparison.Ordinal));
         Assert.NotNull(beginLine);

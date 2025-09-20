@@ -1,12 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System;
-using System.Threading.Tasks;
-using Coven.Core;
-using Coven.Core.Builder;
-using Coven.Core.Di;
 using Coven.Core.Tags;
-using Microsoft.Extensions.DependencyInjection;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -28,7 +23,9 @@ public class CapabilitiesSanityTests
         {
             blockStepIncrementer();
             Appended = input + Appended;
-            if (Appended.Length == 3)
+            // Emit capability tags when we reach length 2 so the next selection
+            // prefers the block advertising both tags.
+            if (Appended.Length == 2)
             {
                 Tag.Add("t1");
                 Tag.Add("t2");
@@ -44,24 +41,21 @@ public class CapabilitiesSanityTests
         // an extra capability tag only the stronger block supports.
         var incrementer = new Action(() => blockSteps++);
 
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        var options = new PullOptions
         {
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer));
-            c.AddBlock<string, string>(sp => new StringAppendBlock(incrementer), capabilities: new[] { "t1", "t2" });
-            c.Done(pull: true, pullOptions: new PullOptions
-            {
-                ShouldComplete = o => o is string s && s.Length >= 4
-            });
-        });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
+            ShouldComplete = o => o is string s && s.Length >= 4
+        };
+        using var host = TestBed.BuildPull(c =>
+        {
+            c.AddBlock(sp => new StringAppendBlock(incrementer));
+            c.AddBlock(sp => new StringAppendBlock(incrementer));
+            c.AddBlock(sp => new StringAppendBlock(incrementer));
+            c.AddBlock(sp => new StringAppendBlock(incrementer));
+            c.AddBlock(sp => new StringAppendBlock(incrementer));
+            c.AddBlock(sp => new StringAppendBlock(incrementer), capabilities: new[] { "t1", "t2" });
+        }, options);
 
-        string result = await coven.Ritual<string, string>("a");
+        string result = await host.Coven.Ritual<string, string>("a");
         Assert.Equal(3, blockSteps);
         Assert.Equal("aaaa", result);
     }

@@ -13,29 +13,14 @@ internal sealed class DefaultSelectionStrategy : ISelectionStrategy
 
         var epochTags = Tag.CurrentEpochTags();
 
-        // 1) Explicit index override: to:#<index> (only consider tags from the current epoch)
-        for (int i = 0; i < forward.Count; i++)
-        {
-            var c = forward[i];
-            if (Enumerable.Contains(epochTags, $"to:#{c.RegistryIndex}")) return c;
-        }
-
-        // 2) Explicit type name override: to:<BlockTypeName> (current-epoch only)
-        for (int i = 0; i < forward.Count; i++)
-        {
-            var c = forward[i];
-            if (Enumerable.Contains(epochTags, $"to:{c.BlockTypeName}")) return c;
-        }
-
-        // 3) Capability overlap using current-epoch tags plus any persistent routing hints;
-        // tie-break by registration order (smallest index wins)
+        // Capability overlap using current-epoch tags; tie-break by registration order (smallest index wins)
         // Best fit rules: type already filtered; choose by total capability matches across all tags,
-        // including forward-hint tags (next:*), then break ties by registration order.
+        // then break ties by registration order.
         int bestTotalScore = int.MinValue;
         int bestIdx = int.MaxValue;
         SelectionCandidate? chosen = null;
         
-        // Union: epoch tags
+        // Consider: epoch tags only (forward-next hints are applied outside selection via Board)
         var effectiveTags = new HashSet<string>(epochTags, StringComparer.OrdinalIgnoreCase);
         for (int i = 0; i < forward.Count; i++)
         {

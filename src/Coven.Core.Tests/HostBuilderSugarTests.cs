@@ -4,17 +4,13 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Di;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
 
 public sealed class HostBuilderSugarTests
 {
-    private sealed class StringToInt : IMagikBlock<string, int>
-    {
-        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(input.Length);
-    }
-
     [Fact]
     public async Task HostApplicationBuilder_BuildCoven_Registers_And_Runs_Coven()
     {
@@ -22,7 +18,7 @@ public sealed class HostBuilderSugarTests
 
         builder.BuildCoven(c =>
         {
-            c.AddBlock<string, int, StringToInt>();
+            c.AddBlock<string, int, StringLength>();
             // Intentionally omit Done() to validate auto-finalize in BuildCoven(Action<>)
         });
 

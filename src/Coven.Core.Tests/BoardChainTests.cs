@@ -8,6 +8,7 @@ using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Di;
 using Microsoft.Extensions.DependencyInjection;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -21,18 +22,15 @@ public class BoardChainTests
     public async Task PostWork_ComposesChain_DefaultsToNextRegistered()
     {
         // Competing first step: object->int vs string->int; should prefer the next registered (object->int) by default.
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<object, int>(sp => new ObjectToIntBlock(999));
             c.AddBlock<string, int, StringLengthBlock>();
             c.AddBlock<int, double, IntToDoubleBlock>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
 
-        var result = await coven.Ritual<string, double>("abcd");
+        var result = await host.Coven.Ritual<string, double>("abcd");
         // Expect generic first (999) -> 999d, proving order preference.
         Assert.Equal(999d, result);
     }
@@ -40,36 +38,27 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_DirectAssignable_ReturnsInput()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c => c.Done());
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        var result = await coven.Ritual<string, object>("hello");
+        using var host = TestBed.BuildPush(c => c.Done());
+        var result = await host.Coven.Ritual<string, object>("hello");
         Assert.Equal("hello", result);
     }
 
     [Fact]
     public async Task PostWork_EmptyRegistry_NotAssignable_Throws()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c => c.Done());
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, int>("hello"));
+        using var host = TestBed.BuildPush(c => c.Done());
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("hello"));
     }
 
     [Fact]
     public async Task PostWork_NoChain_Throws()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int, StringLengthBlock>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, double>("abcd"));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, double>("abcd"));
     }
 
     
@@ -94,32 +83,26 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_Composes_AsyncBlocks_PropagatesAwait()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int, AsyncStringLengthBlock>();
             c.AddBlock<int, double, AsyncIntToDoubleAddOne>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        var result = await coven.Ritual<string, double>("abcd");
+        var result = await host.Coven.Ritual<string, double>("abcd");
         Assert.Equal(5d, result);
     }
 
     [Fact]
     public async Task PostWork_FinalSubtype_IsMappedToRequestedBase()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int, StringLengthBlock>();
             c.AddBlock<int, BaseAnimal, IntToDogBlock>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        BaseAnimal result = await coven.Ritual<string, BaseAnimal>("abc");
+        BaseAnimal result = await host.Coven.Ritual<string, BaseAnimal>("abc");
         Assert.IsType<Dog>(result);
     }
 
@@ -127,17 +110,14 @@ public class BoardChainTests
     public async Task PostWork_Awaits_AsyncDelays_BeforeCompletion()
     {
         var sw = Stopwatch.StartNew();
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int>(sp => new AsyncDelayThenLength(50));
             c.AddBlock<int, double>(sp => new AsyncDelayThenToDouble(50));
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var covenDelay = sp.GetRequiredService<ICoven>();
 
-        var result = await covenDelay.Ritual<string, double>("abcd");
+        var result = await host.Coven.Ritual<string, double>("abcd");
         sw.Stop();
 
         Assert.Equal(4d, result); // length 4 then cast to double
@@ -147,32 +127,26 @@ public class BoardChainTests
     [Fact]
     public async Task PostWork_TieBreaksByRegistrationOrder_WhenSpecificityEqual()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int>(sp => new ReturnConstInt(1));
             c.AddBlock<string, int>(sp => new ReturnConstInt(2));
             c.AddBlock<int, double, IntToDoubleBlock>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-        var result = await coven.Ritual<string, double>("ignored");
+        var result = await host.Coven.Ritual<string, double>("ignored");
         Assert.Equal(1d, result);
     }
 
     [Fact]
     public async Task PostWork_PropagatesBlockException()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int, ThrowingBlock>();
             c.Done();
         });
-        using var sp = services.BuildServiceProvider();
-        var covenFail = sp.GetRequiredService<ICoven>();
-        await Assert.ThrowsAsync<InvalidOperationException>(async () => await covenFail.Ritual<string, int>("x"));
+        await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("x"));
     }
 
     // Async test blocks

@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Di;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
@@ -33,19 +34,17 @@ public class DiScopeLifecycleTests
     {
         Tracker.Reset();
 
-        var services = new ServiceCollection();
-        services.AddScoped<Tracker>();
-        services.BuildCoven(c =>
-        {
-            c.AddBlock<string, string, UsesTracker>(ServiceLifetime.Transient);
-            c.Done();
-        });
+        using var host = TestBed.BuildPush(
+            build: c =>
+            {
+                c.AddBlock<string, string, UsesTracker>(ServiceLifetime.Transient);
+                c.Done();
+            },
+            configureServices: s => s.AddScoped<Tracker>()
+        );
 
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-
-        var r1 = await coven.Ritual<string, string>("x");
-        var r2 = await coven.Ritual<string, string>("y");
+        var r1 = await host.Coven.Ritual<string, string>("x");
+        var r2 = await host.Coven.Ritual<string, string>("y");
 
         // Each ritual should get a new scoped Tracker
         Assert.NotEqual(r1.Split(':')[1], r2.Split(':')[1]);
@@ -66,17 +65,13 @@ public class DiScopeLifecycleTests
     [Fact]
     public async Task Missing_Dependency_Throws_Clear_Error()
     {
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, int, NeedsMissing>();
             c.Done();
         });
 
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await coven.Ritual<string, int>("abc"));
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("abc"));
         Assert.Contains("Unable to resolve", ex.Message);
     }
 
@@ -94,17 +89,13 @@ public class DiScopeLifecycleTests
     public async Task Transient_Block_Instance_Disposed_When_Scope_Ends()
     {
         DisposableBlock.Reset();
-        var services = new ServiceCollection();
-        services.BuildCoven(c =>
+        using var host = TestBed.BuildPush(c =>
         {
             c.AddBlock<string, string, DisposableBlock>(ServiceLifetime.Transient);
             c.Done();
         });
 
-        using var sp = services.BuildServiceProvider();
-        var coven = sp.GetRequiredService<ICoven>();
-
-        var _ = await coven.Ritual<string, string>("z");
+        var _ = await host.Coven.Ritual<string, string>("z");
 
         Assert.Equal(1, DisposableBlock.Created);
         Assert.Equal(1, DisposableBlock.Disposed);
@@ -132,20 +123,17 @@ public class DiScopeLifecycleTests
     {
         SingletonTracker.Reset();
 
-        var services = new ServiceCollection();
-        services.AddSingleton<SingletonTracker>();
-        services.BuildCoven(c =>
-        {
-            c.AddBlock<string, string, UsesSingleton>(ServiceLifetime.Transient);
-            c.Done();
-        });
-
         string id1, id2;
-        using (var sp = services.BuildServiceProvider())
+        using (var host = TestBed.BuildPush(
+            build: c =>
+            {
+                c.AddBlock<string, string, UsesSingleton>(ServiceLifetime.Transient);
+                c.Done();
+            },
+            configureServices: s => s.AddSingleton<SingletonTracker>()))
         {
-            var coven = sp.GetRequiredService<ICoven>();
-            var r1 = await coven.Ritual<string, string>("one");
-            var r2 = await coven.Ritual<string, string>("two");
+            var r1 = await host.Coven.Ritual<string, string>("one");
+            var r2 = await host.Coven.Ritual<string, string>("two");
             id1 = r1.Split(':')[1];
             id2 = r2.Split(':')[1];
             Assert.Equal(id1, id2); // same singleton instance id across rituals
