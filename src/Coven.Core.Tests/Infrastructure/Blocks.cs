@@ -26,33 +26,7 @@ internal sealed class IntToDoubleAddOneBlock : IMagikBlock<int, double>
     public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult(input + 1d);
 }
 
-internal sealed class IntToDoubleAddBlock(double delta) : IMagikBlock<int, double>
-{
-    public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult(input + delta);
-}
 
-internal sealed class ReturnConstIntBlock(int value) : IMagikBlock<string, int>
-{
-    public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(value);
-}
-
-internal sealed class AsyncDelayStringLengthBlock(int delayMs) : IMagikBlock<string, int>
-{
-    public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
-        return input.Length;
-    }
-}
-
-internal sealed class AsyncDelayIntToDoubleBlock(int delayMs) : IMagikBlock<int, double>
-{
-    public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
-        return input;
-    }
-}
 
 internal sealed class EmitFastBlock : IMagikBlock<string, int>
 {
@@ -106,30 +80,7 @@ internal sealed class ProbeTagBlock : IMagikBlock<string, string>
     }
 }
 
-// Counter and math helpers
-internal sealed class Counter { public int Value { get; init; } }
 
-internal sealed class IncBlock : IMagikBlock<Counter, Counter>
-{
-    public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default)
-        => Task.FromResult(new Counter { Value = input.Value + 1 });
-}
-
-
-internal sealed class Copy1Block : IMagikBlock<Counter, Counter>
-{
-    public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult(new Counter { Value = input.Value });
-}
-
-internal sealed class Copy2Block : IMagikBlock<Counter, Counter>
-{
-    public Task<Counter> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult(new Counter { Value = input.Value });
-}
-
-internal sealed class CounterToDoubleBlock : IMagikBlock<Counter, double>
-{
-    public Task<double> DoMagik(Counter input, CancellationToken cancellationToken = default) => Task.FromResult((double)input.Value);
-}
 
 // Pull behavior helpers
 internal sealed class Start { public string Value { get; init; } = string.Empty; }

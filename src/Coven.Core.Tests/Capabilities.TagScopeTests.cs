@@ -14,7 +14,7 @@ public class TagScopeTests
     {
         Assert.Throws<InvalidOperationException>(() => Tag.Add("x"));
         Assert.Throws<InvalidOperationException>(() => Tag.Contains("x"));
-        Assert.Throws<InvalidOperationException>(() => { var _ = Tag.Current; });
+        Assert.Throws<InvalidOperationException>(() => Tag.Current);
     }
 
     [Fact]

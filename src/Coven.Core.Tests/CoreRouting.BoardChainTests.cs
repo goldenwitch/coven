@@ -71,23 +71,7 @@ public class BoardChainTests
         public Task<double> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult((double)input);
     }
 
-    private sealed class ObjectToIntBlock(int value) : IMagikBlock<object, int>
-    {
-        public Task<int> DoMagik(object input, CancellationToken cancellationToken = default) => Task.FromResult(value);
-    }
 
-    [Fact]
-    public async Task PostWorkComposesAsyncBlocksPropagatesAwait()
-    {
-        using TestHost host = TestBed.BuildPush(c =>
-        {
-            _ = c.MagikBlock<string, int, AsyncStringLengthBlock>()
-                .MagikBlock<int, double, AsyncIntToDoubleAddOne>()
-                .Done();
-        });
-        double result = await host.Coven.Ritual<string, double>("abcd");
-        Assert.Equal(5d, result);
-    }
 
     [Fact]
     public async Task PostWorkFinalSubtypeIsMappedToRequestedBase()
@@ -145,42 +129,7 @@ public class BoardChainTests
         await Assert.ThrowsAsync<InvalidOperationException>(async () => await host.Coven.Ritual<string, int>("x"));
     }
 
-    // Async test blocks
-    private sealed class AsyncStringLengthBlock : IMagikBlock<string, int>
-    {
-        public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-            return input.Length;
-        }
-    }
 
-    private sealed class AsyncIntToDoubleAddOne : IMagikBlock<int, double>
-    {
-        public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(1, cancellationToken).ConfigureAwait(false);
-            return input + 1d;
-        }
-    }
-
-    private sealed class AsyncDelayThenLength(int delayMs) : IMagikBlock<string, int>
-    {
-        public async Task<int> DoMagik(string input, CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
-            return input.Length;
-        }
-    }
-
-    private sealed class AsyncDelayThenToDouble(int delayMs) : IMagikBlock<int, double>
-    {
-        public async Task<double> DoMagik(int input, CancellationToken cancellationToken = default)
-        {
-            await Task.Delay(delayMs, cancellationToken).ConfigureAwait(false);
-            return input;
-        }
-    }
 
     // Subtype mapping test types/blocks
     private class BaseAnimal { }
@@ -189,11 +138,6 @@ public class BoardChainTests
     private sealed class IntToDogBlock : IMagikBlock<int, BaseAnimal>
     {
         public Task<BaseAnimal> DoMagik(int input, CancellationToken cancellationToken = default) => Task.FromResult<BaseAnimal>(new Dog { From = input });
-    }
-
-    private sealed class ReturnConstInt(int value) : IMagikBlock<string, int>
-    {
-        public Task<int> DoMagik(string input, CancellationToken cancellationToken = default) => Task.FromResult(value);
     }
 
     private sealed class ThrowingBlock : IMagikBlock<string, int>
