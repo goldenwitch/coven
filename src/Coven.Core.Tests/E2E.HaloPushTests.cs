@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class HaloE2ETests
+public class HaloPushTests
 {
     [Fact]
     public async Task HaloEndToEndCapabilityRoutingUppercaseSalutation()

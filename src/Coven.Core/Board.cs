@@ -19,7 +19,7 @@ public class Board : IBoard
         Pull
     }
 
-    private readonly BoardMode _currentMode = BoardMode.Push;
+    private readonly BoardMode _currentMode;
     internal IReadOnlyList<MagikBlockDescriptor> Registry { get; }
     private readonly IReadOnlyList<RegisteredBlock> _registeredBlocks;
     private readonly PipelineCompiler _compiler;
@@ -71,19 +71,15 @@ public class Board : IBoard
         {
             ILogger? logger = null;
             IDisposable? ritualScope = null;
-            try
+            IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
+            ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+            logger = lf?.CreateLogger("Coven.Ritual.Pull");
+            string rid = Guid.NewGuid().ToString("N");
+            if (logger is not null && logger.IsEnabled(LogLevel.Information))
             {
-                IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
-                ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-                logger = lf?.CreateLogger("Coven.Ritual.Pull");
-                string rid = Guid.NewGuid().ToString("N");
-                if (logger is not null && logger.IsEnabled(LogLevel.Information))
-                {
-                    ritualScope = logger.BeginScope("ritual:" + rid);
-                    CoreLog.PullBegin(logger, rid, input.GetType().Name, bid);
-                }
+                ritualScope = logger.BeginScope("ritual:" + rid);
+                CoreLog.PullBegin(logger, rid, input.GetType().Name, bid);
             }
-            catch { }
 
             ISelectionStrategy selector = _selectionStrategy ?? new DefaultSelectionStrategy();
             SelectionEngine engine = new(_registeredBlocks, selector);
@@ -318,17 +314,13 @@ public class Board : IBoard
 
         }
         _pullBranchTags[bid] = persisted;
-        try
+        IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
+        ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
+        ILogger? logger = lf?.CreateLogger("Coven.Ritual.Pull");
+        if (logger is not null && logger.IsEnabled(LogLevel.Information))
         {
-            IServiceProvider? sp = CovenExecutionScope.CurrentProvider;
-            ILoggerFactory? lf = sp?.GetService(typeof(ILoggerFactory)) as ILoggerFactory;
-            ILogger? logger = lf?.CreateLogger("Coven.Ritual.Pull");
-            if (logger is not null && logger.IsEnabled(LogLevel.Information))
-            {
-                CoreLog.PullComplete(logger, blockTypeName, output?.GetType().Name ?? "null", bid);
-            }
+            CoreLog.PullComplete(logger, blockTypeName, output?.GetType().Name ?? "null", bid);
         }
-        catch { }
         sink.Complete(output, branchId);
     }
 }

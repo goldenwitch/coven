@@ -7,9 +7,8 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class BuilderIntegrationTests
+public class PrecompilationTests
 {
-    
 
     // DI-first equivalents of routing and precompilation tests formerly in DiBuilderE2ETests
     private sealed class StringToInt : IMagikBlock<string, int>
@@ -37,9 +36,9 @@ public class BuilderIntegrationTests
     }
 
 
-    
 
-    
+
+
 
     [Fact]
     public async Task DiDonePrecompilesAllPipelinesNoLazyCompiles()

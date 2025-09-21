@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class DiScopeLifecycleTests
+public class ScopeLifecycleTests
 {
     private sealed class Tracker : IDisposable
     {

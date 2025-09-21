@@ -25,7 +25,7 @@ internal static class SchemaGen
 
     /// <summary>
     /// Generates a JSON Schema (as text) for the given CLR <paramref name="type"/>.
-    /// Uses .NET 9's System.Text.Json schema exporter.
+    /// Uses System.Text.Json's JSON Schema exporter.
     /// </summary>
     /// <param name="type">The CLR type to describe.</param>
     /// <param name="configureSerializer">Optional hook to tweak JsonSerializerOptions (naming, numbers, etc.).</param>

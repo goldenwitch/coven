@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class PushNoShortCircuitMixedTypesTests
+public class PushMixedTypesNoShortCircuitTests
 {
     [Fact]
     public async Task PushMixedTypesDoesNotShortCircuitOnAssignable()

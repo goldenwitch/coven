@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class PullBehaviorTests
+public class TypeDrivenFinalityTests
 {
     // Assert that declared generic TOut controls finality in pull mode,
     // not the runtime type of the value produced by earlier steps.

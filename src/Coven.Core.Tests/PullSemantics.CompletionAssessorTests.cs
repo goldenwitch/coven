@@ -5,7 +5,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class PullCompletionAssessorTests
+public class CompletionAssessorTests
 {
     private sealed class AppendRan : IMagikBlock<string, string>
     {

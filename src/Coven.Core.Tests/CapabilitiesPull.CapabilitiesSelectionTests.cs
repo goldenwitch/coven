@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class DiPullModeTests
+public class CapabilitiesSelectionTests
 {
     [Fact]
     public async Task PullModeWorksWithDIBlocks()

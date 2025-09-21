@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class CapabilitiesSanityTests
+public class SelectionPreferenceTests
 {
     private int blockSteps;
     internal sealed class StringAppendBlock(Action blockStepIncrementer) : IMagikBlock<string, string>

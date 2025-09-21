@@ -5,7 +5,7 @@ using Coven.Core.Tests.Infrastructure;
 
 namespace Coven.Core.Tests;
 
-public sealed class DiCapabilitiesDiscoveryTests
+public sealed class CapabilitiesMergeTests
 {
     [Fact]
     public async Task CapabilityTagsAreMergedFromBuilderAttributeAndInterface()

@@ -6,7 +6,7 @@ using Xunit;
 
 namespace Coven.Core.Tests;
 
-public class TagCapabilityTests
+public class TagCapabilitySelectionTests
 {
 
     private sealed class Counter { public int Value { get; init; } }
