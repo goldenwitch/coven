@@ -1,15 +1,12 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Core;
 
-public class MagikBlock<T, TOutput> : IMagikBlock<T, TOutput>
+public class MagikBlock<T, TOutput>(Func<T, CancellationToken, Task<TOutput>> func) : IMagikBlock<T, TOutput>
 {
-    private readonly Func<T, Task<TOutput>> Magik;
-    public MagikBlock(Func<T, Task<TOutput>> func)
-    {
-        Magik = func;
-    }
 
-    public async Task<TOutput> DoMagik(T input)
+    public async Task<TOutput> DoMagik(T input, CancellationToken cancellationToken = default)
     {
-        return await Magik(input);
+        return await func(input, cancellationToken);
     }
 }

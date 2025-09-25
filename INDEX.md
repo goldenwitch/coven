@@ -8,60 +8,28 @@ Project overview: see [README](/README.md).
 
 ## Coven with Agents (Coven.Spellcasting)
 - [Coven.Spellcasting](/src/Coven.Spellcasting/)
-- [Coven.Spellcasting.Tests](/src/Coven.Spellcasting.Tests/)
-- [Coven.Spellcasting.Agents](/src/Coven.Spellcasting.Agents/)
-- [Coven.Spellcasting.Agents.Validation](/src/Coven.Spellcasting.Agents.Validation/)
-- [Coven.Spellcasting.Agents.Tests](/src/Coven.Spellcasting.Agents.Tests/)
-
-### Agent implementations
-- [Coven.Spellcasting.Agents.Codex](/src/Coven.Spellcasting.Agents.Codex/)
 
 ## Coven Infrastructure for Chat
 - [Coven.Chat](/src/Coven.Chat/)
-- [Coven.Chat.Journal](/src/Coven.Chat.Journal/)
-- [Coven.Chat.Tests](/src/Coven.Chat.Tests/)
-
-### Chat integration implementations
-- [Coven.Chat.Adapter.Discord](/src/Coven.Chat.Adapter.Discord/)
-- [Coven.Chat.Adapter.Discord.Tests](/src/Coven.Chat.Adapter.Discord.Tests/)
-
-## Analyzers
-- [Coven.Analyzers](/src/Coven.Analyzers/)
-- [Coven.Analyzers.CodeFixes](/src/Coven.Analyzers.CodeFixes/)
-- [Coven.Analyzers.Tests](/src/Coven.Analyzers.Tests/)
 
 # Architecture Guide
 
-Start with Overview, then explore by topic. This index includes all design docs in this folder and subfolders.
+Explore by topic. All paths below are under `/architecture`.
 
-## Getting Started
-- [Overview](./Overview.md)
-- [End-to-End Example](./EndToEndExample.md)
+- [Architecture README](/architecture/README.md)
 
-## Core Concepts
-- [MagikBlocks & Builder](./MagikBlocks.md)
-- [Tags & Routing](./TagsAndRouting.md)
-- [MagikTrick (Fenced Routing)](./MagikTrick.md)
+## Core Components
+- [Coven.Core](/architecture/Coven.Core.md)
+- [Coven.Chat](/architecture/Coven.Chat.md)
+- [Coven.Daemonology](/architecture/Coven.Daemonology.md)
+- [Coven.Spellcasting](/architecture/Coven.Spellcasting.md)
 
-## Runtime
-- [Board (Push & Pull)](./Board.md)
-- [Dependency Injection](./DependencyInjection.md)
-- [Connectivity](./Connectivity.md)
-
-## Spellcasting
-- [Spellcasting (Design)](./Spellcasting/Spellcasting.md)
-- [Spellcasting.Agents](./Spellcasting/Spellcasting.Agents.md)
-- [Spellcasting.Agents.Validation](./Spellcasting/Spellcasting.Agents.Validation.md)
-
-## Chat Subsystem
-- [Chat (Overview)](./Chat/Chat.md)
-- [Chat Journal](./Chat/Chat.Journal.md)
-- [Chat Journal Compaction](./Chat/Chat.Journal.Compaction.md)
-- [Discord Adapter](./Chat/Chat.Adapter.Discord.md)
-
-## Tooling
-- [Roslyn Analyzer Pack](./Analyzer/Analyzer.md)
+## Integrations
+- [Coven.Chat.Console](/architecture/Coven.Chat.Console.md)
+- [Coven.Chat.Discord](/architecture/Coven.Chat.Discord.md)
+- [Coven.Codex](/architecture/Coven.Codex.md)
+- [Coven.OpenAI](/architecture/Coven.OpenAI.md)
+- [Coven.Spellcasting.MCP](/architecture/Coven.Spellcasting.MCP.md)
 
 ## Meta
-- [Contributing](./Contributing.md)
-- [Licensing](./Licensing.md)
+- [Licensing](/architecture/Licensing.md)

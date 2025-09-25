@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+// SPDX-License-Identifier: BUSL-1.1
 
 namespace Coven.Core.Routing;
 
@@ -11,16 +10,13 @@ public sealed class SelectionCandidate
     public Type OutputType { get; }
     public string BlockTypeName { get; }
     public IReadOnlyCollection<string> Capabilities { get; }
-    public bool IsTrick { get; }
 
-    internal SelectionCandidate(int registryIndex, Type inputType, Type outputType, string blockTypeName, IReadOnlyCollection<string> capabilities, bool isTrick)
+    internal SelectionCandidate(int registryIndex, Type inputType, Type outputType, string blockTypeName, IReadOnlyCollection<string> capabilities)
     {
         RegistryIndex = registryIndex;
         InputType = inputType;
         OutputType = outputType;
         BlockTypeName = blockTypeName;
         Capabilities = capabilities;
-        IsTrick = isTrick;
     }
 }
-

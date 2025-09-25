@@ -59,7 +59,8 @@ jobs:
         run: |
           build/ci/prerelease/detect-changed.sh \
             --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}"
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --shared-regex '^$'
 
       - name: Stop early if nothing changed
         if: steps.affected.outputs.any != 'true'
@@ -107,58 +108,3 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           build/ci/prerelease/publish.sh --source "$NUGET_SOURCE"
-
-      - name: Update samples CPM overlay (Include= only)
-        if: steps.affected.outputs.any == 'true'
-        run: |
-          python3 build/ci/prerelease/update-samples.py \
-            --ids "${{ steps.affected.outputs.ids }}" \
-            --version "${{ steps.ver.outputs.version }}" \
-            --prefix "Coven."
-        id: bump
-
-
-      - name: CPM debug report (what refs vs what central versions)
-        if: steps.affected.outputs.any == 'true'
-        run: |
-          python3 build/ci/prerelease/cpm-report.py \
-            --overlay "samples/Directory.Packages.props" \
-            --parent  "Directory.Packages.props" \
-            --prefix  "Coven." \
-            --out     "artifacts/cpm/cpm-report.md"
-
-      - name: Upload CPM report
-        if: steps.affected.outputs.any == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: cpm-report
-          path: artifacts/cpm/cpm-report.md
-          retention-days: 7
-
-      # (Changed-detection for commit stays the same)
-      - name: Commit & push samples update to PR branch
-        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true'
-        run: |
-          build/ci/prerelease/commit-push.sh \
-            --message "chore(samples): use prerelease ${{ steps.ver.outputs.version }} [skip ci] [prerelease-bot]" \
-            --head-ref "${{ github.event.pull_request.head.ref }}"
-
-
-      - name: Validate samples against prerelease
-        if: steps.affected.outputs.any == 'true'
-        run: build/ci/prerelease/validate-samples.sh
-
-      - name: Commit & push samples update to PR branch
-        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO == 'true' && steps.bump.outputs.changed_any == 'true'
-        run: |
-          build/ci/prerelease/commit-push.sh \
-            --message "chore(samples): use prerelease ${{ steps.ver.outputs.version }} [skip ci] [prerelease-bot]" \
-            --head-ref "${{ github.event.pull_request.head.ref }}"
-
-      - name: Note for fork PRs
-        if: steps.affected.outputs.any == 'true' && env.IS_SAME_REPO != 'true'
-        uses: peter-evans/create-or-update-comment@v4
-        with:
-          issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            ⚠️ This PR comes from a fork, so secrets are unavailable and the prerelease publish step was skipped for safety.

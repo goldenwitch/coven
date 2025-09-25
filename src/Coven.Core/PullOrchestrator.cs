@@ -1,0 +1,115 @@
+// SPDX-License-Identifier: BUSL-1.1
+
+namespace Coven.Core;
+
+// Concrete orchestrator for Pull mode that advances work step-by-step by
+// calling IBoard.GetWork<TIn>(GetWorkRequest<TIn>, IOrchestratorSink) until
+// the produced value is assignable to the requested TOut.
+internal sealed class PullOrchestrator : IOrchestratorSink
+{
+    private readonly Board _board;
+    private readonly string _branchId;
+    private TaskCompletionSource<object>? finalTcs;
+    private IReadOnlyCollection<string>? initialTags;
+    private bool usedInitialTags;
+    private Type? expectedFinalType;
+    private readonly PullOptions? _options;
+    private CancellationToken token;
+
+    internal PullOrchestrator(Board board, PullOptions? options = null, string branchId = "main")
+    {
+        _board = board;
+        _options = options;
+        _branchId = branchId;
+    }
+
+    public void Complete<TStepOut>(TStepOut output, string? branchId = null)
+    {
+        // Use declared generic types to determine finality, not runtime value type.
+        // If the step's declared TStepOut is assignable to the requested final type, consult completion policy.
+        if (expectedFinalType is not null && expectedFinalType.IsAssignableFrom(typeof(TStepOut)))
+        {
+            if (_options?.ShouldComplete is not null)
+            {
+                if (_options.ShouldComplete(output!))
+                {
+                    CompletedFinal(output!);
+                }
+                else
+                {
+                    _ = NextAsync(output);
+                }
+                return;
+            }
+
+            // Default behavior: complete when assignable
+            CompletedFinal(output!);
+            return;
+        }
+
+        _ = NextAsync(output);
+    }
+
+    public void CompletedFinal<TFinal>(TFinal result)
+    {
+        _ = (finalTcs?.TrySetResult(result!));
+    }
+
+    internal async Task<TOut> Run<TIn, TOut>(TIn input, List<string>? initialTags = null, CancellationToken cancellationToken = default)
+    {
+        token = cancellationToken;
+        // Initial finality is also based on declared types: is TIn assignable to TOut?
+        if (typeof(TOut).IsAssignableFrom(typeof(TIn)))
+        {
+            // Consult per-step policy first; then fallback to initial-input policy; default is to complete immediately
+            if (_options?.ShouldComplete is not null)
+            {
+                if (_options.ShouldComplete(input!))
+                {
+
+                    return (TOut)(object)input!;
+                }
+                // else fall through and start stepping
+
+            }
+            else if (_options?.IsInitialComplete is not null)
+            {
+                if (_options.IsInitialComplete(input!))
+                {
+
+                    return (TOut)(object)input!;
+                }
+                // else fall through and start stepping
+
+            }
+            else
+            {
+                return (TOut)(object)input!;
+            }
+        }
+
+        this.initialTags = initialTags;
+        usedInitialTags = false;
+        expectedFinalType = typeof(TOut);
+        finalTcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        _ = NextAsync(input);
+
+        object result = await finalTcs.Task.ConfigureAwait(false);
+        return (TOut)result;
+    }
+
+    private async Task NextAsync<TCur>(TCur current)
+    {
+        try
+        {
+            IReadOnlyCollection<string>? tags = usedInitialTags ? null : initialTags;
+            usedInitialTags = true;
+            await _board.GetWork(new GetWorkRequest<TCur>(current, tags, _branchId, token), this, token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            _ = (finalTcs?.TrySetException(ex));
+        }
+    }
+}

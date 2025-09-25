@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: BUSL-1.1
+
 namespace Coven.Core.Tags;
 
 public static class Tag
@@ -10,26 +12,26 @@ public static class Tag
     {
         get
         {
-            var scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
-            return scope.Set;
+            ITagScope scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
+            return scope.TagSet;
         }
     }
 
     public static void Add(string tag)
     {
-        var scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
+        ITagScope scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
         scope.Add(tag);
     }
 
     public static bool Contains(string tag)
     {
-        var scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
+        ITagScope scope = currentScope.Value ?? throw new InvalidOperationException("No active tag scope.");
         return scope.Contains(tag);
     }
 
     public static ITagScope? BeginScope(ITagScope scope)
     {
-        var prev = currentScope.Value;
+        ITagScope? prev = currentScope.Value;
         currentScope.Value = scope;
         return prev;
     }
@@ -47,24 +49,30 @@ public static class Tag
     // Internals used by the router to manage per-step tag epochs without mutating tags.
     internal static void IncrementEpoch()
     {
-        if (currentScope.Value is BoardTagScope b) b.IncrementEpoch();
+        if (currentScope.Value is BoardTagScope b)
+        {
+            b.IncrementEpoch();
+        }
+
     }
 
     internal static IReadOnlyList<string> CurrentEpochTags()
     {
-        if (currentScope.Value is BoardTagScope b) return b.GetCurrentEpochTags();
-        return Array.Empty<string>();
+        return currentScope.Value is BoardTagScope b ? b.GetCurrentEpochTags() : [];
     }
 
     internal static void Log(string message)
     {
-        if (currentScope.Value is BoardTagScope b) b.AddLog(message);
+        if (currentScope.Value is BoardTagScope b)
+        {
+            b.AddLog(message);
+        }
+
     }
 
     internal static IReadOnlyList<string> GetLogs()
     {
-        if (currentScope.Value is BoardTagScope b) return b.GetLogs();
-        return Array.Empty<string>();
+        return currentScope.Value is BoardTagScope b ? b.GetLogs() : [];
     }
 
     // Selection fence: constrain the next selection to a set of allowed block instances.
@@ -76,20 +84,34 @@ public static class Tag
 
     internal static void SetNextSelectionFence(IEnumerable<object> allowed)
     {
-        if (currentScope.Value is not BoardTagScope b) return;
+        if (currentScope.Value is not BoardTagScope b)
+        {
+            return;
+        }
+
+
         currentFence.Value = new SelectionFence
         {
-            Allowed = new HashSet<object>(allowed),
+            Allowed = [.. allowed],
             Epoch = b.Epoch
         };
     }
 
     internal static IReadOnlyCollection<object>? GetFenceForCurrentEpoch()
     {
-        if (currentScope.Value is not BoardTagScope b) return null;
-        var f = currentFence.Value;
-        if (f is null) return null;
-        if (f.Epoch != b.Epoch) return null;
-        return f.Allowed;
+        if (currentScope.Value is not BoardTagScope b)
+        {
+            return null;
+        }
+
+
+        SelectionFence? f = currentFence.Value;
+        if (f is null)
+        {
+            return null;
+        }
+
+
+        return f.Epoch != b.Epoch ? null : (IReadOnlyCollection<object>)f.Allowed;
     }
 }
