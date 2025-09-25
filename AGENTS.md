@@ -1,5 +1,5 @@
 # Rules
-Always start by reading \README.md and \Architecture\README.md
+Always start by reading \README.md, \architecture\README.md, and \CONTRIBUTING.md
 Code directory is at \INDEX.md. It's way faster to start with that and then switch to ls/grep.
 
 Don't leave any explanation behind when removing an entire chunk of code. It defeats the purpose to add a line when we were trying to remove one.
