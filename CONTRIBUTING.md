@@ -75,6 +75,11 @@ For example, configuration COULD live in env variables or it COULD live in code.
 For toys, prefer configuration in program.cs. Assume developers will change code to configure things, but minimize the amount of changes they need to make to see new outputs from the toy.
 
 All toys go in /src/toys/ and are included in the global solution.
+
+## Locking and synchronization
+Avoid the lock keyword unless absolutely necessary.
+Prefer semaphore slim.
+
 ## Misc
 We have enabled implicit usings globally.
 
