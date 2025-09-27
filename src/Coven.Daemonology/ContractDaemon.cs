@@ -10,7 +10,6 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
 {
     private readonly IScrivener<DaemonEvent> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
-    private long current;
 
     public Status Status { get; protected set; }
 
@@ -28,16 +27,22 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
     /// <returns></returns>
     public abstract Task Shutdown(CancellationToken cancellationToken = default);
 
-    public async Task<Task> WaitFor(Status target, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Produces the first occurance of a status change that matches the target.
+    /// </summary>
+    /// <param name="target">The status to check status changes against.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task WaitFor(Status target, CancellationToken cancellationToken = default)
+        => WaitForCore(target, cancellationToken).Unwrap();
+
+    private async Task<Task> WaitForCore(Status target, CancellationToken cancellationToken)
     {
-        // Logic should be:
-        // When we get this call, grab our semaphore so that status can't change until we register our listener.
-        // In this case, we never want to miss a status so we MUST latch.
         await _semaphoreSlim.WaitAsync(cancellationToken);
         try
         {
-            // Read from the latest status and return the Task our _scrivener generates for WaitFor starting at the latest index
-            return _scrivener.WaitForAsync<StatusChanged>(current, status => status.NewStatus == target, cancellationToken);
+            // Return the waiter Task; caller will await it. We only await the semaphore.
+            return _scrivener.WaitForAsync<StatusChanged>(0, status => status.NewStatus == target, cancellationToken);
         }
         finally
         {
@@ -45,23 +50,27 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
         }
     }
 
-    public async Task<Task<Exception>> WaitForFailure(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Produces the first occurance of a failure.
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task<Exception> WaitForFailure(CancellationToken cancellationToken = default)
+        => WaitForFailureCore(cancellationToken).Unwrap();
+
+    private async Task<Task<Exception>> WaitForFailureCore(CancellationToken cancellationToken)
     {
         await _semaphoreSlim.WaitAsync(cancellationToken);
         try
         {
-            Task<(long journalPosition, FailureOccurred entry)> wait = _scrivener.WaitForAsync<FailureOccurred>(current, _ => true, cancellationToken);
+            Task<(long journalPosition, FailureOccurred entry)> wait = _scrivener.WaitForAsync<FailureOccurred>(0, _ => true, cancellationToken);
 
-            // Inline async lambda: projects the tuple into the Exception
+            // Project the tuple into the Exception; return the Task to caller.
             return wait.ContinueWith(
-                async t =>
-                {
-                    (_, FailureOccurred failure) = await t.ConfigureAwait(false);
-                    return failure.Exception;
-                },
+                t => t.Result.entry.Exception,
                 cancellationToken,
                 TaskContinuationOptions.ExecuteSynchronously,
-                TaskScheduler.Default).Unwrap();
+                TaskScheduler.Default);
         }
         finally
         {
@@ -86,7 +95,7 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
         try
         {
             Status = newStatus;
-            current = await _scrivener.WriteAsync(new StatusChanged(newStatus), cancellationToken);
+            await _scrivener.WriteAsync(new StatusChanged(newStatus), cancellationToken);
         }
         finally
         {
@@ -106,7 +115,7 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
 
         try
         {
-            current = await _scrivener.WriteAsync(new FailureOccurred(error), cancellationToken);
+            await _scrivener.WriteAsync(new FailureOccurred(error), cancellationToken);
         }
         finally
         {
