@@ -27,6 +27,7 @@ We love dependency injection, specifically constructor injection.
 Avoid the word "new" for anything other than data records.
 
 Hide internal constructors for abstract components behind a ServiceCollectionExtension for building the concrete types.
+When defining a "builder" extension for a library, always use TryAdd. Add is reserved for the end user.
 
 ## Disposal
 1. Leverage using statements to ensure that disposed objects are guaranteed to dispose when out of scope.
@@ -75,7 +76,14 @@ For example, configuration COULD live in env variables or it COULD live in code.
 For toys, prefer configuration in program.cs. Assume developers will change code to configure things, but minimize the amount of changes they need to make to see new outputs from the toy.
 
 All toys go in /src/toys/ and are included in the global solution.
+
+## Locking and synchronization
+Avoid the lock keyword unless absolutely necessary.
+Prefer semaphore slim.
+
 ## Misc
+One class per file unless describing "dumb" data types like records.
+
 We have enabled implicit usings globally.
 
 This means you should never add one of the following usings:
