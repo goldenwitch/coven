@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
 using Coven.Core.Activation;
 using Coven.Core.Routing;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Core.Builder;
 
@@ -25,6 +26,19 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
         return new CovenServiceBuilder(services);
+    }
+
+    /// <summary>
+    /// Registers a singleton in-memory scrivener for the given entry type.
+    /// Uses TryAdd to avoid duplicate registrations.
+    /// </summary>
+    public static IServiceCollection AddInMemoryScrivener<TEntry>(this IServiceCollection services)
+        where TEntry : notnull
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IScrivener<TEntry>, InMemoryScrivener<TEntry>>();
+        return services;
     }
 }
 
