@@ -78,8 +78,9 @@ For toys, prefer configuration in program.cs. Assume developers will change code
 All toys go in /src/toys/ and are included in the global solution.
 
 ## Locking and synchronization
-Avoid the lock keyword unless absolutely necessary.
-Prefer semaphore slim.
+Use SemaphoreSlim over lock in async contexts.
+
+Use System.Threading.Lock for the lock.
 
 ## Misc
 One class per file unless describing "dumb" data types like records.

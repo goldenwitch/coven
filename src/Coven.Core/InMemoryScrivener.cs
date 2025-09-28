@@ -1,26 +1,45 @@
 // SPDX-License-Identifier: BUSL-1.1
-using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 
 namespace Coven.Core;
 
 /// <summary>
-/// In-memory implementation of IScrivener<T> journal with simple, single-process semantics supports tailing, backward read, and predicate waits.
+/// In-memory implementation of IScrivener<T> journal with simple, single-process semantics;
+/// supports tailing, backward read, and predicate waits.
 /// </summary>
 /// <typeparam name="TEntry">The journal entry type.</typeparam>
-public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry>, IDisposable where TEntry : notnull
+public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry : notnull
 {
-    private readonly ConcurrentQueue<(long pos, TEntry entry)> _entries = new();
+    private readonly Lock _gate = new();
+    private readonly List<(long pos, TEntry entry)> _entries = [];
+
     private long _nextPos; // first assigned will be 1
-    private TaskCompletionSource<bool> _signal = NewSignal();
+
+    // Simplify B: consider AsyncAutoResetEvent/Channel<T> instead of TCS exchange to reduce allocations and clarify intent.
+    // Implemented B: level-triggered readiness via bounded Channel (capacity=1) to coalesce multiple writes.
+    private readonly Channel<bool> _signal = Channel.CreateBounded<bool>(
+        new BoundedChannelOptions(1)
+        {
+            SingleReader = false,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.DropOldest
+        });
 
     public Task<long> WriteAsync(TEntry entry, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
-        long pos = Interlocked.Increment(ref _nextPos);
-        _entries.Enqueue((pos, entry));
-        TaskCompletionSource<bool> toComplete = Interlocked.Exchange(ref _signal, NewSignal());
-        toComplete.TrySetResult(true);
+
+        long pos;
+        lock (_gate)
+        {
+            pos = ++_nextPos; // assign and append atomically under the lock
+            _entries.Add((pos, entry));
+        }
+
+        // Notify waiters: write a token; multiple writes coalesce while buffer is full.
+        _signal.Writer.TryWrite(true);
+
         return Task.FromResult(pos);
     }
 
@@ -28,33 +47,37 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry>, IDisposable 
     {
         if (afterPosition == long.MaxValue)
         {
-
             yield break;
         }
 
         long next = afterPosition + 1;
-        Dictionary<long, TEntry> pending = [];
 
         while (true)
         {
-            TaskCompletionSource<bool> waiter = Volatile.Read(ref _signal);
-            (long pos, TEntry entry)[] snapshot = [.. _entries];
-
-            foreach ((long pos, TEntry entry) in snapshot)
-            {
-                if (pos >= next && !pending.ContainsKey(pos))
-                {
-                    pending[pos] = entry;
-                }
-            }
+            ChannelReader<bool> reader = _signal.Reader;
+            // Reset level (best-effort) so subsequent WaitToReadAsync will truly wait if no new writes arrive.
+            reader.TryRead(out _);
 
             bool progressed = false;
-            while (pending.TryGetValue(next, out TEntry? entry))
+            while (true)
             {
+                (long pos, TEntry entry) item;
+                lock (_gate)
+                {
+                    int idx = (int)(next - 1);
+                    if (idx >= 0 && idx < _entries.Count)
+                    {
+                        item = _entries[idx];
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
                 ct.ThrowIfCancellationRequested();
-                yield return (next, entry);
-                pending.Remove(next);
-                next++;
+                yield return (item.pos, item.entry);
+                next = item.pos + 1;
                 progressed = true;
             }
 
@@ -63,18 +86,24 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry>, IDisposable 
                 continue;
             }
 
-            await waiter.Task.WaitAsync(ct).ConfigureAwait(false);
+            await reader.WaitToReadAsync(ct).ConfigureAwait(false);
         }
     }
 
     public async IAsyncEnumerable<(long journalPosition, TEntry entry)> ReadBackwardAsync(long beforePosition = long.MaxValue, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        (long pos, TEntry entry)[] snapshot = [.. _entries];
-        Array.Sort(snapshot, (a, b) => b.pos.CompareTo(a.pos));
+        (long pos, TEntry entry)[] snapshot;
+        lock (_gate)
+        {
+            snapshot = [.. _entries];
+        }
+
         await Task.Yield();
-        foreach ((long pos, TEntry entry) in snapshot)
+
+        for (int i = snapshot.Length - 1; i >= 0; i--)
         {
             ct.ThrowIfCancellationRequested();
+            (long pos, TEntry? entry) = snapshot[i];
             if (pos < beforePosition)
             {
                 yield return (pos, entry);
@@ -85,67 +114,45 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry>, IDisposable 
     public async Task<(long journalPosition, TEntry entry)> WaitForAsync(long afterPosition, Func<TEntry, bool> match, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(match);
+
+        long scanPos = afterPosition + 1;
+
         while (true)
         {
-            TaskCompletionSource<bool> waiter = Volatile.Read(ref _signal);
-            (long pos, TEntry entry)[] snapshot = [.. _entries];
+            ChannelReader<bool> reader = _signal.Reader;
+            // Reset level (best-effort) so subsequent WaitToReadAsync will truly wait if no new writes arrive.
+            reader.TryRead(out _);
 
-            (long pos, TEntry entry)? candidate = null;
-            foreach ((long pos, TEntry e) in snapshot)
+            int count;
+            lock (_gate)
             {
-                if (pos > afterPosition && match(e))
+                count = _entries.Count;
+            }
+
+            for (long p = scanPos; p <= count; p++)
+            {
+                (long pos, TEntry entry) item;
+                lock (_gate)
                 {
-                    if (candidate is null || pos < candidate.Value.pos)
-                    {
-                        candidate = (pos, e);
-                    }
+                    item = _entries[(int)(p - 1)];
+                }
+
+                if (match(item.entry))
+                {
+                    ct.ThrowIfCancellationRequested();
+                    return (item.pos, item.entry);
                 }
             }
 
-            if (candidate is not null)
-            {
-                ct.ThrowIfCancellationRequested();
-                return (candidate.Value.pos, candidate.Value.entry);
-            }
-
-            await waiter.Task.WaitAsync(ct).ConfigureAwait(false);
+            scanPos = count + 1;
+            await reader.WaitToReadAsync(ct).ConfigureAwait(false);
         }
     }
 
     public async Task<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, Func<TDerived, bool> match, CancellationToken ct = default) where TDerived : TEntry
     {
         ArgumentNullException.ThrowIfNull(match);
-        while (true)
-        {
-            TaskCompletionSource<bool> waiter = Volatile.Read(ref _signal);
-            (long pos, TEntry entry)[] snapshot = [.. _entries];
-
-            (long pos, TDerived entry)? candidate = null;
-            foreach ((long pos, TEntry e) in snapshot)
-            {
-                if (pos > afterPosition && e is TDerived d && match(d))
-                {
-                    if (candidate is null || pos < candidate.Value.pos)
-                    {
-                        candidate = (pos, d);
-                    }
-                }
-            }
-
-            if (candidate is not null)
-            {
-                ct.ThrowIfCancellationRequested();
-                return (candidate.Value.pos, candidate.Value.entry);
-            }
-
-            await waiter.Task.WaitAsync(ct).ConfigureAwait(false);
-        }
-    }
-
-    private static TaskCompletionSource<bool> NewSignal() => new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    public void Dispose()
-    {
-        GC.SuppressFinalize(this);
+        (long pos, TEntry? e) = await WaitForAsync(afterPosition, e => e is TDerived d && match(d), ct).ConfigureAwait(false);
+        return (pos, (TDerived)e);
     }
 }
