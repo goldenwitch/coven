@@ -4,34 +4,6 @@ using System.Threading.Channels;
 
 namespace Coven.Core;
 
-// ============================================================================
-// Simplification notes (v0.1)
-// ----------------------------------------------------------------------------
-// A) [Implemented] Replace ConcurrentQueue+reordering with a single lock-protected List<(long,TEntry)>.
-//    - Pros: TailAsync drops the 'pending' map & snapshot copies; ReadBackwardAsync can
-//      just walk the list backwards; WaitForAsync can scan from a cursor (O(delta)).
-//    - Cons: Writes contend on a lock; throughput lower, but acceptable for single-process,
-//      in-memory semantics.
-//
-// B) [Implemented] Use an async-friendly signal primitive (Channel<T>) instead of TCS swapping.
-//    - Options: AsyncAutoResetEvent-like primitive, or Channel<T>. With Channel<T>, TailAsync
-//      is trivial. Keep a List for snapshots/backward scans.
-//
-// C) Avoid repeated array allocations: enumerate ConcurrentQueue<T> directly rather than
-//    materializing to an array each loop (ToArray / [.. _entries]). Enumeration of
-//    ConcurrentQueue<T> is a thread-safe snapshot.
-//
-// E) Micro-optimizations (if hot):
-//    - Track 'scannedUpTo' across waiter loops to avoid rescanning the same prefix.
-//    - Check cancellation earlier in loops.
-//
-// F) Optional API tweaks:
-//    - Return ValueTask<long> from WriteAsync if you want to avoid Task allocation (be mindful
-//      of ValueTask pitfalls).
-//    - Add bounded capacity (ring buffer) to cap memory and expose Count/LatestPosition.
-//    - Add Complete() to end tailers gracefully (set a completed flag and signal waiters).
-// ============================================================================
-
 /// <summary>
 /// In-memory implementation of IScrivener<T> journal with simple, single-process semantics;
 /// supports tailing, backward read, and predicate waits.
@@ -39,7 +11,6 @@ namespace Coven.Core;
 /// <typeparam name="TEntry">The journal entry type.</typeparam>
 public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry : notnull
 {
-    // Implemented A: lock-protected List ensures pos assignment + append are atomic and in-order.
     private readonly Lock _gate = new();
     private readonly List<(long pos, TEntry entry)> _entries = [];
 
@@ -55,7 +26,6 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
-    // Simplify F: could be ValueTask<long> (sync-completed) if high-frequency; weigh ValueTask complexities first.
     public Task<long> WriteAsync(TEntry entry, CancellationToken ct = default)
     {
         ct.ThrowIfCancellationRequested();
