@@ -7,7 +7,7 @@ A tiny, composable **.NET 10** engine for orchestrating multiple agents to achie
 * **Typed MagikBlocks**: implement `IMagikBlock<TIn,TOut>.DoMagik(...)` and compose work as pure(ish) functions.
 * **Tag‑based routing**: a per‑ritual tag scope steers selection; blocks may also advertise **capabilities**.
 * **DI‑first**: one builder on `IServiceCollection` (`BuildCoven`) with `MagikBlock<…>` and `LambdaBlock<…>` helpers; finish with `.Done(pull?: bool)`.
-* **Journal Primitives**: reliable, distributable, and seamless to developers.
+* **Journal Primitives**: reliable, distributable, and seamless to developers. Scriveners MUST support a long position.
 * **Spellcasting (optional)**: minimal `ISpell<…>` interfaces + JSON‑schema generation for tool contracts.
 
 ---
