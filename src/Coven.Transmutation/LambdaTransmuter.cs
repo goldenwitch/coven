@@ -14,6 +14,10 @@ public sealed class LambdaTransmuter<TIn, TOut> : ITransmuter<TIn, TOut>
     /// </summary>
     /// <param name="func">Delegate implementing the transmutation logic.</param>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="func"/> is null.</exception>
+    /// <remarks>
+    /// The delegate should be thread-safe and avoid side-effects. Exceptions thrown by the delegate
+    /// propagate to the caller. Honor the provided <see cref="CancellationToken"/> when applicable.
+    /// </remarks>
     public LambdaTransmuter(Func<TIn, CancellationToken, Task<TOut>> func)
     {
         ArgumentNullException.ThrowIfNull(func);
@@ -29,4 +33,3 @@ public sealed class LambdaTransmuter<TIn, TOut> : ITransmuter<TIn, TOut>
     public Task<TOut> Transmute(TIn Input, CancellationToken cancellationToken = default)
         => _func(Input, cancellationToken);
 }
-
