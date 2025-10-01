@@ -11,4 +11,8 @@
     <ProjectReference Include="..\Coven.Transmutation\Coven.Transmutation.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Discord.Net" />
+  </ItemGroup>
+
 </Project>
