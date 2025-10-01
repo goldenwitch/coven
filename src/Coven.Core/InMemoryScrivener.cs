@@ -11,6 +11,9 @@ namespace Coven.Core;
 /// <typeparam name="TEntry">The journal entry type.</typeparam>
 public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry : notnull
 {
+    private const int FriendlyYieldStride = 1024;
+
+    // Using System.Threading.Lock aligns with repo guidance when a lock is warranted; Dotnet's async sugar is a typing nightmare for a task generator like this.
     private readonly Lock _lock = new();
     private readonly List<(long position, TEntry entry)> _entries = [];
 
@@ -25,6 +28,12 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
             FullMode = BoundedChannelFullMode.DropOldest
         });
 
+    /// <summary>
+    /// Appends an entry to the journal and returns its assigned position.
+    /// </summary>
+    /// <param name="entry">The entry to append.</param>
+    /// <param name="cancellationToken">Cancels the append.</param>
+    /// <returns>The monotonically increasing journal position.</returns>
     public Task<long> WriteAsync(TEntry entry, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -49,6 +58,12 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
         return Task.FromResult(position);
     }
 
+    /// <summary>
+    /// Streams entries forward with positions strictly greater than <paramref name="afterPosition"/>.
+    /// </summary>
+    /// <param name="afterPosition">Only entries after this position are returned.</param>
+    /// <param name="cancellationToken">Cancels the stream.</param>
+    /// <returns>An async sequence of (journalPosition, entry) pairs.</returns>
     public async IAsyncEnumerable<(long journalPosition, TEntry entry)> TailAsync(long afterPosition = 0, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         if (afterPosition == long.MaxValue)
@@ -60,6 +75,7 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
 
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ChannelReader<bool> reader = _writeSignal.Reader;
             // Reset level (best-effort) so subsequent WaitToReadAsync will truly wait if no new writes arrive.
             reader.TryRead(out _);
@@ -70,8 +86,8 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
                 (long position, TEntry entry) item;
                 lock (_lock)
                 {
-                    int index = (int)(nextPosition - 1);
-                    if (index >= 0 && index < _entries.Count)
+                    int index = IndexFromPosition(nextPosition);
+                    if (index < _entries.Count)
                     {
                         item = _entries[index];
                     }
@@ -89,6 +105,8 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
 
             if (progressed)
             {
+                // Friendly yield after draining a backlog to avoid monopolizing the thread.
+                await Task.Yield();
                 continue;
             }
 
@@ -96,6 +114,12 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
         }
     }
 
+    /// <summary>
+    /// Streams entries backward with positions strictly less than <paramref name="beforePosition"/>.
+    /// </summary>
+    /// <param name="beforePosition">Upper bound (exclusive); defaults to logical end.</param>
+    /// <param name="cancellationToken">Cancels the stream.</param>
+    /// <returns>An async sequence of (journalPosition, entry) pairs in descending order.</returns>
     public async IAsyncEnumerable<(long journalPosition, TEntry entry)> ReadBackwardAsync(long beforePosition = long.MaxValue, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         (long position, TEntry entry)[] snapshot;
@@ -104,6 +128,7 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
             snapshot = [.. _entries];
         }
 
+        // Yield cooperatively to avoid CS1998 analyzer warnings and ensure fairness before potentially long loops.
         await Task.Yield();
 
         for (int i = snapshot.Length - 1; i >= 0; i--)
@@ -136,6 +161,7 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
 
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             ChannelReader<bool> reader = _writeSignal.Reader;
             // Reset level (best-effort) so subsequent WaitToReadAsync will truly wait if no new writes arrive.
             reader.TryRead(out _);
@@ -146,18 +172,26 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
                 count = _entries.Count;
             }
 
+            int scanSinceYield = 0;
             for (long positionIndex = scanPos; positionIndex <= count; positionIndex++)
             {
                 (long position, TEntry entry) item;
                 lock (_lock)
                 {
-                    item = _entries[(int)(positionIndex - 1)];
+                    item = _entries[IndexFromPosition(positionIndex)];
                 }
 
                 if (match(item.entry))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     return (item.position, item.entry);
+                }
+
+                // Friendly periodic yield during large scans to maintain responsiveness.
+                if (++scanSinceYield >= FriendlyYieldStride)
+                {
+                    scanSinceYield = 0;
+                    await Task.Yield();
                 }
             }
 
@@ -182,5 +216,22 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
         ArgumentNullException.ThrowIfNull(match);
         (long position, TEntry entry) = await WaitForAsync(afterPosition, e => e is TDerived d && match(d), cancellationToken).ConfigureAwait(false);
         return (position, (TDerived)entry);
+    }
+
+    private static int IndexFromPosition(long position)
+    {
+        if (position < 1)
+        {
+            throw new ArgumentOutOfRangeException(nameof(position), "Position must be >= 1.");
+        }
+
+        long zeroBased = position - 1;
+        if (zeroBased > int.MaxValue)
+        {
+            // Storage addressing in this in-memory implementation uses int-indexed list.
+            throw new InvalidOperationException("Position exceeds in-memory addressing capacity. Scriveners MUST support a long position.");
+        }
+
+        return (int)zeroBased;
     }
 }
