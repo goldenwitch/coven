@@ -11,8 +11,6 @@ namespace Coven.Core;
 /// <typeparam name="TEntry">The journal entry type.</typeparam>
 public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry : notnull
 {
-    private const int FriendlyYieldStride = 1024;
-
     // Using System.Threading.Lock aligns with repo guidance when a lock is warranted; Dotnet's async sugar is a typing nightmare for a task generator like this.
     private readonly Lock _lock = new();
     private readonly List<(long position, TEntry entry)> _entries = [];
@@ -157,47 +155,21 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
     {
         ArgumentNullException.ThrowIfNull(match);
 
-        long scanPos = afterPosition + 1;
-
-        while (true)
+        if (afterPosition == long.MaxValue)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            ChannelReader<bool> reader = _writeSignal.Reader;
-            // Reset level (best-effort) so subsequent WaitToReadAsync will truly wait if no new writes arrive.
-            reader.TryRead(out _);
-
-            int count;
-            lock (_lock)
-            {
-                count = _entries.Count;
-            }
-
-            int scanSinceYield = 0;
-            for (long positionIndex = scanPos; positionIndex <= count; positionIndex++)
-            {
-                (long position, TEntry entry) item;
-                lock (_lock)
-                {
-                    item = _entries[IndexFromPosition(positionIndex)];
-                }
-
-                if (match(item.entry))
-                {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    return (item.position, item.entry);
-                }
-
-                // Friendly periodic yield during large scans to maintain responsiveness.
-                if (++scanSinceYield >= FriendlyYieldStride)
-                {
-                    scanSinceYield = 0;
-                    await Task.Yield();
-                }
-            }
-
-            scanPos = count + 1;
-            await reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false);
+            throw new ArgumentOutOfRangeException(nameof(afterPosition), "No further positions exist after long.MaxValue.");
         }
+
+        await foreach ((long journalPosition, TEntry? entry) in TailAsync(afterPosition, cancellationToken))
+        {
+            if (match(entry))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                return (journalPosition, entry);
+            }
+        }
+
+        throw new InvalidOperationException("Unexpected end of tail enumeration.");
     }
 
     /// <summary>
@@ -214,8 +186,8 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
     public async Task<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, Func<TDerived, bool> match, CancellationToken cancellationToken = default) where TDerived : TEntry
     {
         ArgumentNullException.ThrowIfNull(match);
-        (long position, TEntry entry) = await WaitForAsync(afterPosition, e => e is TDerived d && match(d), cancellationToken).ConfigureAwait(false);
-        return (position, (TDerived)entry);
+        (long journalPosition, TEntry entry) = await WaitForAsync(afterPosition, e => e is TDerived d && match(d), cancellationToken).ConfigureAwait(false);
+        return (journalPosition, (TDerived)entry);
     }
 
     private static int IndexFromPosition(long position)
