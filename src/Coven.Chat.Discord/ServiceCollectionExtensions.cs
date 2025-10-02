@@ -2,7 +2,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
-namespace Coven.Chat.Discord.Di;
+namespace Coven.Chat.Discord;
 
 /// <summary>
 /// Internal DI wiring helpers for the Discord session components.
