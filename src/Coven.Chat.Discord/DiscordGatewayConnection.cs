@@ -35,9 +35,28 @@ internal sealed class DiscordGatewayConnection(
     // 0 = not wired, 1 = wired. Interlocked used to guarantee single subscription to events.
     private int _eventsWired;
 
+    // Readiness signaling for the current connection attempt. Null when not connecting.
+    // TaskCompletionSource uses RunContinuationsAsynchronously so continuations do not run inline on the event thread.
+    private TaskCompletionSource<bool>? _clientReadyCompletionSource;
+
     /// <summary>
-    /// Connects to Discord, authenticates the bot, starts the gateway, and wires message handlers.
-    /// Idempotent with respect to event wiring: only the first call will subscribe handlers.
+    /// Handles the Discord client's Ready event by completing the readiness signal for the current connection attempt.
+    /// </summary>
+    /// <remarks>
+    /// TrySetResult tolerates duplicate or late events and races with cleanup. We return a completed task to
+    /// conform to the expected event delegate signature without blocking the event thread.
+    /// </remarks>
+    private Task OnClientReady()
+    {
+        // The volatile field is only written while holding the lifecycle semaphore; here we only read and attempt completion.
+        _clientReadyCompletionSource?.TrySetResult(true);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Connects to Discord, authenticates the bot, starts the gateway, wires message handlers,
+    /// and awaits the client readiness signal before returning. Idempotent with respect to event
+    /// wiring: only the first call will subscribe persistent handlers.
     /// </summary>
     /// <param name="cancellationToken">A token to cancel the connection attempt.</param>
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
@@ -46,7 +65,6 @@ internal sealed class DiscordGatewayConnection(
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) == 1, nameof(DiscordGatewayConnection));
 
         // Ensure only one concurrent ConnectAsync or DisposeAsync runs at a time.
-
         await _lifecycleSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         bool connected = false;
         try
@@ -59,8 +77,18 @@ internal sealed class DiscordGatewayConnection(
                 _socketClient.MessageReceived += OnMessageReceivedAsync;
             }
 
+            // Initialize the readiness signal and subscribe to the canonical Ready handler for this connection attempt.
+            // Subscribing before starting avoids missing a fast-fired Ready event after Login/Start.
+            _clientReadyCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _socketClient.Ready += OnClientReady;
+
             await _socketClient.LoginAsync(TokenType.Bot, _configuration.BotToken).ConfigureAwait(false);
             await _socketClient.StartAsync().ConfigureAwait(false);
+
+            // Await the client readiness signal so that callers observe a truly ready connection.
+            // WaitAsync honors cancellation so shutdown requests propagate promptly.
+            Task readinessTask = _clientReadyCompletionSource.Task;
+            await readinessTask.WaitAsync(cancellationToken).ConfigureAwait(false);
 
             DiscordLog.Connected(_logger);
             connected = true;
@@ -68,6 +96,10 @@ internal sealed class DiscordGatewayConnection(
         catch { throw; }
         finally
         {
+            // Always unsubscribe the Ready handler to avoid event leaks and clear the readiness signal reference.
+            try { _socketClient.Ready -= OnClientReady; } catch { /* best effort */ }
+            _clientReadyCompletionSource = null;
+
             // If connection did not complete successfully, unwind any partial state to ensure
             // retries do not accumulate subscriptions or leak a started client.
             if (!connected)
