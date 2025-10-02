@@ -1,3 +1,4 @@
+using System.Threading.Channels;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.Logging;
@@ -27,9 +28,28 @@ internal sealed class DiscordNetSessionFactory(DiscordClientConfig configuration
         };
 
         DiscordSocketClient socketClient = new(socketConfiguration);
-        DiscordNetSession session = new(_configuration, socketClient, _logger);
 
-        await session.ConnectAsync(cancellationToken).ConfigureAwait(false);
-        return session;
+        // The bounded channel coordinates inbound message flow from the gateway to session consumers.
+        BoundedChannelOptions channelOptions = new(256)
+        {
+            SingleReader = false,
+            SingleWriter = false,
+            FullMode = BoundedChannelFullMode.Wait
+        };
+        Channel<DiscordIncoming> inboundChannel = Channel.CreateBounded<DiscordIncoming>(channelOptions);
+
+        DiscordGatewayConnection gateway = new(_configuration, socketClient, _logger, inboundChannel.Writer);
+        try
+        {
+            await gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            return new DiscordNetSession(gateway, inboundChannel.Reader);
+        }
+        catch
+        {
+            // Ensure cleanup and wake any reader enumerations that may have started during a race.
+            inboundChannel.Writer.TryComplete();
+            await gateway.DisposeAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 }

@@ -28,6 +28,18 @@ internal static class DiscordLog
             new EventId(2003, nameof(Disconnected)),
             "Discord session disconnected.");
 
+    private static readonly Action<ILogger, Exception?> _inboundChannelClosed =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2004, nameof(InboundChannelClosed)),
+            "Inbound channel write failed: channel closed (expected during shutdown).");
+
+    private static readonly Action<ILogger, Exception?> _inboundOperationCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2005, nameof(InboundOperationCanceled)),
+            "Inbound channel write canceled (expected when cancellation is requested).");
+
     internal static void Connecting(ILogger logger, ulong channelId) =>
         _connecting(logger, channelId, null);
 
@@ -39,5 +51,10 @@ internal static class DiscordLog
 
     internal static void Disconnected(ILogger logger) =>
         _disconnected(logger, null);
-}
 
+    internal static void InboundChannelClosed(ILogger logger) =>
+        _inboundChannelClosed(logger, null);
+
+    internal static void InboundOperationCanceled(ILogger logger) =>
+        _inboundOperationCanceled(logger, null);
+}
