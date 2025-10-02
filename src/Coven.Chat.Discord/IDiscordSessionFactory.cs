@@ -4,7 +4,7 @@ namespace Coven.Chat.Discord;
 /// Factory abstraction for creating a scoped Discord session. Each session
 /// owns its connection and disposes it when the scope ends.
 /// </summary>
-public interface IDiscordSessionFactory
+internal interface IDiscordSessionFactory
 {
     /// <summary>
     /// Opens a new Discord session that connects to the gateway and binds to the configured channel.

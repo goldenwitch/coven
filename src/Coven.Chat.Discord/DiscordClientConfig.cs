@@ -3,7 +3,7 @@ namespace Coven.Chat.Discord;
 /// <summary>
 /// Minimal configuration required by the Discord client adapter.
 /// </summary>
-public sealed class DiscordClientConfig
+internal sealed class DiscordClientConfig
 {
     /// <summary>
     /// Gets or sets the bot token used to authenticate with the Discord gateway.
@@ -15,4 +15,3 @@ public sealed class DiscordClientConfig
     /// </summary>
     public ulong ChannelId { get; init; }
 }
-

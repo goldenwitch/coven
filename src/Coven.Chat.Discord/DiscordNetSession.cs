@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
 
@@ -15,10 +16,11 @@ namespace Coven.Chat.Discord;
 /// </remarks>
 /// <param name="configuration">The minimal configuration used to bind a channel.</param>
 /// <param name="socketClient">The Discord.Net socket client used by this session.</param>
-public sealed class DiscordNetSession(DiscordClientConfig configuration, DiscordSocketClient socketClient) : IDiscordSession
+internal sealed class DiscordNetSession(DiscordClientConfig configuration, DiscordSocketClient socketClient, ILogger logger) : IDiscordSession
 {
     private readonly DiscordClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly DiscordSocketClient _socketClient = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly SemaphoreSlim _lifecycleSemaphore = new(1, 1);
     private readonly Channel<DiscordIncoming> _inboundChannel = Channel.CreateBounded<DiscordIncoming>(new BoundedChannelOptions(256)
     {
@@ -40,9 +42,11 @@ public sealed class DiscordNetSession(DiscordClientConfig configuration, Discord
         await _lifecycleSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            DiscordLog.Connecting(_logger, _configuration.ChannelId);
             _socketClient.MessageReceived += OnMessageReceivedAsync;
             await _socketClient.LoginAsync(TokenType.Bot, _configuration.BotToken).ConfigureAwait(false);
             await _socketClient.StartAsync().ConfigureAwait(false);
+            DiscordLog.Connected(_logger);
         }
         finally
         {
@@ -83,25 +87,19 @@ public sealed class DiscordNetSession(DiscordClientConfig configuration, Discord
 
     private async Task OnMessageReceivedAsync(SocketMessage message)
     {
-        try
+        if (message.Channel is null || message.Channel.Id != _configuration.ChannelId)
         {
-            if (message.Channel is null || message.Channel.Id != _configuration.ChannelId)
-            {
-                return;
-            }
-
-            DiscordIncoming incoming = new(
-                Sender: message.Author?.Username ?? message.Author?.Id.ToString(CultureInfo.InvariantCulture) ?? "unknown",
-                Text: message.Content ?? string.Empty,
-                MessageId: message.Id.ToString(CultureInfo.InvariantCulture),
-                Timestamp: message.Timestamp);
-
-            await _inboundChannel.Writer.WriteAsync(incoming).ConfigureAwait(false);
+            return;
         }
-        catch
-        {
-            // Swallow to avoid crashing Discord.NET internal threads; consumers see errors via operations.
-        }
+
+        DiscordIncoming incoming = new(
+            Sender: message.Author?.Username ?? message.Author?.Id.ToString(CultureInfo.InvariantCulture) ?? "unknown",
+            Text: message.Content ?? string.Empty,
+            MessageId: message.Id.ToString(CultureInfo.InvariantCulture),
+            Timestamp: message.Timestamp);
+
+        await _inboundChannel.Writer.WriteAsync(incoming).ConfigureAwait(false);
+        DiscordLog.InboundMessage(_logger, incoming.MessageId, incoming.Sender);
     }
 
     /// <inheritdoc />
@@ -119,21 +117,17 @@ public sealed class DiscordNetSession(DiscordClientConfig configuration, Discord
             _socketClient.MessageReceived -= OnMessageReceivedAsync;
             _inboundChannel.Writer.TryComplete();
 
-            try
-            {
-                await _socketClient.LogoutAsync().ConfigureAwait(false);
-                await _socketClient.StopAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                _socketClient.Dispose();
-                _lifecycleSemaphore.Dispose();
-            }
+            await _socketClient.LogoutAsync().ConfigureAwait(false);
+            await _socketClient.StopAsync().ConfigureAwait(false);
+            _socketClient.Dispose();
+            DiscordLog.Disconnected(_logger);
         }
         finally
         {
             _lifecycleSemaphore.Release();
         }
+
+        _lifecycleSemaphore.Dispose();
         GC.SuppressFinalize(this);
     }
 }

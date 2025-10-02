@@ -5,7 +5,7 @@ namespace Coven.Chat.Discord;
 /// The session provides an async stream for inbound messages and a method
 /// to send outbound messages. Dispose the session to disconnect.
 /// </summary>
-public interface IDiscordSession : IAsyncDisposable
+internal interface IDiscordSession : IAsyncDisposable
 {
     /// <summary>
     /// Streams inbound messages from the configured channel as a cooperative cancellation-aware async sequence.
@@ -23,4 +23,3 @@ public interface IDiscordSession : IAsyncDisposable
     /// <param name="cancellationToken">Token that requests cooperative cancellation of the operation.</param>
     Task SendAsync(string text, CancellationToken cancellationToken = default);
 }
-
