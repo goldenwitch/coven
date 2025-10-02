@@ -29,15 +29,32 @@ internal sealed class DiscordGatewayConnection(
     // Serialize lifecycle transitions (connect/dispose) to prevent interleaving and double wiring.
     private readonly SemaphoreSlim _lifecycleSemaphore = new(1, 1);
 
-    // 0 = not disposed, 1 = disposed. Interlocked used to guarantee idempotent disposal.
-    private int _disposed;
+    // Removed standalone disposed flag; disposal is represented by ConnectionState.Disposed.
 
-    // 0 = not wired, 1 = wired. Interlocked used to guarantee single subscription to events.
-    private int _eventsWired;
+    // Removed per explicit connection state: event wiring is tied to state transitions (Disconnected -> Connecting).
+
+    /// <summary>
+    /// Connection lifecycle state for observability and coordination across threads.
+    /// Backed by an <see cref="int"/> field to allow atomic transitions via <see cref="Interlocked"/>.
+    /// </summary>
+    private enum ConnectionState
+    {
+        Disconnected = 0,
+        Connecting = 1,
+        Connected = 2,
+        Disposed = 3
+    }
+
+    // Backing field storing the current connection state; use Interlocked for writes and Volatile for reads.
+    private int _connectionState = (int)ConnectionState.Disconnected;
 
     // Readiness signaling for the current connection attempt. Null when not connecting.
     // TaskCompletionSource uses RunContinuationsAsynchronously so continuations do not run inline on the event thread.
     private TaskCompletionSource<bool>? _clientReadyCompletionSource;
+
+    // Cancellation token source used to cooperatively cancel in-flight operations (e.g., channel writes)
+    // during shutdown. This avoids indefinite blocking under backpressure and ensures responsive teardown.
+    private CancellationTokenSource? _shutdownCancellationSource;
 
     /// <summary>
     /// Handles the Discord client's Ready event by completing the readiness signal for the current connection attempt.
@@ -61,25 +78,28 @@ internal sealed class DiscordGatewayConnection(
     /// <param name="cancellationToken">A token to cancel the connection attempt.</param>
     public async Task ConnectAsync(CancellationToken cancellationToken = default)
     {
-        // Volatile.Read provides a cheap, up-to-date disposed check across threads without locking.
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) == 1, nameof(DiscordGatewayConnection));
+        // Volatile.Read provides an up-to-date state check across threads without locking.
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed, nameof(DiscordGatewayConnection));
 
         // Ensure only one concurrent ConnectAsync or DisposeAsync runs at a time.
         await _lifecycleSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         bool connected = false;
         try
         {
+            // Atomic state transition so other threads (e.g., event handlers) can observe we are connecting.
+            Interlocked.Exchange(ref _connectionState, (int)ConnectionState.Connecting);
             DiscordLog.Connecting(_logger, _configuration.ChannelId);
 
-            // Wire events exactly once even if ConnectAsync is somehow invoked multiple times by upstream code.
-            if (Interlocked.CompareExchange(ref _eventsWired, 1, 0) == 0)
-            {
-                _socketClient.MessageReceived += OnMessageReceivedAsync;
-            }
+            // Wire events when beginning a connection attempt. Because we hold the lifecycle semaphore,
+            // upstream cannot concurrently wire again. Removing a handler that may not be subscribed is a no-op
+            // during unwind/dispose, so we do not need an additional flag.
+            _socketClient.MessageReceived += OnMessageReceivedAsync;
 
             // Initialize the readiness signal and subscribe to the canonical Ready handler for this connection attempt.
             // Subscribing before starting avoids missing a fast-fired Ready event after Login/Start.
             _clientReadyCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            // Initialize the shutdown CTS for this connected lifetime. It is canceled in DisposeAsync/unwind paths.
+            _shutdownCancellationSource = new CancellationTokenSource();
             _socketClient.Ready += OnClientReady;
 
             await _socketClient.LoginAsync(TokenType.Bot, _configuration.BotToken).ConfigureAwait(false);
@@ -92,6 +112,8 @@ internal sealed class DiscordGatewayConnection(
 
             DiscordLog.Connected(_logger);
             connected = true;
+            // Atomic state transition to Connected after readiness to reflect a fully usable client.
+            Interlocked.Exchange(ref _connectionState, (int)ConnectionState.Connected);
         }
         catch { throw; }
         finally
@@ -104,11 +126,14 @@ internal sealed class DiscordGatewayConnection(
             // retries do not accumulate subscriptions or leak a started client.
             if (!connected)
             {
-                if (Volatile.Read(ref _eventsWired) == 1)
-                {
-                    _socketClient.MessageReceived -= OnMessageReceivedAsync;
-                    Interlocked.Exchange(ref _eventsWired, 0);
-                }
+                // Ensure external observers see a Disconnected state after unwind.
+                Interlocked.Exchange(ref _connectionState, (int)ConnectionState.Disconnected);
+                // Cancel any in-flight operations tied to this connection attempt to avoid hangs.
+                try { _shutdownCancellationSource?.Cancel(); } catch { /* best effort */ }
+                _shutdownCancellationSource?.Dispose();
+                _shutdownCancellationSource = null;
+                // Unsubscribe the message handler; removing a non-subscribed handler is a no-op.
+                _socketClient.MessageReceived -= OnMessageReceivedAsync;
 
                 try { await _socketClient.StopAsync().ConfigureAwait(false); } catch { /* best effort */ }
                 try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch { /* best effort */ }
@@ -124,8 +149,9 @@ internal sealed class DiscordGatewayConnection(
     /// <param name="cancellationToken">A token to cancel the send operation.</param>
     public async Task SendAsync(string text, CancellationToken cancellationToken = default)
     {
-        // Volatile.Read provides a cheap, up-to-date disposed check across threads without locking.
-        ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) == 1, nameof(DiscordGatewayConnection));
+        // Volatile.Read ensures we observe the latest connection state across threads without locking.
+        // We throw ObjectDisposedException when the connection object lifetime has ended.
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed, nameof(DiscordGatewayConnection));
 
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -187,8 +213,8 @@ internal sealed class DiscordGatewayConnection(
     private async Task OnMessageReceivedAsync(SocketMessage message)
     {
         // Quick checks to drop messages for other channels or after disposal without additional work.
-        // Volatile.Read ensures event handler observes latest disposal state to quietly drop messages during shutdown.
-        if (message.Channel is null || message.Channel.Id != _configuration.ChannelId || Volatile.Read(ref _disposed) == 1)
+        // Volatile.Read ensures the event handler observes the latest state to quietly drop messages during shutdown.
+        if (message.Channel is null || message.Channel.Id != _configuration.ChannelId || Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed)
         {
             return;
         }
@@ -206,7 +232,10 @@ internal sealed class DiscordGatewayConnection(
         {
             if (!_inboundWriter.TryWrite(incoming))
             {
-                await _inboundWriter.WriteAsync(incoming).ConfigureAwait(false);
+                // Await with a shutdown-aware token so the event thread does not block indefinitely under backpressure.
+                // The token is canceled during DisposeAsync and connection-unwind paths.
+                CancellationToken shutdownToken = _shutdownCancellationSource?.Token ?? default;
+                await _inboundWriter.WriteAsync(incoming, shutdownToken).ConfigureAwait(false);
             }
             DiscordLog.InboundMessage(_logger, incoming.MessageId, incoming.Sender);
         }
@@ -229,18 +258,19 @@ internal sealed class DiscordGatewayConnection(
     /// </summary>
     public async ValueTask DisposeAsync()
     {
-        // Interlocked.Exchange gates disposal so only one caller runs the critical section.
-        if (Interlocked.Exchange(ref _disposed, 1) == 1)
+        // Atomic state transition ensures only the first caller performs disposal. Subsequent callers return immediately.
+        int previousState = Interlocked.Exchange(ref _connectionState, (int)ConnectionState.Disposed);
+        if (previousState == (int)ConnectionState.Disposed)
         {
             return;
         }
         await _lifecycleSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
-            if (Interlocked.Exchange(ref _eventsWired, 0) == 1)
-            {
-                _socketClient.MessageReceived -= OnMessageReceivedAsync;
-            }
+            // Cancel any in-flight operations (e.g., channel writes) to ensure a prompt and orderly shutdown.
+            try { _shutdownCancellationSource?.Cancel(); } catch { /* best effort */ }
+            // Unsubscribe regardless; removing a non-subscribed handler is a no-op.
+            _socketClient.MessageReceived -= OnMessageReceivedAsync;
 
             // Completing the writer wakes any readers awaiting inbound messages.
             _inboundWriter.TryComplete();
@@ -248,6 +278,8 @@ internal sealed class DiscordGatewayConnection(
             try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch { /* best effort */ }
             try { await _socketClient.StopAsync().ConfigureAwait(false); } catch { /* best effort */ }
             _socketClient.Dispose();
+            _shutdownCancellationSource?.Dispose();
+            _shutdownCancellationSource = null;
 
             DiscordLog.Disconnected(_logger);
         }
