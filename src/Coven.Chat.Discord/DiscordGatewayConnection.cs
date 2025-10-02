@@ -133,9 +133,50 @@ internal sealed class DiscordGatewayConnection(
         }
 
         // Resolve the target channel each send to avoid caching references that may become invalid across reconnects.
-        IMessageChannel messageChannel = _socketClient.GetChannel(_configuration.ChannelId) as IMessageChannel
-            ?? throw new InvalidOperationException("Configured channel was not found or is not a message channel.");
+        // Attempt cache-first, then fall back to REST with cooperative cancellation for resilience on cold caches.
+        IMessageChannel? messageChannel = _socketClient.GetChannel(_configuration.ChannelId) as IMessageChannel;
+        if (messageChannel is null)
+        {
+            DiscordLog.ChannelCacheMiss(_logger, _configuration.ChannelId);
+            try
+            {
+                DiscordLog.ChannelRestFetchStart(_logger, _configuration.ChannelId);
+                // RequestOptions carries the cancellation token so REST calls honor cooperative cancellation.
+                RequestOptions requestOptions = new() { CancelToken = cancellationToken };
+                IChannel? restChannel = await _socketClient.Rest.GetChannelAsync(_configuration.ChannelId, requestOptions).ConfigureAwait(false);
+                if (restChannel is IMessageChannel resolvedMessageChannel)
+                {
+                    messageChannel = resolvedMessageChannel;
+                    DiscordLog.ChannelRestFetchSuccess(_logger, _configuration.ChannelId);
+                }
+                else
+                {
+                    // Provide clear diagnostics when the resolved channel is not a message-capable channel.
+                    string actualTypeName = restChannel?.GetType().Name ?? "null";
+                    DiscordLog.ChannelRestFetchInvalidType(_logger, _configuration.ChannelId, actualTypeName);
+                    throw new InvalidOperationException($"Configured channel '{_configuration.ChannelId}' resolved via REST but is not a message channel (actual: {actualTypeName}).");
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Await cancellation with context for observability; rethrow to propagate to caller.
+                DiscordLog.ChannelLookupCanceled(_logger, _configuration.ChannelId);
+                throw;
+            }
+            catch (Exception error)
+            {
+                // Log detailed lookup failure with the channel identifier for triage, then rethrow.
+                DiscordLog.ChannelLookupError(_logger, _configuration.ChannelId, error);
+                throw;
+            }
+        }
+        else
+        {
+            DiscordLog.ChannelCacheHit(_logger, _configuration.ChannelId);
+        }
 
+        // WaitAsync is used to attach the provided cancellation token to the send operation so callers can
+        // cooperatively cancel outbound messages, avoiding hangs during shutdown.
         await messageChannel.SendMessageAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
