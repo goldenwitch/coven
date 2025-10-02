@@ -38,17 +38,40 @@ internal sealed class DiscordNetSessionFactory(DiscordClientConfig configuration
         };
         Channel<DiscordIncoming> inboundChannel = Channel.CreateBounded<DiscordIncoming>(channelOptions);
 
-        DiscordGatewayConnection gateway = new(_configuration, socketClient, _logger, inboundChannel.Writer);
+        // Create a session-scoped CTS that links to the factory-provided token so either can trigger graceful shutdown.
+        CancellationTokenSource sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+
+        DiscordLog.SessionOpenStart(_logger, _configuration.ChannelId);
+        DiscordGatewayConnection gateway = new(
+            _configuration,
+            socketClient,
+            _logger,
+            inboundChannel.Writer,
+            sessionCts.Token);
         try
         {
-            await gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
-            return new DiscordNetSession(gateway, inboundChannel.Reader);
+            await gateway.ConnectAsync(sessionCts.Token).ConfigureAwait(false);
+            DiscordLog.SessionOpenSucceeded(_logger, _configuration.ChannelId);
+            return new DiscordNetSession(gateway, inboundChannel.Reader, sessionCts, _logger);
         }
-        catch
+        catch (OperationCanceledException)
         {
             // Ensure cleanup and wake any reader enumerations that may have started during a race.
             inboundChannel.Writer.TryComplete();
-            await gateway.DisposeAsync().ConfigureAwait(false);
+            try { sessionCts.Cancel(); } catch { /* best effort */ }
+            try { await gateway.DisposeAsync().ConfigureAwait(false); } catch (Exception dex) { DiscordLog.SessionOpenCleanupDisposeError(_logger, _configuration.ChannelId, dex); }
+            sessionCts.Dispose();
+            DiscordLog.SessionOpenCanceled(_logger, _configuration.ChannelId);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            // Ensure cleanup and wake any reader enumerations that may have started during a race.
+            inboundChannel.Writer.TryComplete();
+            try { sessionCts.Cancel(); } catch { /* best effort */ }
+            try { await gateway.DisposeAsync().ConfigureAwait(false); } catch (Exception dex) { DiscordLog.SessionOpenCleanupDisposeError(_logger, _configuration.ChannelId, dex); }
+            sessionCts.Dispose();
+            DiscordLog.SessionOpenFailed(_logger, _configuration.ChannelId, ex);
             throw;
         }
     }

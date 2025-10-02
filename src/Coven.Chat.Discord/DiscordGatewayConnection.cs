@@ -19,19 +19,17 @@ internal sealed class DiscordGatewayConnection(
     DiscordClientConfig configuration,
     DiscordSocketClient socketClient,
     ILogger logger,
-    ChannelWriter<DiscordIncoming> inboundWriter) : IAsyncDisposable
+    ChannelWriter<DiscordIncoming> inboundWriter,
+    CancellationToken sessionToken) : IAsyncDisposable
 {
     private readonly DiscordClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly DiscordSocketClient _socketClient = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly ChannelWriter<DiscordIncoming> _inboundWriter = inboundWriter ?? throw new ArgumentNullException(nameof(inboundWriter));
+    private readonly CancellationToken _sessionToken = sessionToken;
 
     // Serialize lifecycle transitions (connect/dispose) to prevent interleaving and double wiring.
     private readonly SemaphoreSlim _lifecycleSemaphore = new(1, 1);
-
-    // Removed standalone disposed flag; disposal is represented by ConnectionState.Disposed.
-
-    // Removed per explicit connection state: event wiring is tied to state transitions (Disconnected -> Connecting).
 
     /// <summary>
     /// Connection lifecycle state for observability and coordination across threads.
@@ -51,12 +49,6 @@ internal sealed class DiscordGatewayConnection(
     // Readiness signaling for the current connection attempt. Always non-null; replaced per connect.
     // TaskCompletionSource uses RunContinuationsAsynchronously so continuations do not run inline on the event thread.
     private TaskCompletionSource<bool> _clientReadyCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
-
-    // Cancellation token source used to cooperatively cancel in-flight operations (e.g., channel writes)
-    // during shutdown. This avoids indefinite blocking under backpressure and ensures responsive teardown.
-    private CancellationTokenSource _shutdownCancellationSource = new();
-    // Cached token to avoid reading from a potentially disposed source during races.
-    private CancellationToken _shutdownCancellationToken;
 
     /// <summary>
     /// Handles the Discord client's Ready event by completing the readiness signal for the current connection attempt.
@@ -78,14 +70,14 @@ internal sealed class DiscordGatewayConnection(
     /// and awaits the client readiness signal before returning. Idempotent with respect to event
     /// wiring: only the first call will subscribe persistent handlers.
     /// </summary>
-    /// <param name="cancellationToken">A token to cancel the connection attempt.</param>
-    public async Task ConnectAsync(CancellationToken cancellationToken = default)
+    /// <param name="sessionToken">A token to cancel the connection attempt.</param>
+    public async Task ConnectAsync(CancellationToken sessionToken)
     {
         // Volatile.Read provides an up-to-date state check across threads without locking.
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed, nameof(DiscordGatewayConnection));
 
         // Ensure only one concurrent ConnectAsync or DisposeAsync runs at a time.
-        await _lifecycleSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _lifecycleSemaphore.WaitAsync(sessionToken).ConfigureAwait(false);
         bool connected = false;
         try
         {
@@ -101,9 +93,6 @@ internal sealed class DiscordGatewayConnection(
             // Initialize the readiness signal and subscribe to the canonical Ready handler for this connection attempt.
             // Subscribing before starting avoids missing a fast-fired Ready event after Login/Start.
             _clientReadyCompletionSource = new(TaskCreationOptions.RunContinuationsAsynchronously);
-            // Initialize the shutdown CTS for this connected lifetime. It is canceled in DisposeAsync/unwind paths.
-            _shutdownCancellationSource = new CancellationTokenSource();
-            _shutdownCancellationToken = _shutdownCancellationSource.Token;
             _socketClient.Ready += OnClientReady;
 
             await _socketClient.LoginAsync(TokenType.Bot, _configuration.BotToken).ConfigureAwait(false);
@@ -112,7 +101,7 @@ internal sealed class DiscordGatewayConnection(
             // Await the client readiness signal so that callers observe a truly ready connection.
             // WaitAsync honors cancellation so shutdown requests propagate promptly.
             Task readinessTask = _clientReadyCompletionSource.Task;
-            await readinessTask.WaitAsync(cancellationToken).ConfigureAwait(false);
+            await readinessTask.WaitAsync(sessionToken).ConfigureAwait(false);
 
             DiscordLog.Connected(_logger);
             connected = true;
@@ -131,14 +120,11 @@ internal sealed class DiscordGatewayConnection(
             {
                 // Ensure external observers see a Disconnected state after unwind.
                 Interlocked.Exchange(ref _connectionState, (int)ConnectionState.Disconnected);
-                // Cancel any in-flight operations tied to this connection attempt to avoid hangs.
-                try { _shutdownCancellationSource.Cancel(); } catch { /* best effort */ }
-                _shutdownCancellationSource.Dispose();
                 // Unsubscribe the message handler; removing a non-subscribed handler is a no-op.
                 _socketClient.MessageReceived -= OnMessageReceivedAsync;
 
-                try { await _socketClient.StopAsync().ConfigureAwait(false); } catch { /* best effort */ }
-                try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch { /* best effort */ }
+                try { await _socketClient.StopAsync().ConfigureAwait(false); } catch (Exception ex) { DiscordLog.GatewayStopUnwindError(_logger, ex); }
+                try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch (Exception ex) { DiscordLog.GatewayLogoutUnwindError(_logger, ex); }
             }
             _lifecycleSemaphore.Release();
         }
@@ -155,6 +141,11 @@ internal sealed class DiscordGatewayConnection(
         // We throw ObjectDisposedException when the connection object lifetime has ended.
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed, nameof(DiscordGatewayConnection));
 
+        // Early abort by per-call token if requested.
+        cancellationToken.ThrowIfCancellationRequested();
+        // Early abort on session cancellation.
+        _sessionToken.ThrowIfCancellationRequested();
+
         if (string.IsNullOrWhiteSpace(text))
         {
             return;
@@ -170,7 +161,7 @@ internal sealed class DiscordGatewayConnection(
             {
                 DiscordLog.ChannelRestFetchStart(_logger, _configuration.ChannelId);
                 // RequestOptions carries the cancellation token so REST calls honor cooperative cancellation.
-                RequestOptions requestOptions = new() { CancelToken = cancellationToken };
+                RequestOptions requestOptions = new() { CancelToken = _sessionToken };
                 IChannel? restChannel = await _socketClient.Rest.GetChannelAsync(_configuration.ChannelId, requestOptions).ConfigureAwait(false);
                 if (restChannel is IMessageChannel resolvedMessageChannel)
                 {
@@ -204,9 +195,34 @@ internal sealed class DiscordGatewayConnection(
             messageChannel = cachedMessageChannel;
         }
 
+        // Re-check before sending to fail fast if canceled or disposed since resolution started.
+        ObjectDisposedException.ThrowIf(Volatile.Read(ref _connectionState) == (int)ConnectionState.Disposed, nameof(DiscordGatewayConnection));
+        cancellationToken.ThrowIfCancellationRequested();
+        _sessionToken.ThrowIfCancellationRequested();
+
+        DiscordLog.OutboundSendStart(_logger, _configuration.ChannelId, text.Length);
         // WaitAsync is used to attach the provided cancellation token to the send operation so callers can
         // cooperatively cancel outbound messages, avoiding hangs during shutdown.
-        await messageChannel.SendMessageAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await messageChannel.SendMessageAsync(text).WaitAsync(_sessionToken).ConfigureAwait(false);
+            DiscordLog.OutboundSendSucceeded(_logger, _configuration.ChannelId);
+        }
+        catch (OperationCanceledException)
+        {
+            DiscordLog.OutboundOperationCanceled(_logger, _configuration.ChannelId);
+            throw;
+        }
+        catch (ObjectDisposedException ex)
+        {
+            DiscordLog.OutboundSendFailed(_logger, _configuration.ChannelId, ex);
+            throw;
+        }
+        catch (Exception ex)
+        {
+            DiscordLog.OutboundSendFailed(_logger, _configuration.ChannelId, ex);
+            throw;
+        }
     }
 
     /// <summary>
@@ -244,10 +260,8 @@ internal sealed class DiscordGatewayConnection(
             if (!_inboundWriter.TryWrite(incoming))
             {
                 // Await with a shutdown-aware token so the event thread does not block indefinitely under backpressure.
-                // The token is canceled during DisposeAsync and connection-unwind paths.
-                // Use the cached token captured when the CTS was created to avoid touching a potentially disposed source.
-                CancellationToken shutdownToken = _shutdownCancellationToken;
-                await _inboundWriter.WriteAsync(incoming, shutdownToken).ConfigureAwait(false);
+                // The token is canceled by the session owner to drive graceful shutdown.
+                await _inboundWriter.WriteAsync(incoming, _sessionToken).ConfigureAwait(false);
             }
             DiscordLog.InboundMessage(_logger, incoming.MessageId, incoming.Sender);
         }
@@ -261,6 +275,10 @@ internal sealed class DiscordGatewayConnection(
         {
             // Expected when cancellation is requested (for example, during shutdown); log for visibility.
             DiscordLog.InboundOperationCanceled(_logger);
+        }
+        catch (Exception ex)
+        {
+            DiscordLog.InboundHandlerUnexpectedError(_logger, ex);
         }
     }
 
@@ -279,18 +297,15 @@ internal sealed class DiscordGatewayConnection(
         await _lifecycleSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
-            // Cancel any in-flight operations (e.g., channel writes) to ensure a prompt and orderly shutdown.
-            try { _shutdownCancellationSource.Cancel(); } catch { /* best effort */ }
             // Unsubscribe regardless; removing a non-subscribed handler is a no-op.
             _socketClient.MessageReceived -= OnMessageReceivedAsync;
 
             // Completing the writer wakes any readers awaiting inbound messages.
             _inboundWriter.TryComplete();
 
-            try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch { /* best effort */ }
-            try { await _socketClient.StopAsync().ConfigureAwait(false); } catch { /* best effort */ }
+            try { await _socketClient.LogoutAsync().ConfigureAwait(false); } catch (Exception ex) { DiscordLog.GatewayLogoutDisposeError(_logger, ex); }
+            try { await _socketClient.StopAsync().ConfigureAwait(false); } catch (Exception ex) { DiscordLog.GatewayStopDisposeError(_logger, ex); }
             _socketClient.Dispose();
-            _shutdownCancellationSource.Dispose();
 
             DiscordLog.Disconnected(_logger);
         }
