@@ -26,16 +26,9 @@ internal sealed class DiscordNetSession(DiscordGatewayConnection gateway, Channe
         // Volatile.Read provides a cheap, up-to-date disposed check across threads without locking.
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) == 1, nameof(DiscordNetSession));
 
-
-        ChannelReader<DiscordIncoming> inboundChannelReader = _inboundReader;
-
-        while (await inboundChannelReader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (DiscordIncoming nextIncoming in _inboundReader.ReadAllAsync(cancellationToken))
         {
-            while (inboundChannelReader.TryRead(out DiscordIncoming? nextIncoming))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return nextIncoming;
-            }
+            yield return nextIncoming;
         }
     }
 
@@ -44,7 +37,6 @@ internal sealed class DiscordNetSession(DiscordGatewayConnection gateway, Channe
     {
         // Volatile.Read provides a cheap, up-to-date disposed check across threads without locking.
         ObjectDisposedException.ThrowIf(Volatile.Read(ref _disposed) == 1, nameof(DiscordNetSession));
-
 
         await _gateway.SendAsync(text, cancellationToken).ConfigureAwait(false);
     }
