@@ -175,12 +175,6 @@ internal static class DiscordLog
             new EventId(2034, nameof(SessionOpenSucceeded)),
             "Opened Discord session for channel {ChannelId}.");
 
-    private static readonly Action<ILogger, ulong, Exception?> _sessionOpenCanceled =
-        LoggerMessage.Define<ulong>(
-            LogLevel.Information,
-            new EventId(2035, nameof(SessionOpenCanceled)),
-            "Discord session open canceled for channel {ChannelId}.");
-
     private static readonly Action<ILogger, ulong, Exception?> _sessionOpenCleanupDisposeError =
         LoggerMessage.Define<ulong>(
             LogLevel.Error,
@@ -270,9 +264,6 @@ internal static class DiscordLog
 
     internal static void SessionOpenSucceeded(ILogger logger, ulong channelId) =>
         _sessionOpenSucceeded(logger, channelId, null);
-
-    internal static void SessionOpenCanceled(ILogger logger, ulong channelId) =>
-        _sessionOpenCanceled(logger, channelId, null);
 
     internal static void SessionOpenCleanupDisposeError(ILogger logger, ulong channelId, Exception error) =>
         _sessionOpenCleanupDisposeError(logger, channelId, error);
