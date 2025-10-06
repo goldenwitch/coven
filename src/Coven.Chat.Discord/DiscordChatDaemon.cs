@@ -3,34 +3,44 @@ using Coven.Daemonology;
 
 namespace Coven.Chat.Discord;
 
-internal class DiscordChatDaemon(
+internal sealed class DiscordChatDaemon(
     IScrivener<DaemonEvent> scrivener,
-    DiscordGatewayFactory gatewayFactory) : ContractDaemon(scrivener), IAsyncDisposable
+    DiscordChatSessionFactory sessionFactory) : ContractDaemon(scrivener), IAsyncDisposable
 {
-    private readonly DiscordGatewayFactory _gatewayFactory = gatewayFactory ?? throw new ArgumentNullException(nameof(gatewayFactory));
-    private DiscordGatewayConnection? _gateway;
+    private readonly DiscordChatSessionFactory _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
     private CancellationTokenSource? _sessionCts;
+    private DiscordChatSession? _session;
 
     public override async Task Start(CancellationToken cancellationToken)
     {
         _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        _gateway = _gatewayFactory.Create(_sessionCts.Token);
+        _session = _sessionFactory.Create(_sessionCts.Token);
+        await _session.StartAsync().ConfigureAwait(false);
 
-        await _gateway.ConnectAsync().ConfigureAwait(false);
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
 
-    public override Task Shutdown(CancellationToken cancellationToken)
+    public override async Task Shutdown(CancellationToken cancellationToken)
     {
         _sessionCts?.Cancel();
-        return Transition(Status.Completed, cancellationToken);
+        await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
-        _gateway?.Dispose();
-        _sessionCts?.Dispose();
-        GC.SuppressFinalize(this);
-        return ValueTask.CompletedTask;
+        try
+        {
+            if (_session is not null)
+            {
+                await _session.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _session = null;
+            _sessionCts?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+        return;
     }
 }
