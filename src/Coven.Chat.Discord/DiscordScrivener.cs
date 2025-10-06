@@ -1,4 +1,5 @@
 using Coven.Core;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Chat.Discord;
 
@@ -7,7 +8,13 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
     private readonly IScrivener<DiscordEntry> _scrivener;
     private readonly DiscordGatewayConnection _discordClient;
 
-    public DiscordScrivener(IScrivener<DiscordEntry> scrivener, DiscordGatewayConnection discordClient)
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="scrivener"></param>
+    /// <param name="discordClient"></param>
+    /// <remarks> Because we are what we utilize, ensure that the inner scrivener is keyed in DI.</remarks>
+    public DiscordScrivener([FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener, DiscordGatewayConnection discordClient)
     {
         ArgumentNullException.ThrowIfNull(scrivener);
         ArgumentNullException.ThrowIfNull(discordClient);

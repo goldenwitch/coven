@@ -2,6 +2,7 @@ using System.Globalization;
 using Coven.Core;
 using Discord;
 using Discord.WebSocket;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
@@ -9,7 +10,7 @@ namespace Coven.Chat.Discord;
 internal sealed class DiscordGatewayConnection(
     DiscordClientConfig configuration,
     DiscordSocketClient socketClient,
-    IScrivener<DiscordEntry> scrivener,
+    [FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener,
     ILogger logger,
     CancellationToken sessionToken) : IDisposable
 {
