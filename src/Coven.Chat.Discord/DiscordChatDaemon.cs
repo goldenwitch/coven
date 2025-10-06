@@ -5,14 +5,13 @@ namespace Coven.Chat.Discord;
 
 public class DiscordChatDaemon(IScrivener<DaemonEvent> scrivener) : ContractDaemon(scrivener)
 {
-    public override Task Shutdown(CancellationToken cancellationToken = default)
+    public override Task Shutdown(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return Transition(Status.Completed, cancellationToken);
     }
 
-    public override Task Start(CancellationToken cancellationToken = default)
+    public override Task Start(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        return Transition(Status.Running, cancellationToken);
     }
 }
-

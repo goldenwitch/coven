@@ -3,7 +3,7 @@ namespace Coven.Chat.Discord;
 /// <summary>
 /// Minimal configuration required by the Discord client adapter.
 /// </summary>
-internal sealed class DiscordClientConfig
+public sealed class DiscordClientConfig
 {
     /// <summary>
     /// Gets or sets the bot token used to authenticate with the Discord gateway.
