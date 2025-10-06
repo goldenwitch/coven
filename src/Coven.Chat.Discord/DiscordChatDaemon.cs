@@ -3,15 +3,34 @@ using Coven.Daemonology;
 
 namespace Coven.Chat.Discord;
 
-public class DiscordChatDaemon(IScrivener<DaemonEvent> scrivener) : ContractDaemon(scrivener)
+internal class DiscordChatDaemon(
+    IScrivener<DaemonEvent> scrivener,
+    DiscordGatewayFactory gatewayFactory) : ContractDaemon(scrivener), IAsyncDisposable
 {
+    private readonly DiscordGatewayFactory _gatewayFactory = gatewayFactory ?? throw new ArgumentNullException(nameof(gatewayFactory));
+    private DiscordGatewayConnection? _gateway;
+    private CancellationTokenSource? _sessionCts;
+
+    public override async Task Start(CancellationToken cancellationToken)
+    {
+        _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _gateway = _gatewayFactory.Create(_sessionCts.Token);
+
+        await _gateway.ConnectAsync().ConfigureAwait(false);
+        await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
+    }
+
     public override Task Shutdown(CancellationToken cancellationToken)
     {
+        _sessionCts?.Cancel();
         return Transition(Status.Completed, cancellationToken);
     }
 
-    public override Task Start(CancellationToken cancellationToken)
+    public ValueTask DisposeAsync()
     {
-        return Transition(Status.Running, cancellationToken);
+        _gateway?.Dispose();
+        _sessionCts?.Dispose();
+        GC.SuppressFinalize(this);
+        return ValueTask.CompletedTask;
     }
 }
