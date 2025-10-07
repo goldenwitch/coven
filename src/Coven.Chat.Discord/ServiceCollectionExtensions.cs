@@ -2,6 +2,7 @@ using Coven.Core;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Coven.Daemonology;
 using Coven.Transmutation;
+using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -9,12 +10,22 @@ namespace Coven.Chat.Discord;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddDiscordChat(this IServiceCollection services)
+    public static IServiceCollection AddDiscordChat(this IServiceCollection services, DiscordClientConfig discordClientConfig)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         // Discord client and session factory
-        services.AddSingleton<DiscordSocketClient>();
+        services.AddScoped(sp => discordClientConfig);
+        // Configure DiscordSocketClient with required gateway intents so MessageReceived fires.
+        // Intents must also be enabled in the Discord Developer Portal (Message Content is privileged).
+        services.AddSingleton(_ => new DiscordSocketClient(new DiscordSocketConfig
+        {
+            GatewayIntents =
+                GatewayIntents.Guilds |
+                GatewayIntents.GuildMessages |
+                GatewayIntents.DirectMessages |
+                GatewayIntents.MessageContent
+        }));
         services.AddScoped<DiscordChatSessionFactory>();
 
         // Default ChatEntry journal if none provided by host
@@ -24,7 +35,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
         services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
-        services.AddScoped<IDaemon, DiscordChatDaemon>();
+        services.AddScoped<ContractDaemon, DiscordChatDaemon>();
         return services;
     }
 }

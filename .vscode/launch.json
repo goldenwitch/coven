@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch: Coven.Toys.DiscordChat",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/toys/Coven.Toys.DiscordChat/bin/Debug/net10.0/Coven.Toys.DiscordChat.dll",
+      "cwd": "${workspaceFolder}/src/toys/Coven.Toys.DiscordChat",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true
+    },
+    {
+      "name": "Attach: .NET Core",
+      "type": "coreclr",
+      "request": "attach"
+    }
+  ]
+}
+
