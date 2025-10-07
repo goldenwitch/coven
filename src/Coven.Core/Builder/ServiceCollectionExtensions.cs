@@ -22,12 +22,6 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static CovenServiceBuilder BuildCoven(this IServiceCollection services)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        return new CovenServiceBuilder(services);
-    }
-
     /// <summary>
     /// Registers a singleton in-memory scrivener for the given entry type.
     /// Uses TryAdd to avoid duplicate registrations.

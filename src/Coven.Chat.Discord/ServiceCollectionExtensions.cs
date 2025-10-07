@@ -9,11 +9,12 @@ namespace Coven.Chat.Discord;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddDiscordChat(this IServiceCollection services)
+    public static IServiceCollection AddDiscordChat(this IServiceCollection services, DiscordClientConfig discordClientConfig)
     {
         ArgumentNullException.ThrowIfNull(services);
 
         // Discord client and session factory
+        services.AddScoped(sp => discordClientConfig);
         services.AddSingleton<DiscordSocketClient>();
         services.AddScoped<DiscordChatSessionFactory>();
 

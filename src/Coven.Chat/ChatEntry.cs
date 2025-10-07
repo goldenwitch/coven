@@ -3,8 +3,10 @@
 namespace Coven.Chat;
 
 // Minimal chat entry union used with IScrivener<T>
-public abstract record ChatEntry(string Sender);
+public abstract record ChatEntry(string Sender, string Text);
 
-public sealed record ChatThought(string Sender, string Text) : ChatEntry(Sender);
+public sealed record ChatOutgoing(string Sender, string Text) : ChatEntry(Sender, Text);
 
-public sealed record ChatResponse(string Sender, string Text) : ChatEntry(Sender);
+public sealed record ChatIncoming(string Sender, string Text) : ChatEntry(Sender, Text);
+
+public sealed record ChatAck(string Sender, string Text) : ChatEntry(Sender, Text);

@@ -30,6 +30,12 @@ internal sealed class DiscordChatSession(
         {
             await foreach ((long _, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
             {
+                // Skip Acks
+                if (entry is DiscordAck)
+                {
+                    continue;
+                }
+
                 ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
                 await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
             }
@@ -39,6 +45,12 @@ internal sealed class DiscordChatSession(
         {
             await foreach ((long _, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
             {
+                // Skip Acks
+                if (entry is ChatAck)
+                {
+                    continue;
+                }
+
                 DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
                 await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
             }
