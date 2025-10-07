@@ -9,7 +9,7 @@ using Microsoft.Extensions.Hosting;
 DiscordClientConfig discordClientConfig = new()
 {
     BotToken = "",
-    ChannelId = 1330113333424164865 // If you are leveraging a specific channel put the id here.
+    ChannelId = 123 // If you are leveraging a specific channel put the id here.
 };
 
 // Register all of our DI stuff
