@@ -9,7 +9,8 @@ using Microsoft.Extensions.Logging;
 // Configuration
 DiscordClientConfig discordClientConfig = new()
 {
-    BotToken = ""
+    BotToken = "",
+    ChannelId = 123
 };
 
 // Register all of our DI stuff
