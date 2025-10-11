@@ -18,21 +18,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped(sp => discordClientConfig);
         // Configure DiscordSocketClient with required gateway intents so MessageReceived fires.
         // Intents must also be enabled in the Discord Developer Portal (Message Content is privileged).
-        services.AddSingleton(_ => new DiscordSocketClient(new DiscordSocketConfig
+        services.AddScoped(_ => new DiscordSocketClient(new DiscordSocketConfig
         {
             GatewayIntents =
                 GatewayIntents.Guilds |
                 GatewayIntents.GuildMessages |
                 GatewayIntents.DirectMessages |
-                GatewayIntents.MessageContent
+                GatewayIntents.MessageContent,
         }));
         services.AddScoped<DiscordChatSessionFactory>();
+        services.AddScoped<DiscordGatewayConnection>();
 
         // Default ChatEntry journal if none provided by host
         services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
 
-        services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");
         services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
+        services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");
+
         services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();

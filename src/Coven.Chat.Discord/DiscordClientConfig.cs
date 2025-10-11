@@ -13,5 +13,5 @@ public sealed class DiscordClientConfig
     /// <summary>
     /// Gets or sets the identifier of the channel to read from and write to.
     /// </summary>
-    public ulong ChannelId { get; init; }
+    public required ulong ChannelId { get; init; }
 }

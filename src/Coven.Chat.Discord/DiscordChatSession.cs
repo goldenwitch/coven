@@ -1,5 +1,6 @@
 using Coven.Core;
 using Coven.Transmutation;
+using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
 
@@ -8,27 +9,26 @@ internal sealed class DiscordChatSession(
     IScrivener<DiscordEntry> discordJournal,
     IScrivener<ChatEntry> chatJournal,
     IBiDirectionalTransmuter<DiscordEntry, ChatEntry> transmuter,
+    ILogger<DiscordChatSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
 {
     private readonly DiscordGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     private readonly IScrivener<DiscordEntry> _discordJournal = discordJournal ?? throw new ArgumentNullException(nameof(discordJournal));
     private readonly IScrivener<ChatEntry> _chatJournal = chatJournal ?? throw new ArgumentNullException(nameof(chatJournal));
     private readonly IBiDirectionalTransmuter<DiscordEntry, ChatEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
+    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
 
-    private CancellationTokenSource? _pumpCts;
     private Task? _discordToChatPump;
     private Task? _chatToDiscordPump;
 
     public async Task StartAsync()
     {
-        await _gateway.ConnectAsync().ConfigureAwait(false);
-        // Create a linked CTS so we can cancel pumps cooperatively during Dispose.
-        _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(_sessionToken);
-        CancellationToken ct = _pumpCts.Token;
+        CancellationToken ct = _sessionToken;
+        await _gateway.ConnectAsync(ct).ConfigureAwait(false);
         _discordToChatPump = Task.Run(async () =>
         {
-            await foreach ((long _, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
+            await foreach ((long position, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
             {
                 // Skip Acks
                 if (entry is DiscordAck)
@@ -36,14 +36,17 @@ internal sealed class DiscordChatSession(
                     continue;
                 }
 
+                DiscordLog.DiscordToChatObserved(_logger, entry.GetType().Name, position);
                 ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
-                await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
+                DiscordLog.DiscordToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
+                long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
+                DiscordLog.DiscordToChatAppended(_logger, chat.GetType().Name, chatPos);
             }
         }, ct);
 
         _chatToDiscordPump = Task.Run(async () =>
         {
-            await foreach ((long _, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
+            await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
             {
                 // Skip Acks
                 if (entry is ChatAck)
@@ -51,8 +54,11 @@ internal sealed class DiscordChatSession(
                     continue;
                 }
 
+                DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
                 DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
-                await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
+                DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
+                long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
+                DiscordLog.ChatToDiscordAppended(_logger, discord.GetType().Name, discPos);
             }
         }, ct);
     }
@@ -61,9 +67,6 @@ internal sealed class DiscordChatSession(
     {
         try
         {
-            // Ensure pumps are cancelled so async enumerables can complete cooperatively.
-            _pumpCts?.Cancel();
-
             if (_discordToChatPump is not null && _chatToDiscordPump is not null)
             {
                 try
@@ -79,8 +82,6 @@ internal sealed class DiscordChatSession(
         finally
         {
             _gateway.Dispose();
-            _pumpCts?.Dispose();
-            _pumpCts = null;
             _discordToChatPump = null;
             _chatToDiscordPump = null;
             GC.SuppressFinalize(this);
