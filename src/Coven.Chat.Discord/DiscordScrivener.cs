@@ -25,7 +25,7 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
     public async Task<long> WriteAsync(DiscordEntry entry, CancellationToken cancellationToken = default)
     {
         // First we write to discord. We are intentionally not solving the problem where we receive an echo of the message we sent.
-        await _discordClient.SendAsync(entry.Text);
+        await _discordClient.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
 
         // Then we write to our underlying scrivener to ensure that the message is available.
         return await _scrivener.WriteAsync(entry, cancellationToken).ConfigureAwait(false);

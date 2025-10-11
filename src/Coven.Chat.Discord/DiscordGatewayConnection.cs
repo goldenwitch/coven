@@ -11,19 +11,17 @@ internal sealed class DiscordGatewayConnection(
     DiscordClientConfig configuration,
     DiscordSocketClient socketClient,
     [FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener,
-    ILogger<DiscordGatewayConnection> logger,
-    CancellationToken sessionToken) : IDisposable
+    ILogger<DiscordGatewayConnection> logger) : IDisposable
 {
     private readonly DiscordClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly DiscordSocketClient _socketClient = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
     private readonly IScrivener<DiscordEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(socketClient));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    private readonly CancellationToken _sessionToken = sessionToken;
 
-    public async Task ConnectAsync()
+    public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         DiscordLog.Connecting(_logger, _configuration.ChannelId);
-        _sessionToken.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
         _socketClient.MessageReceived += OnMessageReceivedAsync;
 
@@ -33,10 +31,10 @@ internal sealed class DiscordGatewayConnection(
         DiscordLog.Connected(_logger);
     }
 
-    public async Task SendAsync(string text)
+    public async Task SendAsync(string text, CancellationToken cancellationToken)
     {
         // Early abort on session cancellation.
-        _sessionToken.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
         if (string.IsNullOrWhiteSpace(text))
         {
@@ -54,7 +52,7 @@ internal sealed class DiscordGatewayConnection(
                 DiscordLog.ChannelRestFetchStart(_logger, _configuration.ChannelId);
 
                 // RequestOptions carries the cancellation token so REST calls honor cooperative cancellation.
-                RequestOptions requestOptions = new() { CancelToken = _sessionToken };
+                RequestOptions requestOptions = new() { CancelToken = cancellationToken };
                 IChannel restChannel = await _socketClient.Rest.GetChannelAsync(_configuration.ChannelId, requestOptions);
 
                 if (restChannel is IMessageChannel resolvedMessageChannel)
@@ -89,14 +87,14 @@ internal sealed class DiscordGatewayConnection(
             messageChannel = cachedMessageChannel;
         }
 
-        _sessionToken.ThrowIfCancellationRequested();
+        cancellationToken.ThrowIfCancellationRequested();
 
         DiscordLog.OutboundSendStart(_logger, _configuration.ChannelId, text.Length);
         // WaitAsync is used to attach the provided cancellation token to the send operation so callers can
         // cooperatively cancel outbound messages, avoiding hangs during shutdown.
         try
         {
-            await messageChannel.SendMessageAsync(text).WaitAsync(_sessionToken).ConfigureAwait(false);
+            await messageChannel.SendMessageAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
             DiscordLog.OutboundSendSucceeded(_logger, _configuration.ChannelId);
         }
         catch (OperationCanceledException)

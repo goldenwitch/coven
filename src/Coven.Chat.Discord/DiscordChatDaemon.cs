@@ -23,6 +23,11 @@ internal sealed class DiscordChatDaemon(
     public override async Task Shutdown(CancellationToken cancellationToken)
     {
         _sessionCts?.Cancel();
+        if (_session is not null)
+        {
+            await _session.DisposeAsync().ConfigureAwait(false);
+            _session = null;
+        }
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
     }
 
@@ -30,9 +35,11 @@ internal sealed class DiscordChatDaemon(
     {
         try
         {
-            if (_session is not null)
+            // Prefer a unified shutdown path so status transitions and
+            // cooperative cancellation happen in one place.
+            if (Status != Status.Completed)
             {
-                await _session.DisposeAsync().ConfigureAwait(false);
+                await Shutdown(CancellationToken.None).ConfigureAwait(false);
             }
         }
         finally

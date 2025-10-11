@@ -16,16 +16,13 @@ internal sealed class DiscordChatSession(
     private readonly IBiDirectionalTransmuter<DiscordEntry, ChatEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
     private readonly CancellationToken _sessionToken = sessionToken;
 
-    private CancellationTokenSource? _pumpCts;
     private Task? _discordToChatPump;
     private Task? _chatToDiscordPump;
 
     public async Task StartAsync()
     {
-        await _gateway.ConnectAsync().ConfigureAwait(false);
-        // Create a linked CTS so we can cancel pumps cooperatively during Dispose.
-        _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(_sessionToken);
-        CancellationToken ct = _pumpCts.Token;
+        CancellationToken ct = _sessionToken;
+        await _gateway.ConnectAsync(ct).ConfigureAwait(false);
         _discordToChatPump = Task.Run(async () =>
         {
             await foreach ((long _, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
@@ -61,9 +58,6 @@ internal sealed class DiscordChatSession(
     {
         try
         {
-            // Ensure pumps are cancelled so async enumerables can complete cooperatively.
-            _pumpCts?.Cancel();
-
             if (_discordToChatPump is not null && _chatToDiscordPump is not null)
             {
                 try
@@ -79,8 +73,6 @@ internal sealed class DiscordChatSession(
         finally
         {
             _gateway.Dispose();
-            _pumpCts?.Dispose();
-            _pumpCts = null;
             _discordToChatPump = null;
             _chatToDiscordPump = null;
             GC.SuppressFinalize(this);
