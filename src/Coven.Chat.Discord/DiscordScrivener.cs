@@ -1,5 +1,6 @@
 using Coven.Core;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
 
@@ -7,6 +8,7 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
 {
     private readonly IScrivener<DiscordEntry> _scrivener;
     private readonly DiscordGatewayConnection _discordClient;
+    private readonly ILogger _logger;
 
     /// <summary>
     /// 
@@ -14,21 +16,28 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
     /// <param name="scrivener"></param>
     /// <param name="discordClient"></param>
     /// <remarks> Because we are what we utilize, ensure that the inner scrivener is keyed in DI.</remarks>
-    public DiscordScrivener([FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener, DiscordGatewayConnection discordClient)
+    public DiscordScrivener([FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener, DiscordGatewayConnection discordClient, ILogger<DiscordScrivener> logger)
     {
         ArgumentNullException.ThrowIfNull(scrivener);
         ArgumentNullException.ThrowIfNull(discordClient);
+        ArgumentNullException.ThrowIfNull(logger);
         _scrivener = scrivener;
         _discordClient = discordClient;
+        _logger = logger;
     }
 
     public async Task<long> WriteAsync(DiscordEntry entry, CancellationToken cancellationToken = default)
     {
-        // First we write to discord. We are intentionally not solving the problem where we receive an echo of the message we sent.
-        await _discordClient.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
+        // Only send actual outbound messages to Discord. ACKs and inbound entries must not be sent.
+        if (entry is DiscordOutgoing)
+        {
+            await _discordClient.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
+        }
 
-        // Then we write to our underlying scrivener to ensure that the message is available.
-        return await _scrivener.WriteAsync(entry, cancellationToken).ConfigureAwait(false);
+        // Always persist to the underlying scrivener so pumps and tests can observe ordering.
+        long pos = await _scrivener.WriteAsync(entry, cancellationToken).ConfigureAwait(false);
+        DiscordLog.DiscordScrivenerAppended(_logger, entry.GetType().Name, pos);
+        return pos;
     }
 
     public IAsyncEnumerable<(long journalPosition, DiscordEntry entry)> TailAsync(long afterPosition = 0, CancellationToken cancellationToken = default)

@@ -84,6 +84,70 @@ internal static class DiscordLog
             new EventId(2016, nameof(ChannelLookupError)),
             "Channel lookup failed for {ChannelId}.");
 
+    // Inbound receive and journal append
+    private static readonly Action<ILogger, string, int, Exception?> _inboundUserMessageReceived =
+        LoggerMessage.Define<string, int>(
+            LogLevel.Information,
+            new EventId(2020, nameof(InboundUserMessageReceived)),
+            "Inbound Discord message received from {Sender} (length {Length}).");
+
+    private static readonly Action<ILogger, string, int, Exception?> _inboundBotMessageObserved =
+        LoggerMessage.Define<string, int>(
+            LogLevel.Debug,
+            new EventId(2021, nameof(InboundBotMessageObserved)),
+            "Observed bot-authored message from {Sender} (length {Length}); recording ACK.");
+
+    private static readonly Action<ILogger, string, long, Exception?> _inboundAppendedToJournal =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2022, nameof(InboundAppendedToJournal)),
+            "Appended inbound {EntryType} to Discord journal at position {Position}.");
+
+    // Pump: Discord -> Chat
+    private static readonly Action<ILogger, string, long, Exception?> _discordToChatObserved =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2030, nameof(DiscordToChatObserved)),
+            "Discord→Chat observed {EntryType} at position {Position}.");
+
+    private static readonly Action<ILogger, string, string, Exception?> _discordToChatTransmuted =
+        LoggerMessage.Define<string, string>(
+            LogLevel.Information,
+            new EventId(2031, nameof(DiscordToChatTransmuted)),
+            "Discord→Chat transmuted {FromType} → {ToType}.");
+
+    private static readonly Action<ILogger, string, long, Exception?> _discordToChatAppended =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2032, nameof(DiscordToChatAppended)),
+            "Discord→Chat appended {EntryType} to Chat journal at position {Position}.");
+
+    // Pump: Chat -> Discord
+    private static readonly Action<ILogger, string, long, Exception?> _chatToDiscordObserved =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2040, nameof(ChatToDiscordObserved)),
+            "Chat→Discord observed {EntryType} at position {Position}.");
+
+    private static readonly Action<ILogger, string, string, Exception?> _chatToDiscordTransmuted =
+        LoggerMessage.Define<string, string>(
+            LogLevel.Information,
+            new EventId(2041, nameof(ChatToDiscordTransmuted)),
+            "Chat→Discord transmuted {FromType} → {ToType}.");
+
+    private static readonly Action<ILogger, string, long, Exception?> _chatToDiscordAppended =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2042, nameof(ChatToDiscordAppended)),
+            "Chat→Discord appended {EntryType} to Discord journal at position {Position}.");
+
+    // DiscordScrivener internal append
+    private static readonly Action<ILogger, string, long, Exception?> _discordScrivenerAppended =
+        LoggerMessage.Define<string, long>(
+            LogLevel.Information,
+            new EventId(2050, nameof(DiscordScrivenerAppended)),
+            "DiscordScrivener appended {EntryType} to internal journal at position {Position}.");
+
     internal static void Connecting(ILogger logger, ulong channelId) =>
         _connecting(logger, channelId, null);
 
@@ -122,4 +186,34 @@ internal static class DiscordLog
 
     internal static void ChannelLookupError(ILogger logger, ulong channelId, Exception error) =>
         _channelLookupError(logger, channelId, error);
+
+    internal static void InboundUserMessageReceived(ILogger logger, string sender, int length) =>
+        _inboundUserMessageReceived(logger, sender, length, null);
+
+    internal static void InboundBotMessageObserved(ILogger logger, string sender, int length) =>
+        _inboundBotMessageObserved(logger, sender, length, null);
+
+    internal static void InboundAppendedToJournal(ILogger logger, string entryType, long position) =>
+        _inboundAppendedToJournal(logger, entryType, position, null);
+
+    internal static void DiscordToChatObserved(ILogger logger, string entryType, long position) =>
+        _discordToChatObserved(logger, entryType, position, null);
+
+    internal static void DiscordToChatTransmuted(ILogger logger, string fromType, string toType) =>
+        _discordToChatTransmuted(logger, fromType, toType, null);
+
+    internal static void DiscordToChatAppended(ILogger logger, string entryType, long position) =>
+        _discordToChatAppended(logger, entryType, position, null);
+
+    internal static void ChatToDiscordObserved(ILogger logger, string entryType, long position) =>
+        _chatToDiscordObserved(logger, entryType, position, null);
+
+    internal static void ChatToDiscordTransmuted(ILogger logger, string fromType, string toType) =>
+        _chatToDiscordTransmuted(logger, fromType, toType, null);
+
+    internal static void ChatToDiscordAppended(ILogger logger, string entryType, long position) =>
+        _chatToDiscordAppended(logger, entryType, position, null);
+
+    internal static void DiscordScrivenerAppended(ILogger logger, string entryType, long position) =>
+        _discordScrivenerAppended(logger, entryType, position, null);
 }

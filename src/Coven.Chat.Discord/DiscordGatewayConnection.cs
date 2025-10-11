@@ -118,6 +118,18 @@ internal sealed class DiscordGatewayConnection(
     {
         // Determine the sender identity. For Discord.Net, Author should be present on normal messages;
         string sender = message.Author.Username;
+
+        // Bots don't get incoming, they only get ACK
+        if (message.Author.IsBot)
+        {
+            string text = message.Content ?? string.Empty;
+            DiscordLog.InboundBotMessageObserved(_logger, sender, text.Length);
+            DiscordAck ack = new(sender, text);
+            long pos = await _scrivener.WriteAsync(ack).ConfigureAwait(false);
+            DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordAck), pos);
+            return;
+        }
+
         if (string.IsNullOrEmpty(sender))
         {
             throw new InvalidOperationException("Discord message author username is missing.");
@@ -131,7 +143,9 @@ internal sealed class DiscordGatewayConnection(
 
         // Just need to send the incoming message to a scrivener
         // Scrivener is responsible for synchronizing etc
-        await _scrivener.WriteAsync(incoming);
+        DiscordLog.InboundUserMessageReceived(_logger, sender, incoming.Text.Length);
+        long position = await _scrivener.WriteAsync(incoming).ConfigureAwait(false);
+        DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordIncoming), position);
     }
 
     public void Dispose()
