@@ -4,16 +4,17 @@ using Coven.Core.Builder;
 using Coven.Toys.DiscordChat;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 // Configuration
 DiscordClientConfig discordClientConfig = new()
 {
-    BotToken = "",
-    ChannelId = 123 // If you are leveraging a specific channel put the id here.
+    BotToken = ""
 };
 
 // Register all of our DI stuff
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddLogging(builder => builder.AddConsole());
 builder.Services.AddDiscordChat(discordClientConfig);
 builder.Services.BuildCoven(CovenServiceBuilder => CovenServiceBuilder.MagikBlock<Empty, Empty, EchoBlock>().Done());
 

@@ -11,7 +11,7 @@ internal sealed class DiscordGatewayConnection(
     DiscordClientConfig configuration,
     DiscordSocketClient socketClient,
     [FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener,
-    ILogger logger,
+    ILogger<DiscordGatewayConnection> logger,
     CancellationToken sessionToken) : IDisposable
 {
     private readonly DiscordClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
