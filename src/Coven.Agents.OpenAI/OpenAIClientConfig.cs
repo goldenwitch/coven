@@ -16,6 +16,4 @@ public sealed class OpenAIClientConfig
     public float? Temperature { get; init; }
     public float? TopP { get; init; }
     public int? MaxOutputTokens { get; init; }
-    public string? SystemPrompt { get; init; }
 }
-

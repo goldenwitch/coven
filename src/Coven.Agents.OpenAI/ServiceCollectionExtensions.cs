@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Agents;
 using Coven.Core;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using OpenAI;
+using System.ClientModel;
 
 namespace Coven.Agents.OpenAI;
 
@@ -15,7 +16,37 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        services.AddScoped(sp => config);
+        // Validate required configuration early
+        if (string.IsNullOrWhiteSpace(config.ApiKey))
+        {
+            throw new ArgumentException("OpenAIClientConfig.ApiKey is required.");
+        }
+        if (string.IsNullOrWhiteSpace(config.Model))
+        {
+            throw new ArgumentException("OpenAIClientConfig.Model is required.");
+        }
+
+        services.AddScoped(_ => config);
+
+        // OpenAI client (official SDK)
+        services.AddScoped(sp =>
+        {
+            OpenAIClientConfig cfg = sp.GetRequiredService<OpenAIClientConfig>();
+            OpenAIClientOptions options = new();
+            if (!string.IsNullOrWhiteSpace(cfg.Organization))
+            {
+                options.OrganizationId = cfg.Organization;
+            }
+
+
+            if (!string.IsNullOrWhiteSpace(cfg.Project))
+            {
+                options.ProjectId = cfg.Project;
+            }
+
+
+            return new OpenAIClient(new ApiKeyCredential(cfg.ApiKey), options);
+        });
 
         // Journals and gateway
         services.TryAddSingleton<IScrivener<AgentEntry>, InMemoryScrivener<AgentEntry>>();

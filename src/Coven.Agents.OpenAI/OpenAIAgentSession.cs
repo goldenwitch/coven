@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Agents;
 using Coven.Core;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
@@ -28,12 +27,13 @@ internal sealed class OpenAIAgentSession(
     public async Task StartAsync()
     {
         CancellationToken ct = _sessionToken;
-        await _gateway.ConnectAsync(ct).ConfigureAwait(false);
+        await _gateway.ConnectAsync().ConfigureAwait(false);
 
         _openAIToAgentsPump = Task.Run(async () =>
         {
             await foreach ((long position, OpenAIEntry entry) in _openAIJournal.TailAsync(0, ct))
             {
+                // Skip ACKs to prevent pump loops between journals.
                 if (entry is OpenAIAck)
                 {
                     continue;
@@ -51,6 +51,7 @@ internal sealed class OpenAIAgentSession(
         {
             await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(0, ct))
             {
+                // Skip ACKs to prevent pump loops between journals.
                 if (entry is AgentAck)
                 {
                     continue;
@@ -89,4 +90,3 @@ internal sealed class OpenAIAgentSession(
         }
     }
 }
-

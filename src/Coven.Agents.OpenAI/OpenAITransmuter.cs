@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Agents;
 using Coven.Transmutation;
 
 namespace Coven.Agents.OpenAI;
