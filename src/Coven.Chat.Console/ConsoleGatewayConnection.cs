@@ -1,6 +1,7 @@
 using Coven.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using SysConsole = System.Console;
 
 namespace Coven.Chat.Console;
 
@@ -29,7 +30,7 @@ internal sealed class ConsoleGatewayConnection(
                 string? line;
                 try
                 {
-                    line = await System.Console.In.ReadLineAsync(ct).ConfigureAwait(false);
+                    line = await SysConsole.In.ReadLineAsync(ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -71,7 +72,7 @@ internal sealed class ConsoleGatewayConnection(
         ConsoleLog.OutboundSendStart(_logger, text.Length);
         try
         {
-            await System.Console.Out.WriteLineAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await SysConsole.Out.WriteLineAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
             ConsoleLog.OutboundSendSucceeded(_logger);
         }
         catch (OperationCanceledException)
@@ -101,4 +102,3 @@ internal sealed class ConsoleGatewayConnection(
         }
     }
 }
-
