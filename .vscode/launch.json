@@ -2,6 +2,17 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch: Coven.Toys.ConsoleOpenAI",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/toys/Coven.Toys.ConsoleOpenAI/bin/Debug/net10.0/Coven.Toys.ConsoleOpenAI.dll",
+      "cwd": "${workspaceFolder}/src/toys/Coven.Toys.ConsoleOpenAI",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "preLaunchTask": "build"
+    },
+    {
       "name": "Launch: Coven.Toys.DiscordChat",
       "type": "coreclr",
       "request": "launch",
@@ -9,7 +20,19 @@
       "cwd": "${workspaceFolder}/src/toys/Coven.Toys.DiscordChat",
       "console": "integratedTerminal",
       "stopAtEntry": false,
-      "justMyCode": true
+      "justMyCode": true,
+      "preLaunchTask": "build"
+    },
+    {
+      "name": "Launch: Coven.Toys.ConsoleChat",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/toys/Coven.Toys.ConsoleChat/bin/Debug/net10.0/Coven.Toys.ConsoleChat.dll",
+      "cwd": "${workspaceFolder}/src/toys/Coven.Toys.ConsoleChat",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "preLaunchTask": "build"
     },
     {
       "name": "Attach: .NET Core",
@@ -18,4 +41,3 @@
     }
   ]
 }
-
