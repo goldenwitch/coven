@@ -31,6 +31,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Console", "Coven
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleChat", "toys\Coven.Toys.ConsoleChat\Coven.Toys.ConsoleChat.csproj", "{D18FBE36-789B-48E4-9E4C-E695B7C21946}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleOpenAI", "toys\Coven.Toys.ConsoleOpenAI\Coven.Toys.ConsoleOpenAI.csproj", "{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -197,6 +199,18 @@ Global
 		{D18FBE36-789B-48E4-9E4C-E695B7C21946}.Release|x64.Build.0 = Release|Any CPU
 		{D18FBE36-789B-48E4-9E4C-E695B7C21946}.Release|x86.ActiveCfg = Release|Any CPU
 		{D18FBE36-789B-48E4-9E4C-E695B7C21946}.Release|x86.Build.0 = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|x64.Build.0 = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Debug|x86.Build.0 = Debug|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|x64.ActiveCfg = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|x64.Build.0 = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|x86.ActiveCfg = Release|Any CPU
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -204,5 +218,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{615A4459-0FDB-4233-8116-DDE3DFA5AF2B} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 		{D18FBE36-789B-48E4-9E4C-E695B7C21946} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
+		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 	EndGlobalSection
 EndGlobal
