@@ -13,6 +13,17 @@
       "preLaunchTask": "build"
     },
     {
+      "name": "Launch: DiscordAgent",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/samples/01.DiscordAgent/bin/Debug/net10.0/DiscordAgent.dll",
+      "cwd": "${workspaceFolder}/src/samples/01.DiscordAgent",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "preLaunchTask": "build"
+    },
+    {
       "name": "Launch: Coven.Toys.DiscordChat",
       "type": "coreclr",
       "request": "launch",
