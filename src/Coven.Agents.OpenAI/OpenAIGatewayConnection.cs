@@ -18,7 +18,7 @@ internal sealed class OpenAIGatewayConnection(
     private readonly OpenAIClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-    private readonly OpenAIClient _client = openAIClient ?? throw new ArgumentNullException(nameof(openAIClient));
+    private readonly OpenAIResponseClient _client = openAIClient.GetOpenAIResponseClient(configuration.Model) ?? throw new ArgumentNullException(nameof(openAIClient));
 
     public Task ConnectAsync()
     {
@@ -31,10 +31,9 @@ internal sealed class OpenAIGatewayConnection(
         cancellationToken.ThrowIfCancellationRequested();
 
         // Build request using official OpenAI .NET SDK
-        OpenAILog.OutboundSendStart(_logger, outgoing.Text.Length);
-
-        // Create a per-model Responses client and prepare options
-        OpenAIResponseClient responsesClient = _client.GetOpenAIResponseClient(_configuration.Model);
+        // Include limited history of prior assistant responses from the journal
+        List<ResponseItem> input = await BuildTranscriptInputAsync(outgoing, _configuration.HistoryClip ?? int.MaxValue, cancellationToken).ConfigureAwait(false);
+        OpenAILog.OutboundSendStart(_logger, input.Count);
 
         ResponseCreationOptions options = new()
         {
@@ -46,7 +45,7 @@ internal sealed class OpenAIGatewayConnection(
         OpenAIResponse response;
         try
         {
-            ClientResult<OpenAIResponse> result = await responsesClient.CreateResponseAsync(outgoing.Text, options, cancellationToken).ConfigureAwait(false);
+            ClientResult<OpenAIResponse> result = await _client.CreateResponseAsync(input, options, cancellationToken).ConfigureAwait(false);
             response = result.Value;
             OpenAILog.OutboundSendSucceeded(_logger);
         }
@@ -70,5 +69,39 @@ internal sealed class OpenAIGatewayConnection(
             Model: response.Model);
 
         await _journal.WriteAsync(incoming, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<List<ResponseItem>> BuildTranscriptInputAsync(OpenAIOutgoing newest, int maxMessages, CancellationToken cancellationToken)
+    {
+        List<ResponseItem> buffer = [];
+
+        // Walk the journal backward and collect user/assistant text entries.
+        await foreach ((_, OpenAIEntry entry) in _journal.ReadBackwardAsync(long.MaxValue, cancellationToken).ConfigureAwait(false))
+        {
+            switch (entry)
+            {
+                case OpenAIOutgoing u when !string.IsNullOrWhiteSpace(u.Text):
+                    buffer.Add(ResponseItem.CreateUserMessageItem(u.Text));
+                    break;
+
+                case OpenAIIncoming a when !string.IsNullOrWhiteSpace(a.Text):
+                    buffer.Add(ResponseItem.CreateAssistantMessageItem(a.Text));
+                    break;
+
+                default:
+                    // ignore other entry types (tool traces, etc.) in this minimal window
+                    break;
+            }
+
+            if (buffer.Count >= maxMessages)
+            {
+                break;
+            }
+        }
+
+        buffer.Reverse(); // chronological
+
+        buffer.Add(ResponseItem.CreateUserMessageItem(newest.Text));
+        return buffer;
     }
 }
