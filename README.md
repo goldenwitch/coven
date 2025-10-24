@@ -2,6 +2,9 @@
 
 A tiny, composable **.NET 10** engine for orchestrating multiple agents to achieve big things.
 
+> ___"With great power comes great responsibility"___ - _Uncle Ben_
+> <br> If you use this library, don't be evil.
+
 ## Highlights
 
 * **Typed MagikBlocks**: implement `IMagikBlock<TIn,TOut>.DoMagik(...)` and compose work as pure(ish) functions.
@@ -9,8 +12,6 @@ A tiny, composable **.NET 10** engine for orchestrating multiple agents to achie
 * **DI‑first**: one builder on `IServiceCollection` (`BuildCoven`) with `MagikBlock<…>` and `LambdaBlock<…>` helpers; finish with `.Done(pull?: bool)`.
 * **Journal Primitives**: reliable, distributable, and seamless to developers. Scriveners MUST support a long position.
 * **Spellcasting (optional)**: minimal `ISpell<…>` interfaces + JSON‑schema generation for tool contracts.
-
----
 
 ## Quick Start
 
