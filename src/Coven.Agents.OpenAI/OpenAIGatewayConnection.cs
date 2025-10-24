@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI;
 using OpenAI.Responses;
+using Coven.Transmutation;
 
 namespace Coven.Agents.OpenAI;
 
@@ -13,12 +14,14 @@ internal sealed class OpenAIGatewayConnection(
     OpenAIClientConfig configuration,
     [FromKeyedServices("Coven.InternalOpenAIScrivener")] IScrivener<OpenAIEntry> journal,
     ILogger<OpenAIGatewayConnection> logger,
-    OpenAIClient openAIClient)
+    OpenAIClient openAIClient,
+    ITransmuter<OpenAIEntry, ResponseItem?> entryToItem)
 {
     private readonly OpenAIClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly OpenAIResponseClient _client = openAIClient.GetOpenAIResponseClient(configuration.Model) ?? throw new ArgumentNullException(nameof(openAIClient));
+    private readonly ITransmuter<OpenAIEntry, ResponseItem?> _entryToItem = entryToItem ?? throw new ArgumentNullException(nameof(entryToItem));
 
     public Task ConnectAsync()
     {
@@ -75,22 +78,13 @@ internal sealed class OpenAIGatewayConnection(
     {
         List<ResponseItem> buffer = [];
 
-        // Walk the journal backward and collect user/assistant text entries.
+        // Walk the journal backward and collect user/assistant text entries via transmuter.
         await foreach ((_, OpenAIEntry entry) in _journal.ReadBackwardAsync(long.MaxValue, cancellationToken).ConfigureAwait(false))
         {
-            switch (entry)
+            ResponseItem? item = await _entryToItem.Transmute(entry, cancellationToken).ConfigureAwait(false);
+            if (item is not null)
             {
-                case OpenAIOutgoing u when !string.IsNullOrWhiteSpace(u.Text):
-                    buffer.Add(ResponseItem.CreateUserMessageItem(u.Text));
-                    break;
-
-                case OpenAIIncoming a when !string.IsNullOrWhiteSpace(a.Text):
-                    buffer.Add(ResponseItem.CreateAssistantMessageItem(a.Text));
-                    break;
-
-                default:
-                    // ignore other entry types (tool traces, etc.) in this minimal window
-                    break;
+                buffer.Add(item);
             }
 
             if (buffer.Count >= maxMessages)
@@ -101,7 +95,12 @@ internal sealed class OpenAIGatewayConnection(
 
         buffer.Reverse(); // chronological
 
-        buffer.Add(ResponseItem.CreateUserMessageItem(newest.Text));
+        // Add the newest outgoing as the final user message
+        ResponseItem? newestItem = await _entryToItem.Transmute(newest, cancellationToken).ConfigureAwait(false);
+        if (newestItem is not null)
+        {
+            buffer.Add(newestItem);
+        }
         return buffer;
     }
 }

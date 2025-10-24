@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenAI;
 using System.ClientModel;
+using OpenAI.Responses;
 
 namespace Coven.Agents.OpenAI;
 
@@ -56,6 +57,7 @@ public static class ServiceCollectionExtensions
 
         // Transmuter and daemon
         services.AddScoped<IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>, OpenAITransmuter>();
+        services.TryAddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, OpenAIEntryToResponseItemTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();

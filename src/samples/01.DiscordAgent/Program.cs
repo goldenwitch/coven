@@ -6,6 +6,8 @@ using DiscordAgent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Coven.Transmutation;
+using OpenAI.Responses;
 
 // Configuration
 DiscordClientConfig discordConfig = new()
@@ -25,6 +27,8 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddDiscordChat(discordConfig);
 builder.Services.AddOpenAIAgents(openAiConfig);
+// Override default OpenAI entry → ResponseItem mapping with sample templating
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
 
 IHost host = builder.Build();
