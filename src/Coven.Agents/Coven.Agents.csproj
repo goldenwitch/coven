@@ -2,5 +2,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />
+  </ItemGroup>
 </Project>
-

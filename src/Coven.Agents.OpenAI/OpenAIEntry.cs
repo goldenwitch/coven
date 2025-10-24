@@ -20,6 +20,14 @@ public sealed record OpenAIIncoming(
     string Model
 ) : OpenAIEntry(Sender, Text);
 
+public sealed record OpenAIIncomingChunk(
+    string Sender,
+    string Text,
+    string ResponseId,
+    DateTimeOffset Timestamp,
+    string Model
+) : OpenAIEntry(Sender, Text);
+
 public sealed record OpenAIThought(
     string Sender,
     string Text,
@@ -33,3 +41,9 @@ public sealed record OpenAIAck(
     string Text
 ) : OpenAIEntry(Sender, Text);
 
+public sealed record OpenAIStreamCompleted(
+    string Sender,
+    string ResponseId,
+    DateTimeOffset Timestamp,
+    string Model
+) : OpenAIEntry(Sender, "");

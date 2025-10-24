@@ -13,3 +13,7 @@ public sealed record AgentThought(string Sender, string Text) : AgentEntry(Sende
 
 public sealed record AgentAck(string Sender, string Text) : AgentEntry(Sender, Text);
 
+// Streaming additions
+public sealed record AgentChunk(string Sender, string Text) : AgentEntry(Sender, Text);
+
+public sealed record AgentStreamCompleted(string Sender) : AgentEntry(Sender, "");

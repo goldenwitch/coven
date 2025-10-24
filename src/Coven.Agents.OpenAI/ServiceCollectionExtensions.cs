@@ -8,12 +8,16 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenAI;
 using System.ClientModel;
 using OpenAI.Responses;
+using Coven.Agents.Streaming;
 
 namespace Coven.Agents.OpenAI;
 
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddOpenAIAgents(this IServiceCollection services, OpenAIClientConfig config)
+        => AddOpenAIAgents(services, config, null);
+
+    public static IServiceCollection AddOpenAIAgents(this IServiceCollection services, OpenAIClientConfig config, Action<OpenAIRegistration>? configure)
     {
         ArgumentNullException.ThrowIfNull(services);
 
@@ -28,6 +32,15 @@ public static class ServiceCollectionExtensions
         }
 
         services.AddScoped(_ => config);
+
+        // Optional streaming configuration
+        OpenAIRegistration registration = new();
+        configure?.Invoke(registration);
+        services.AddScoped(_ => new AgentStreamingOptions
+        {
+            Enabled = registration.StreamingEnabled,
+            Segmenter = registration.Segmenter
+        });
 
         // OpenAI client (official SDK)
         services.AddScoped(sp =>
@@ -61,6 +74,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();
+
+        // When streaming is enabled, include agent-agnostic segmentation daemon
+        if (registration.StreamingEnabled)
+        {
+            services.AddScoped<ContractDaemon, AgentStreamSegmentationDaemon>();
+            if (registration.Segmenter is not null)
+            {
+                services.AddScoped(_ => registration.Segmenter);
+            }
+        }
         return services;
     }
 }
