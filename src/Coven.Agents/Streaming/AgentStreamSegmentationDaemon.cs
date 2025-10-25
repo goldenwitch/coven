@@ -13,34 +13,34 @@ public sealed class AgentStreamSegmentationDaemon(
     private readonly IScrivener<AgentEntry> _agentJournal = agentJournal ?? throw new ArgumentNullException(nameof(agentJournal));
     private readonly IStreamSegmenter _segmenter = segmenter ?? throw new ArgumentNullException(nameof(segmenter));
 
-    private CancellationTokenSource? _cts;
-    private Task? _pump;
+    private CancellationTokenSource? _linkedCancellationSource;
+    private Task? _pumpTask;
 
     public override async Task Start(CancellationToken cancellationToken)
     {
-        _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-        CancellationToken ct = _cts.Token;
+        _linkedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken linkedToken = _linkedCancellationSource.Token;
 
         // Determine start position (logical end at start time)
-        long startPos = 0;
-        await foreach ((long pos, _) in _agentJournal.ReadBackwardAsync(long.MaxValue, ct))
+        long startPosition = 0;
+        await foreach ((long position, _) in _agentJournal.ReadBackwardAsync(long.MaxValue, linkedToken))
         {
-            startPos = pos;
+            startPosition = position;
             break;
         }
 
-        _pump = Task.Run(() => RunAsync(startPos, ct), ct);
+        _pumpTask = Task.Run(() => RunAsync(startPosition, linkedToken), linkedToken);
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
 
     public override async Task Shutdown(CancellationToken cancellationToken)
     {
-        _cts?.Cancel();
-        if (_pump is not null)
+        _linkedCancellationSource?.Cancel();
+        if (_pumpTask is not null)
         {
             try
             {
-                await _pump.ConfigureAwait(false);
+                await _pumpTask.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -48,52 +48,52 @@ public sealed class AgentStreamSegmentationDaemon(
             }
             finally
             {
-                _pump = null;
+                _pumpTask = null;
             }
         }
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task RunAsync(long startAfterPosition, CancellationToken ct)
+    private async Task RunAsync(long startAfterPosition, CancellationToken cancellationToken)
     {
-        Queue<string> pending = new();
-        int lookback = Math.Max(1, _segmenter.MinChunkLookback);
+        Queue<string> pendingChunks = new();
+        int lookbackCount = Math.Max(1, _segmenter.MinChunkLookback);
 
-        long lastEmittedPos = startAfterPosition;
+        long lastEmittedPosition = startAfterPosition;
         DateTimeOffset startedAt = DateTimeOffset.UtcNow;
         DateTimeOffset lastEmitAt = startedAt;
-        long lastObservedChunkPos = startAfterPosition;
+        long lastObservedChunkPosition = startAfterPosition;
 
         try
         {
-            await foreach ((long pos, AgentEntry entry) in _agentJournal.TailAsync(startAfterPosition, ct))
+            await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(startAfterPosition, cancellationToken))
             {
                 switch (entry)
                 {
                     case AgentChunk chunk:
-                        lastObservedChunkPos = pos;
-                        pending.Enqueue(chunk.Text);
-                        while (pending.Count > lookback)
+                        lastObservedChunkPosition = position;
+                        pendingChunks.Enqueue(chunk.Text);
+                        while (pendingChunks.Count > lookbackCount)
                         {
-                            pending.Dequeue();
+                            pendingChunks.Dequeue();
                         }
-                        if (_segmenter.ShouldEmit(new StreamWindow(pending, (int)(lastObservedChunkPos - lastEmittedPos), startedAt, lastEmitAt)))
+                        if (_segmenter.ShouldEmit(new StreamWindow(pendingChunks, (int)(lastObservedChunkPosition - lastEmittedPosition), startedAt, lastEmitAt)))
                         {
-                            await EmitAsync(lastEmittedPos, pos, ct).ConfigureAwait(false);
-                            lastEmittedPos = pos;
+                            await EmitAsync(lastEmittedPosition, position, cancellationToken).ConfigureAwait(false);
+                            lastEmittedPosition = position;
                             lastEmitAt = DateTimeOffset.UtcNow;
-                            pending.Clear();
+                            pendingChunks.Clear();
                         }
                         break;
                     case AgentStreamCompleted completed:
                         // Flush any remaining chunks up to the completion event position
-                        long flushUpTo = lastObservedChunkPos > lastEmittedPos ? lastObservedChunkPos : lastEmittedPos;
-                        if (flushUpTo > lastEmittedPos)
+                        long flushUpToPosition = lastObservedChunkPosition > lastEmittedPosition ? lastObservedChunkPosition : lastEmittedPosition;
+                        if (flushUpToPosition > lastEmittedPosition)
                         {
-                            await EmitAsync(lastEmittedPos, flushUpTo, ct).ConfigureAwait(false);
-                            lastEmittedPos = flushUpTo;
+                            await EmitAsync(lastEmittedPosition, flushUpToPosition, cancellationToken).ConfigureAwait(false);
+                            lastEmittedPosition = flushUpToPosition;
                             lastEmitAt = DateTimeOffset.UtcNow;
-                            pending.Clear();
+                            pendingChunks.Clear();
                         }
                         break;
                     default:
@@ -108,41 +108,41 @@ public sealed class AgentStreamSegmentationDaemon(
         }
         catch (Exception ex)
         {
-            await Fail(ex, ct).ConfigureAwait(false);
+            await Fail(ex, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private async Task EmitAsync(long fromExclusive, long toInclusive, CancellationToken ct)
+    private async Task EmitAsync(long fromExclusive, long toInclusive, CancellationToken cancellationToken)
     {
-        StringBuilder sb = new();
+        StringBuilder stringBuilder = new();
         string sender = string.Empty;
-        await foreach ((long pos, AgentEntry entry) in _agentJournal.TailAsync(fromExclusive, ct))
+        await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(fromExclusive, cancellationToken))
         {
-            if (pos > toInclusive)
+            if (position > toInclusive)
             {
                 break;
             }
-            if (entry is AgentChunk c)
+            if (entry is AgentChunk chunkEntry)
             {
                 // Track sender from the latest chunk we see in-range
-                if (!string.IsNullOrEmpty(c.Sender))
+                if (!string.IsNullOrEmpty(chunkEntry.Sender))
                 {
-                    sender = c.Sender;
+                    sender = chunkEntry.Sender;
                 }
-                if (!string.IsNullOrEmpty(c.Text))
+                if (!string.IsNullOrEmpty(chunkEntry.Text))
                 {
-                    sb.Append(c.Text);
+                    stringBuilder.Append(chunkEntry.Text);
                 }
             }
         }
 
-        string text = sb.ToString();
+        string text = stringBuilder.ToString();
         if (text.Length == 0)
         {
             return;
         }
         // Preserve the originating sender to keep this daemon agent-agnostic
-        await _agentJournal.WriteAsync(new AgentResponse(sender, text), ct).ConfigureAwait(false);
+        await _agentJournal.WriteAsync(new AgentResponse(sender, text), cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()
@@ -156,7 +156,7 @@ public sealed class AgentStreamSegmentationDaemon(
         }
         finally
         {
-            _cts?.Dispose();
+            _linkedCancellationSource?.Dispose();
             GC.SuppressFinalize(this);
         }
     }

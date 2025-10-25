@@ -31,37 +31,61 @@ internal sealed class OpenAIAgentSession(
 
         _openAIToAgentsPump = Task.Run(async () =>
         {
-            await foreach ((long position, OpenAIEntry entry) in _openAIJournal.TailAsync(0, ct))
+            try
             {
-                // Skip ACKs to prevent pump loops between journals.
-                if (entry is OpenAIAck)
+                await foreach ((long position, OpenAIEntry entry) in _openAIJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    if (entry is OpenAIAck)
+                    {
+                        continue;
+                    }
 
-                OpenAILog.OpenAIToAgentsObserved(_logger, entry.GetType().Name, position);
-                AgentEntry agent = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
-                OpenAILog.OpenAIToAgentsTransmuted(_logger, entry.GetType().Name, agent.GetType().Name);
-                long agentPos = await _agentJournal.WriteAsync(agent, ct).ConfigureAwait(false);
-                OpenAILog.OpenAIToAgentsAppended(_logger, agent.GetType().Name, agentPos);
+                    OpenAILog.OpenAIToAgentsObserved(_logger, entry.GetType().Name, position);
+                    AgentEntry agent = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    OpenAILog.OpenAIToAgentsTransmuted(_logger, entry.GetType().Name, agent.GetType().Name);
+                    long agentPos = await _agentJournal.WriteAsync(agent, ct).ConfigureAwait(false);
+                    OpenAILog.OpenAIToAgentsAppended(_logger, agent.GetType().Name, agentPos);
+                }
+                OpenAILog.OpenAIToAgentsPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                OpenAILog.OpenAIToAgentsPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                OpenAILog.OpenAIToAgentsPumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
 
         _agentsToOpenAIPump = Task.Run(async () =>
         {
-            await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(0, ct))
+            try
             {
-                // Skip ACKs to prevent pump loops between journals.
-                if (entry is AgentAck)
+                await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    if (entry is AgentAck)
+                    {
+                        continue;
+                    }
 
-                OpenAILog.AgentsToOpenAIObserved(_logger, entry.GetType().Name, position);
-                OpenAIEntry openAI = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
-                OpenAILog.AgentsToOpenAITransmuted(_logger, entry.GetType().Name, openAI.GetType().Name);
-                long aiPos = await _openAIJournal.WriteAsync(openAI, ct).ConfigureAwait(false);
-                OpenAILog.AgentsToOpenAIAppended(_logger, openAI.GetType().Name, aiPos);
+                    OpenAILog.AgentsToOpenAIObserved(_logger, entry.GetType().Name, position);
+                    OpenAIEntry openAI = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    OpenAILog.AgentsToOpenAITransmuted(_logger, entry.GetType().Name, openAI.GetType().Name);
+                    long aiPos = await _openAIJournal.WriteAsync(openAI, ct).ConfigureAwait(false);
+                    OpenAILog.AgentsToOpenAIAppended(_logger, openAI.GetType().Name, aiPos);
+                }
+                OpenAILog.AgentsToOpenAIPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                OpenAILog.AgentsToOpenAIPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                OpenAILog.AgentsToOpenAIPumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
     }

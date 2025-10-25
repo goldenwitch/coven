@@ -27,9 +27,9 @@ builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddConsoleChat(consoleConfig);
 
 // Enable OpenAI streaming with sensible segmentation
-builder.Services.AddOpenAIAgents(openAiConfig, reg =>
+builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
-    reg.EnableStreaming(
+    registration.EnableStreaming(
         Segmenters.Compose(
             Segmenters.SentenceBoundary(minLen: 64),
             Segmenters.DoubleNewline(),
