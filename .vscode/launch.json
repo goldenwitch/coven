@@ -13,6 +13,17 @@
       "preLaunchTask": "build"
     },
     {
+      "name": "Launch: Coven.Toys.DiscordStreaming",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/toys/Coven.Toys.DiscordStreaming/bin/Debug/net10.0/Coven.Toys.DiscordStreaming.dll",
+      "cwd": "${workspaceFolder}/src/toys/Coven.Toys.DiscordStreaming",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "preLaunchTask": "build"
+    },
+    {
       "name": "Launch: Coven.Toys.ConsoleOpenAIStreaming",
       "type": "coreclr",
       "request": "launch",
