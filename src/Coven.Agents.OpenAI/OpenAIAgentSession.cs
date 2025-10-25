@@ -7,14 +7,14 @@ using Microsoft.Extensions.Logging;
 namespace Coven.Agents.OpenAI;
 
 internal sealed class OpenAIAgentSession(
-    OpenAIGatewayConnection gateway,
+    IOpenAIGatewayConnection gateway,
     IScrivener<OpenAIEntry> openAIJournal,
     IScrivener<AgentEntry> agentJournal,
     IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> transmuter,
     ILogger<OpenAIAgentSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
 {
-    private readonly OpenAIGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
+    private readonly IOpenAIGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     private readonly IScrivener<OpenAIEntry> _openAIJournal = openAIJournal ?? throw new ArgumentNullException(nameof(openAIJournal));
     private readonly IScrivener<AgentEntry> _agentJournal = agentJournal ?? throw new ArgumentNullException(nameof(agentJournal));
     private readonly IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));

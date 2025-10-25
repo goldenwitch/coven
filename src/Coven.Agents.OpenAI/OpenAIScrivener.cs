@@ -9,12 +9,12 @@ namespace Coven.Agents.OpenAI;
 internal sealed class OpenAIScrivener : IScrivener<OpenAIEntry>
 {
     private readonly IScrivener<OpenAIEntry> _inner;
-    private readonly OpenAIGatewayConnection _gateway;
+    private readonly IOpenAIGatewayConnection _gateway;
     private readonly ILogger _logger;
 
     public OpenAIScrivener(
         [FromKeyedServices("Coven.InternalOpenAIScrivener")] IScrivener<OpenAIEntry> inner,
-        OpenAIGatewayConnection gateway,
+        IOpenAIGatewayConnection gateway,
         ILogger<OpenAIScrivener> logger)
     {
         ArgumentNullException.ThrowIfNull(inner);
@@ -50,4 +50,3 @@ internal sealed class OpenAIScrivener : IScrivener<OpenAIEntry>
         where TDerived : OpenAIEntry
         => _inner.WaitForAsync(afterPosition, match, cancellationToken);
 }
-

@@ -66,11 +66,19 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IScrivener<AgentEntry>, InMemoryScrivener<AgentEntry>>();
         services.AddKeyedScoped<IScrivener<OpenAIEntry>, InMemoryScrivener<OpenAIEntry>>("Coven.InternalOpenAIScrivener");
         services.AddScoped<IScrivener<OpenAIEntry>, OpenAIScrivener>();
-        services.AddScoped<OpenAIGatewayConnection>();
+        if (registration.StreamingEnabled)
+        {
+            services.TryAddScoped<IOpenAIGatewayConnection, OpenAIStreamingGatewayConnection>();
+        }
+        else
+        {
+            services.TryAddScoped<IOpenAIGatewayConnection, OpenAIRequestGatewayConnection>();
+        }
 
         // Transmuter and daemon
         services.AddScoped<IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>, OpenAITransmuter>();
         services.TryAddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, OpenAIEntryToResponseItemTransmuter>();
+        services.TryAddScoped<IOpenAITranscriptBuilder, DefaultOpenAITranscriptBuilder>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();
