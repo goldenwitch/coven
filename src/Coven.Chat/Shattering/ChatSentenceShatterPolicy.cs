@@ -5,9 +5,9 @@ using Coven.Core.Streaming;
 namespace Coven.Chat.Shattering;
 
 /// <summary>
-/// Scatters Chat entries into sentence-sized segments.
-/// - ChatIncoming -> yields ChatChunk per sentence
-/// - ChatOutgoing -> yields ChatOutgoing per sentence
+/// Shatters drafts into sentence-sized segments.
+/// - ChatIncomingDraft -> yields ChatChunk per sentence
+/// - ChatOutgoingDraft -> yields ChatChunk per sentence
 ///
 /// A sentence ends on '.', '!' or '?' followed by whitespace or end-of-input.
 /// Trailing whitespace is preserved with the sentence it follows.
@@ -18,22 +18,18 @@ public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatEntry>
     {
         switch (entry)
         {
-            case ChatIncoming incoming:
+            case ChatOutgoingDraft outgoingDraft:
+                foreach (string s in SplitSentences(outgoingDraft.Text))
                 {
-                    foreach (string s in SplitSentences(incoming.Text))
-                    {
-                        yield return new ChatChunk(incoming.Sender, s);
-                    }
-                    break;
+                    yield return new ChatChunk(outgoingDraft.Sender, s);
                 }
-            case ChatOutgoing outgoing:
+                yield break;
+            case ChatIncomingDraft incomingDraft:
+                foreach (string s in SplitSentences(incomingDraft.Text))
                 {
-                    foreach (string s in SplitSentences(outgoing.Text))
-                    {
-                        yield return new ChatOutgoing(outgoing.Sender, s);
-                    }
-                    break;
+                    yield return new ChatChunk(incomingDraft.Sender, s);
                 }
+                yield break;
             default:
                 yield break;
         }

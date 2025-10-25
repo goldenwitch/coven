@@ -5,9 +5,9 @@ using Coven.Core.Streaming;
 namespace Coven.Chat.Shattering;
 
 /// <summary>
-/// Scatters Chat entries on paragraph boundaries.
-/// - ChatIncoming -> yields ChatChunk segments per paragraph
-/// - ChatOutgoing -> yields ChatOutgoing segments per paragraph
+/// Shatters drafts on paragraph boundaries.
+/// - ChatIncomingDraft -> yields ChatChunk segments per paragraph
+/// - ChatOutgoingDraft -> yields ChatChunk segments per paragraph
 ///
 /// A paragraph boundary is a double newline sequence ("\r\n\r\n" or "\n\n").
 /// The boundary newlines are preserved with the preceding paragraph to maintain formatting.
@@ -18,22 +18,18 @@ public sealed class ChatParagraphShatterPolicy : IShatterPolicy<ChatEntry>
     {
         switch (entry)
         {
-            case ChatIncoming incoming:
+            case ChatOutgoingDraft outgoingDraft:
+                foreach (string part in SplitParagraphs(outgoingDraft.Text))
                 {
-                    foreach (string part in SplitParagraphs(incoming.Text))
-                    {
-                        yield return new ChatChunk(incoming.Sender, part);
-                    }
-                    break;
+                    yield return new ChatChunk(outgoingDraft.Sender, part);
                 }
-            case ChatOutgoing outgoing:
+                yield break;
+            case ChatIncomingDraft incomingDraft:
+                foreach (string part in SplitParagraphs(incomingDraft.Text))
                 {
-                    foreach (string part in SplitParagraphs(outgoing.Text))
-                    {
-                        yield return new ChatOutgoing(outgoing.Sender, part);
-                    }
-                    break;
+                    yield return new ChatChunk(incomingDraft.Sender, part);
                 }
+                yield break;
             default:
                 yield break;
         }

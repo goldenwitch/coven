@@ -42,22 +42,21 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();
 
-        // Enable chat shattering + windowing by default
-        services.AddChatShattering();
+        // Enable windowing; session performs shattering for drafts
         services.AddChatWindowing();
 
-        // Discord shattering:
-        // - Incoming: paragraph boundaries -> ChatChunk
-        // - Outgoing: enforce 2k max per message -> ChatOutgoing shards
-        services.AddScoped<IShatterPolicy<ChatEntry>>(sp =>
+        // Session-local shattering policy (drafts -> chunks): Paragraph first, then 2k safety split
+        services.TryAddScoped<IShatterPolicy<ChatEntry>>(sp =>
             new ChainedShatterPolicy<ChatEntry>(
                 new ChatParagraphShatterPolicy(),
-                new ChatOutgoingMaxLengthShatterPolicy(2000)
+                new ChatChunkMaxLengthShatterPolicy(2000)
             ));
 
+        // Compose paragraph boundary with Discord-safe 2k cap
         services.TryAddScoped<IWindowPolicy<ChatChunk>>(_ =>
             new CompositeWindowPolicy<ChatChunk>(
-                new ChatParagraphWindowPolicy()
+                new ChatParagraphWindowPolicy(),
+                new ChatMaxLengthWindowPolicy(2000)
             ));
 
 

@@ -21,7 +21,7 @@ public class EchoBlock(ContractDaemon discordDaemon, IScrivener<ChatEntry> scriv
             switch (entry)
             {
                 case ChatIncoming r:
-                    await _scrivener.WriteAsync(new ChatOutgoing("BOT", r.Text), cancellationToken);
+                    await _scrivener.WriteAsync(new ChatOutgoingDraft("BOT", r.Text), cancellationToken);
                     break;
                 default:
                     break;

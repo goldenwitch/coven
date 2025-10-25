@@ -63,7 +63,8 @@ internal sealed class ConsoleChatSession(
             {
                 await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
                 {
-                    if (entry is ChatAck)
+                    // Forward only fixed ChatOutgoing to console
+                    if (entry is not ChatOutgoing)
                     {
                         continue;
                     }

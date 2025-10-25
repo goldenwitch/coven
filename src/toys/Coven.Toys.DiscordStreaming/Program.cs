@@ -22,11 +22,16 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddDiscordChat(discordClientConfig);
 
-// Toy overrides: use sentence shattering and a composite window policy
-builder.Services.AddScoped<IShatterPolicy<ChatEntry>, ChatSentenceShatterPolicy>();
+// Toy overrides: Paragraph then 2k shatter; paragraph+2k windowing
+builder.Services.AddScoped<IShatterPolicy<ChatEntry>>(sp =>
+    new ChainedShatterPolicy<ChatEntry>(
+        new ChatParagraphShatterPolicy(),
+        new ChatChunkMaxLengthShatterPolicy(2000)
+    ));
 builder.Services.AddScoped<IWindowPolicy<ChatChunk>>(_ =>
     new CompositeWindowPolicy<ChatChunk>(
-        new ChatSentenceWindowPolicy())
+        new ChatParagraphWindowPolicy(),
+        new ChatMaxLengthWindowPolicy(2000))
     );
 
 builder.Services.BuildCoven(b => b.MagikBlock<Empty, Empty, StreamingBlock>().Done());

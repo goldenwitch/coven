@@ -24,8 +24,14 @@ public sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirection
 
         return Output switch
         {
-            ChatIncoming incoming => Task.FromResult<ConsoleEntry>(new ConsoleAck(incoming.Sender, incoming.Text)),
             ChatOutgoing outgoing => Task.FromResult<ConsoleEntry>(new ConsoleOutgoing(_config.OutputSender, outgoing.Text)),
+
+            // Internal/unfixed artifacts or inbound: acknowledge only
+            ChatOutgoingDraft draft => Task.FromResult<ConsoleEntry>(new ConsoleAck(draft.Sender, draft.Text)),
+            ChatChunk chunk => Task.FromResult<ConsoleEntry>(new ConsoleAck(chunk.Sender, chunk.Text)),
+            ChatStreamCompleted done => Task.FromResult<ConsoleEntry>(new ConsoleAck(done.Sender, string.Empty)),
+            ChatIncoming incoming => Task.FromResult<ConsoleEntry>(new ConsoleAck(incoming.Sender, incoming.Text)),
+            ChatIncomingDraft incomingDraft => Task.FromResult<ConsoleEntry>(new ConsoleAck(incomingDraft.Sender, incomingDraft.Text)),
             _ => throw new ArgumentOutOfRangeException(nameof(Output))
         };
     }

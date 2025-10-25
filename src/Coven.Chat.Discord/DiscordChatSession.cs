@@ -65,35 +65,40 @@ internal sealed class DiscordChatSession(
             {
                 await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
                 {
-                    if (entry is ChatAck)
-                    {
-                        continue;
-                    }
-
                     DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
 
-                    // Shatter ChatOutgoing before appending to Discord journal
-                    if (entry is ChatOutgoing)
+                    // Session-local shattering for drafts
+                    if (entry is ChatOutgoingDraft draft)
                     {
-                        bool emittedShard = false;
-                        IEnumerable<ChatEntry> shards = _shatterPolicy.Shatter(entry) ?? [];
-                        foreach (ChatEntry shardEntry in shards)
+                        bool produced = false;
+                        IEnumerable<ChatEntry> outputs = _shatterPolicy.Shatter(draft) ?? [];
+                        foreach (ChatEntry o in outputs)
                         {
-                            if (shardEntry is not ChatOutgoing shard)
+                            if (o is ChatChunk chunk)
                             {
-                                continue; // only forward ChatOutgoing shards to Discord
+                                produced = true;
+                                long cp = await _chatJournal.WriteAsync(chunk, ct).ConfigureAwait(false);
+                                DiscordLog.ChatToDiscordAppended(_logger, chunk.GetType().Name, cp);
                             }
-                            emittedShard = true;
-                            DiscordEntry shardDiscord = await _transmuter.TransmuteOut(shard, ct).ConfigureAwait(false);
-                            DiscordLog.ChatToDiscordTransmuted(_logger, shard.GetType().Name, shardDiscord.GetType().Name);
-                            long shardPos = await _discordJournal.WriteAsync(shardDiscord, ct).ConfigureAwait(false);
-                            DiscordLog.ChatToDiscordAppended(_logger, shardDiscord.GetType().Name, shardPos);
                         }
 
-                        if (emittedShard)
+                        if (produced)
                         {
-                            continue; // do not forward original when shards were emitted
+                            long donePos = await _chatJournal.WriteAsync(new ChatStreamCompleted(draft.Sender), ct).ConfigureAwait(false);
+                            DiscordLog.ChatToDiscordAppended(_logger, nameof(ChatStreamCompleted), donePos);
+                            continue; // do not forward the draft itself
                         }
+
+                        // Fallback: convert draft to fixed and write for forwarding
+                        long fixedPos = await _chatJournal.WriteAsync(new ChatOutgoing(draft.Sender, draft.Text), ct).ConfigureAwait(false);
+                        DiscordLog.ChatToDiscordAppended(_logger, nameof(ChatOutgoing), fixedPos);
+                        continue; // handled by subsequent iterations
+                    }
+
+                    // Forward only fixed ChatOutgoing to Discord
+                    if (entry is not ChatOutgoing)
+                    {
+                        continue;
                     }
 
                     DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);

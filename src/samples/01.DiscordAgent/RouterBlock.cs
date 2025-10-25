@@ -39,10 +39,10 @@ public sealed class RouterBlock(
                 switch (entry)
                 {
                     case AgentResponse r:
-                        await _chat.WriteAsync(new ChatOutgoing("BOT", r.Text), cancellationToken).ConfigureAwait(false);
+                        await _chat.WriteAsync(new ChatOutgoingDraft("BOT", r.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     case AgentThought t:
-                        await _chat.WriteAsync(new ChatOutgoing("BOT", t.Text), cancellationToken).ConfigureAwait(false);
+                        await _chat.WriteAsync(new ChatOutgoingDraft("BOT", t.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         break;
@@ -54,4 +54,3 @@ public sealed class RouterBlock(
         return input;
     }
 }
-
