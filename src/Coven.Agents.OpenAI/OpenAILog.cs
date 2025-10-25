@@ -66,6 +66,42 @@ internal static class OpenAILog
             new EventId(3042, nameof(AgentsToOpenAIAppended)),
             "Agents→OpenAI appended {EntryType} to OpenAI journal at position {Position}.");
 
+    private static readonly Action<ILogger, Exception?> _openAIToAgentsPumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3060, nameof(OpenAIToAgentsPumpFailed)),
+            "OpenAI→Agents pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _agentsToOpenAIPumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3061, nameof(AgentsToOpenAIPumpFailed)),
+            "Agents→OpenAI pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _openAIToAgentsPumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3062, nameof(OpenAIToAgentsPumpCanceled)),
+            "OpenAI→Agents pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _agentsToOpenAIPumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3063, nameof(AgentsToOpenAIPumpCanceled)),
+            "Agents→OpenAI pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _openAIToAgentsPumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3064, nameof(OpenAIToAgentsPumpCompleted)),
+            "OpenAI→Agents pump completed.");
+
+    private static readonly Action<ILogger, Exception?> _agentsToOpenAIPumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3065, nameof(AgentsToOpenAIPumpCompleted)),
+            "Agents→OpenAI pump completed.");
+
     internal static void Connected(ILogger logger) => _connected(logger, null);
     internal static void OutboundSendStart(ILogger logger, int length) => _outboundSendStart(logger, length, null);
     internal static void OutboundSendSucceeded(ILogger logger) => _outboundSendSucceeded(logger, null);
@@ -76,5 +112,10 @@ internal static class OpenAILog
     internal static void AgentsToOpenAIObserved(ILogger logger, string entryType, long position) => _agentsToOpenAIObserved(logger, entryType, position, null);
     internal static void AgentsToOpenAITransmuted(ILogger logger, string fromType, string toType) => _agentsToOpenAITransmuted(logger, fromType, toType, null);
     internal static void AgentsToOpenAIAppended(ILogger logger, string entryType, long position) => _agentsToOpenAIAppended(logger, entryType, position, null);
+    internal static void OpenAIToAgentsPumpFailed(ILogger logger, Exception ex) => _openAIToAgentsPumpFailed(logger, ex);
+    internal static void AgentsToOpenAIPumpFailed(ILogger logger, Exception ex) => _agentsToOpenAIPumpFailed(logger, ex);
+    internal static void OpenAIToAgentsPumpCanceled(ILogger logger) => _openAIToAgentsPumpCanceled(logger, null);
+    internal static void AgentsToOpenAIPumpCanceled(ILogger logger) => _agentsToOpenAIPumpCanceled(logger, null);
+    internal static void OpenAIToAgentsPumpCompleted(ILogger logger) => _openAIToAgentsPumpCompleted(logger, null);
+    internal static void AgentsToOpenAIPumpCompleted(ILogger logger) => _agentsToOpenAIPumpCompleted(logger, null);
 }
-
