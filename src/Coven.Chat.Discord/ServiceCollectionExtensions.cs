@@ -1,10 +1,12 @@
 using Coven.Core;
+using Coven.Core.Streaming;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Coven.Chat.Windowing;
 
 namespace Coven.Chat.Discord;
 
@@ -38,6 +40,21 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();
+
+        // Enable chat windowing by default
+        services.AddChatWindowing();
+
+        // Prefer sentence/paragraph boundaries with a hard max-length guard (Discord 2k)
+        services.AddScoped<IWindowPolicy<ChatChunk>>(_ =>
+            new CompositeWindowPolicy<ChatChunk>(
+                new ChatMaxLengthWindowPolicy(2000),
+                new ChatParagraphWindowPolicy(),
+                new ChatSentenceWindowPolicy()
+            ));
+
+        // Override the default Chat chunk batch transmuter with a Discord-aware splitter (<=2000 chars)
+        services.AddScoped<ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>>, DiscordChatChunkBatchTransmuter>();
+
         return services;
     }
 }

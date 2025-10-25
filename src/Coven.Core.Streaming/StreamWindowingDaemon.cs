@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: BUSL-1.1
-using System.Text;
 using Coven.Daemonology;
 using Coven.Transmutation;
 
 namespace Coven.Core.Streaming;
 
-public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted>(
+public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
     IScrivener<DaemonEvent> daemonEvents,
     IScrivener<TEntry> journal,
-    IStreamSegmenter<TChunk> segmenter,
-    ITransmuter<TChunk, (string Sender, string Text)> chunkTransmuter,
-    ITransmuter<(string Sender, string Text), TOutput> outputTransmuter
+    IWindowPolicy<TChunk> windowPolicy,
+    ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> batchTransmuter
 ) : ContractDaemon(daemonEvents), IAsyncDisposable
     where TEntry : notnull
     where TChunk : TEntry
@@ -18,10 +16,8 @@ public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted
     where TCompleted : TEntry
 {
     private readonly IScrivener<TEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
-    private readonly IStreamSegmenter<TChunk> _segmenter = segmenter ?? throw new ArgumentNullException(nameof(segmenter));
-    private readonly ITransmuter<TChunk, (string Sender, string Text)> _chunkTransmuter = chunkTransmuter ?? throw new ArgumentNullException(nameof(chunkTransmuter));
-    private readonly ITransmuter<(string Sender, string Text), TOutput> _outputTransmuter = outputTransmuter ?? throw new ArgumentNullException(nameof(outputTransmuter));
-
+    private readonly IWindowPolicy<TChunk> _windowPolicy = windowPolicy ?? throw new ArgumentNullException(nameof(windowPolicy));
+    private readonly ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> _batchTransmuter = batchTransmuter ?? throw new ArgumentNullException(nameof(batchTransmuter));
     private CancellationTokenSource? _linkedCancellationSource;
     private Task? _pumpTask;
 
@@ -64,8 +60,8 @@ public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted
 
     private async Task RunAsync(long startAfterPosition, CancellationToken cancellationToken)
     {
-        Queue<TChunk> pendingChunks = new();
-        int lookbackCount = Math.Max(1, _segmenter.MinChunkLookback);
+        List<TChunk> buffer = [];
+        int lookbackCount = Math.Max(1, _windowPolicy.MinChunkLookback);
 
         long lastEmittedPosition = startAfterPosition;
         DateTimeOffset startedAt = DateTimeOffset.UtcNow;
@@ -80,27 +76,35 @@ public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted
                 {
                     case TChunk chunk:
                         lastObservedChunkPosition = position;
-                        pendingChunks.Enqueue(chunk);
-                        while (pendingChunks.Count > lookbackCount)
+                        buffer.Add(chunk);
+
+                        IEnumerable<TChunk> windowChunks = buffer.Count <= lookbackCount
+                            ? buffer
+                            : buffer.Skip(buffer.Count - lookbackCount);
+
+                        if (_windowPolicy.ShouldEmit(new StreamWindow<TChunk>(windowChunks, buffer.Count, startedAt, lastEmitAt)))
                         {
-                            pendingChunks.Dequeue();
-                        }
-                        if (_segmenter.ShouldEmit(new StreamWindow<TChunk>(pendingChunks, pendingChunks.Count, startedAt, lastEmitAt)))
-                        {
-                            await EmitAsync(lastEmittedPosition, position, cancellationToken).ConfigureAwait(false);
+                            await EmitBufferAsync(buffer, cancellationToken).ConfigureAwait(false);
                             lastEmittedPosition = position;
                             lastEmitAt = DateTimeOffset.UtcNow;
-                            pendingChunks.Clear();
                         }
                         break;
                     case TCompleted:
                         long flushUpToPosition = lastObservedChunkPosition > lastEmittedPosition ? lastObservedChunkPosition : lastEmittedPosition;
-                        if (flushUpToPosition > lastEmittedPosition)
+                        if (flushUpToPosition > lastEmittedPosition && buffer.Count > 0)
                         {
-                            await EmitAsync(lastEmittedPosition, flushUpToPosition, cancellationToken).ConfigureAwait(false);
+                            // Drain the buffer fully on completion, emitting as many outputs as needed
+                            while (buffer.Count > 0)
+                            {
+                                int before = buffer.Count;
+                                await EmitBufferAsync(buffer, cancellationToken).ConfigureAwait(false);
+                                if (buffer.Count >= before)
+                                {
+                                    break; // prevent infinite loop if transmuter does not reduce buffer
+                                }
+                            }
                             lastEmittedPosition = flushUpToPosition;
                             lastEmitAt = DateTimeOffset.UtcNow;
-                            pendingChunks.Clear();
                         }
                         break;
                     default:
@@ -119,38 +123,26 @@ public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted
         }
     }
 
-    private async Task EmitAsync(long fromExclusive, long toInclusive, CancellationToken cancellationToken)
+    private async Task EmitBufferAsync(List<TChunk> buffer, CancellationToken cancellationToken)
     {
-        StringBuilder stringBuilder = new();
-        string sender = string.Empty;
-        await foreach ((long position, TEntry entry) in _journal.TailAsync(fromExclusive, cancellationToken))
-        {
-            if (position > toInclusive)
-            {
-                break;
-            }
-            if (entry is TChunk chunkEntry)
-            {
-                (string Sender, string Text) = await _chunkTransmuter.Transmute(chunkEntry, cancellationToken).ConfigureAwait(false);
-                if (!string.IsNullOrEmpty(Sender))
-                {
-                    sender = Sender;
-                }
-                if (!string.IsNullOrEmpty(Text))
-                {
-                    stringBuilder.Append(Text);
-                }
-            }
-        }
-
-        string text = stringBuilder.ToString();
-        if (text.Length == 0)
+        if (buffer.Count == 0)
         {
             return;
         }
 
-        TOutput output = await _outputTransmuter.Transmute((sender, text), cancellationToken).ConfigureAwait(false);
-        await _journal.WriteAsync(output, cancellationToken).ConfigureAwait(false);
+        BatchTransmuteResult<TChunk, TOutput> result = await _batchTransmuter.Transmute(buffer, cancellationToken).ConfigureAwait(false);
+        await _journal.WriteAsync(result.Output, cancellationToken).ConfigureAwait(false);
+
+        if (result.HasRemainder && result.Remainder is not null)
+        {
+            TChunk remainder = result.Remainder;
+            buffer.Clear();
+            buffer.Add(remainder);
+        }
+        else
+        {
+            buffer.Clear();
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -169,3 +161,4 @@ public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted
         }
     }
 }
+

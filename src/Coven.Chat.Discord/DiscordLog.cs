@@ -148,6 +148,42 @@ internal static class DiscordLog
             new EventId(2050, nameof(DiscordScrivenerAppended)),
             "DiscordScrivener appended {EntryType} to internal journal at position {Position}.");
 
+    private static readonly Action<ILogger, Exception?> _discordToChatPumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(2060, nameof(DiscordToChatPumpFailed)),
+            "Discord→Chat pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _chatToDiscordPumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(2061, nameof(ChatToDiscordPumpFailed)),
+            "Chat→Discord pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _discordToChatPumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2062, nameof(DiscordToChatPumpCanceled)),
+            "Discord→Chat pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _chatToDiscordPumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2063, nameof(ChatToDiscordPumpCanceled)),
+            "Chat→Discord pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _discordToChatPumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2064, nameof(DiscordToChatPumpCompleted)),
+            "Discord→Chat pump completed.");
+
+    private static readonly Action<ILogger, Exception?> _chatToDiscordPumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(2065, nameof(ChatToDiscordPumpCompleted)),
+            "Chat→Discord pump completed.");
+
     internal static void Connecting(ILogger logger, ulong channelId) =>
         _connecting(logger, channelId, null);
 
@@ -216,4 +252,22 @@ internal static class DiscordLog
 
     internal static void DiscordScrivenerAppended(ILogger logger, string entryType, long position) =>
         _discordScrivenerAppended(logger, entryType, position, null);
+
+    internal static void DiscordToChatPumpFailed(ILogger logger, Exception ex) =>
+        _discordToChatPumpFailed(logger, ex);
+
+    internal static void ChatToDiscordPumpFailed(ILogger logger, Exception ex) =>
+        _chatToDiscordPumpFailed(logger, ex);
+
+    internal static void DiscordToChatPumpCanceled(ILogger logger) =>
+        _discordToChatPumpCanceled(logger, null);
+
+    internal static void ChatToDiscordPumpCanceled(ILogger logger) =>
+        _chatToDiscordPumpCanceled(logger, null);
+
+    internal static void DiscordToChatPumpCompleted(ILogger logger) =>
+        _discordToChatPumpCompleted(logger, null);
+
+    internal static void ChatToDiscordPumpCompleted(ILogger logger) =>
+        _chatToDiscordPumpCompleted(logger, null);
 }

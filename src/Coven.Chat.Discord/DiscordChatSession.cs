@@ -28,37 +28,61 @@ internal sealed class DiscordChatSession(
         await _gateway.ConnectAsync(ct).ConfigureAwait(false);
         _discordToChatPump = Task.Run(async () =>
         {
-            await foreach ((long position, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
+            try
             {
-                // Skip Acks
-                if (entry is DiscordAck)
+                await foreach ((long position, DiscordEntry entry) in _discordJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    if (entry is DiscordAck)
+                    {
+                        continue;
+                    }
 
-                DiscordLog.DiscordToChatObserved(_logger, entry.GetType().Name, position);
-                ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
-                DiscordLog.DiscordToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
-                long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
-                DiscordLog.DiscordToChatAppended(_logger, chat.GetType().Name, chatPos);
+                    DiscordLog.DiscordToChatObserved(_logger, entry.GetType().Name, position);
+                    ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    DiscordLog.DiscordToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
+                    long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
+                    DiscordLog.DiscordToChatAppended(_logger, chat.GetType().Name, chatPos);
+                }
+                DiscordLog.DiscordToChatPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                DiscordLog.DiscordToChatPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                DiscordLog.DiscordToChatPumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
 
         _chatToDiscordPump = Task.Run(async () =>
         {
-            await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
+            try
             {
-                // Skip Acks
-                if (entry is ChatAck)
+                await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    if (entry is ChatAck)
+                    {
+                        continue;
+                    }
 
-                DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
-                DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
-                DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
-                long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
-                DiscordLog.ChatToDiscordAppended(_logger, discord.GetType().Name, discPos);
+                    DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
+                    DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
+                    long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
+                    DiscordLog.ChatToDiscordAppended(_logger, discord.GetType().Name, discPos);
+                }
+                DiscordLog.ChatToDiscordPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                DiscordLog.ChatToDiscordPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                DiscordLog.ChatToDiscordPumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
     }

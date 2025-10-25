@@ -100,6 +100,42 @@ internal static class ConsoleLog
             new EventId(3040, nameof(ConsoleScrivenerAppended)),
             "ConsoleScrivener appended {EntryType} to internal journal at position {Position}.");
 
+    private static readonly Action<ILogger, Exception?> _consoleToChatPumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3060, nameof(ConsoleToChatPumpFailed)),
+            "Console→Chat pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _chatToConsolePumpFailed =
+        LoggerMessage.Define(
+            LogLevel.Error,
+            new EventId(3061, nameof(ChatToConsolePumpFailed)),
+            "Chat→Console pump failed.");
+
+    private static readonly Action<ILogger, Exception?> _consoleToChatPumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3062, nameof(ConsoleToChatPumpCanceled)),
+            "Console→Chat pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _chatToConsolePumpCanceled =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3063, nameof(ChatToConsolePumpCanceled)),
+            "Chat→Console pump canceled.");
+
+    private static readonly Action<ILogger, Exception?> _consoleToChatPumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3064, nameof(ConsoleToChatPumpCompleted)),
+            "Console→Chat pump completed.");
+
+    private static readonly Action<ILogger, Exception?> _chatToConsolePumpCompleted =
+        LoggerMessage.Define(
+            LogLevel.Information,
+            new EventId(3065, nameof(ChatToConsolePumpCompleted)),
+            "Chat→Console pump completed.");
+
     internal static void Connecting(ILogger logger) => _connecting(logger, null);
     internal static void Connected(ILogger logger) => _connected(logger, null);
 
@@ -121,5 +157,11 @@ internal static class ConsoleLog
     internal static void ChatToConsoleAppended(ILogger logger, string entryType, long position) => _chatToConsoleAppended(logger, entryType, position, null);
 
     internal static void ConsoleScrivenerAppended(ILogger logger, string entryType, long position) => _consoleScrivenerAppended(logger, entryType, position, null);
-}
 
+    internal static void ConsoleToChatPumpFailed(ILogger logger, Exception ex) => _consoleToChatPumpFailed(logger, ex);
+    internal static void ChatToConsolePumpFailed(ILogger logger, Exception ex) => _chatToConsolePumpFailed(logger, ex);
+    internal static void ConsoleToChatPumpCanceled(ILogger logger) => _consoleToChatPumpCanceled(logger, null);
+    internal static void ChatToConsolePumpCanceled(ILogger logger) => _chatToConsolePumpCanceled(logger, null);
+    internal static void ConsoleToChatPumpCompleted(ILogger logger) => _consoleToChatPumpCompleted(logger, null);
+    internal static void ChatToConsolePumpCompleted(ILogger logger) => _chatToConsolePumpCompleted(logger, null);
+}
