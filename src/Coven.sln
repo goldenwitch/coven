@@ -37,6 +37,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{5D20
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordAgent", "samples\01.DiscordAgent\DiscordAgent.csproj", "{7021B9A6-B5F7-4CE8-AA8E-A9D0E02F90AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleOpenAIStreaming", "toys\Coven.Toys.ConsoleOpenAIStreaming\Coven.Toys.ConsoleOpenAIStreaming.csproj", "{1D6A8099-642A-4DAF-9103-A8324AE31930}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -227,6 +229,18 @@ Global
 		{7021B9A6-B5F7-4CE8-AA8E-A9D0E02F90AF}.Release|x64.Build.0 = Release|Any CPU
 		{7021B9A6-B5F7-4CE8-AA8E-A9D0E02F90AF}.Release|x86.ActiveCfg = Release|Any CPU
 		{7021B9A6-B5F7-4CE8-AA8E-A9D0E02F90AF}.Release|x86.Build.0 = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|x64.Build.0 = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D6A8099-642A-4DAF-9103-A8324AE31930}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -236,5 +250,6 @@ Global
 		{D18FBE36-789B-48E4-9E4C-E695B7C21946} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 		{5A9909A5-2FDB-4FAA-9BAE-45B9334BAD59} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 		{7021B9A6-B5F7-4CE8-AA8E-A9D0E02F90AF} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
+		{1D6A8099-642A-4DAF-9103-A8324AE31930} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 	EndGlobalSection
 EndGlobal
