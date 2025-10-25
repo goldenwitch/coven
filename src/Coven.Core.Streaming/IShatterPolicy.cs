@@ -2,18 +2,17 @@
 namespace Coven.Core.Streaming;
 
 /// <summary>
-/// Defines a policy that scatters a source entry into one or more chunks.
+/// Defines a policy that shatters a single entry into zero or more entries.
+/// Implementations should be pure and side‑effect free.
 /// </summary>
-/// <typeparam name="TSource">The source entry type to scatter.</typeparam>
-/// <typeparam name="TChunk">The chunk type produced.</typeparam>
-public interface IShatterPolicy<TSource, TChunk>
+/// <typeparam name="TEntry">The journal entry type.</typeparam>
+public interface IShatterPolicy<TEntry>
 {
     /// <summary>
-    /// Produces zero or more chunks from a single source entry.
-    /// Implementations should avoid side-effects and honor cancellation in callers.
+    /// Produces zero or more entries derived from the provided entry.
+    /// Policies may return an empty sequence to indicate no change.
     /// </summary>
-    /// <param name="source">The source entry to scatter.</param>
-    /// <returns>Chunks yielded from the provided <paramref name="source"/>.</returns>
-    IEnumerable<TChunk> Shatter(TSource source);
+    /// <param name="entry">The source entry.</param>
+    /// <returns>Zero or more entries to append.</returns>
+    IEnumerable<TEntry> Shatter(TEntry entry);
 }
-

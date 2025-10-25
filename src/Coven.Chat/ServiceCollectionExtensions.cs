@@ -16,19 +16,18 @@ public static class ServiceCollectionExtensions
         services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
         services.TryAddSingleton<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
 
-        services.TryAddScoped<IShatterPolicy<ChatIncoming, ChatChunk>, Shattering.ChatSentenceShatterPolicy>();
+        services.TryAddScoped<IShatterPolicy<ChatEntry>, Shattering.ChatSentenceShatterPolicy>();
 
         services.AddScoped<ContractDaemon>(sp =>
         {
             IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
             IScrivener<ChatEntry> chatJournal = sp.GetRequiredService<IScrivener<ChatEntry>>();
-            IShatterPolicy<ChatIncoming, ChatChunk> policy = sp.GetRequiredService<IShatterPolicy<ChatIncoming, ChatChunk>>();
+            IShatterPolicy<ChatEntry> policy = sp.GetRequiredService<IShatterPolicy<ChatEntry>>();
 
-            return new StreamShatteringDaemon<ChatEntry, ChatIncoming, ChatChunk, ChatStreamCompleted>(
+            return new StreamShatteringDaemon<ChatEntry, ChatIncoming>(
                 daemonEvents,
                 chatJournal,
-                policy,
-                src => new ChatStreamCompleted(src.Sender));
+                policy);
         });
 
         return services;

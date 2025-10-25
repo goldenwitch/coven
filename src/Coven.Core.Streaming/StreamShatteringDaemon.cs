@@ -3,20 +3,16 @@ using Coven.Daemonology;
 
 namespace Coven.Core.Streaming;
 
-public sealed class StreamShatteringDaemon<TEntry, TSource, TChunk, TCompleted>(
+public sealed class StreamShatteringDaemon<TEntry, TSource>(
     IScrivener<DaemonEvent> daemonEvents,
     IScrivener<TEntry> journal,
-    IShatterPolicy<TSource, TChunk> shatterPolicy,
-    Func<TSource, TCompleted> completionFactory
+    IShatterPolicy<TEntry> shatterPolicy
 ) : ContractDaemon(daemonEvents), IAsyncDisposable
     where TEntry : notnull
     where TSource : TEntry
-    where TChunk : TEntry
-    where TCompleted : TEntry
 {
     private readonly IScrivener<TEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
-    private readonly IShatterPolicy<TSource, TChunk> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
-    private readonly Func<TSource, TCompleted> _completionFactory = completionFactory ?? throw new ArgumentNullException(nameof(completionFactory));
+    private readonly IShatterPolicy<TEntry> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
     private CancellationTokenSource? _linkedCancellationSource;
     private Task? _pumpTask;
 
@@ -68,15 +64,12 @@ public sealed class StreamShatteringDaemon<TEntry, TSource, TChunk, TCompleted>(
                     continue; // only scatter the designated source type
                 }
 
-                IEnumerable<TChunk> chunks = _shatterPolicy.Shatter(source) ?? [];
-                foreach (TChunk chunk in chunks)
+                IEnumerable<TEntry> outputs = _shatterPolicy.Shatter(source) ?? [];
+                foreach (TEntry output in outputs)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
+                    await _journal.WriteAsync(output, cancellationToken).ConfigureAwait(false);
                 }
-
-                TCompleted completed = _completionFactory(source);
-                await _journal.WriteAsync((TEntry)(object)completed, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (OperationCanceledException)

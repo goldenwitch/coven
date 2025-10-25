@@ -5,25 +5,52 @@ using Coven.Core.Streaming;
 namespace Coven.Chat.Shattering;
 
 /// <summary>
-/// Scatters a ChatIncoming into sentence-sized ChatChunk segments.
+/// Scatters Chat entries into sentence-sized segments.
+/// - ChatIncoming -> yields ChatChunk per sentence
+/// - ChatOutgoing -> yields ChatOutgoing per sentence
+///
 /// A sentence ends on '.', '!' or '?' followed by whitespace or end-of-input.
 /// Trailing whitespace is preserved with the sentence it follows.
 /// </summary>
-public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatIncoming, ChatChunk>
+public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatEntry>
 {
-    public IEnumerable<ChatChunk> Shatter(ChatIncoming source)
+    public IEnumerable<ChatEntry> Shatter(ChatEntry entry)
     {
-        ArgumentNullException.ThrowIfNull(source);
-        string text = source.Text ?? string.Empty;
-        if (text.Length == 0)
+        switch (entry)
+        {
+            case ChatIncoming incoming:
+                {
+                    foreach (string s in SplitSentences(incoming.Text))
+                    {
+                        yield return new ChatChunk(incoming.Sender, s);
+                    }
+                    break;
+                }
+            case ChatOutgoing outgoing:
+                {
+                    foreach (string s in SplitSentences(outgoing.Text))
+                    {
+                        yield return new ChatOutgoing(outgoing.Sender, s);
+                    }
+                    break;
+                }
+            default:
+                yield break;
+        }
+    }
+
+    private static IEnumerable<string> SplitSentences(string? text)
+    {
+        string t = text ?? string.Empty;
+        if (t.Length == 0)
         {
             yield break;
         }
 
         StringBuilder sb = new();
-        for (int i = 0; i < text.Length; i++)
+        for (int i = 0; i < t.Length; i++)
         {
-            char c = text[i];
+            char c = t[i];
             sb.Append(c);
 
             bool boundary = c is '.' or '!' or '?';
@@ -33,11 +60,11 @@ public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatIncoming, Cha
             }
 
             // Lookahead: boundary if next is whitespace or end
-            bool atEnd = i + 1 >= text.Length;
-            bool nextIsWhitespace = !atEnd && char.IsWhiteSpace(text[i + 1]);
+            bool atEnd = i + 1 >= t.Length;
+            bool nextIsWhitespace = !atEnd && char.IsWhiteSpace(t[i + 1]);
             if (atEnd || nextIsWhitespace)
             {
-                yield return new ChatChunk(source.Sender, sb.ToString());
+                yield return sb.ToString();
                 sb.Clear();
                 continue;
             }
@@ -45,8 +72,7 @@ public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatIncoming, Cha
 
         if (sb.Length > 0)
         {
-            yield return new ChatChunk(source.Sender, sb.ToString());
+            yield return sb.ToString();
         }
     }
 }
-

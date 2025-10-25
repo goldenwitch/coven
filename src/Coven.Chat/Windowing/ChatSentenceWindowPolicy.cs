@@ -10,8 +10,8 @@ namespace Coven.Chat.Windowing;
 /// </summary>
 public sealed class ChatSentenceWindowPolicy : IWindowPolicy<ChatChunk>
 {
-    // Inspect entire buffer to decide cleanly at boundaries
-    public int MinChunkLookback => int.MaxValue;
+    // 4 chunks should be generous for windowing sentence termination
+    public int MinChunkLookback => 4;
 
     public bool ShouldEmit(StreamWindow<ChatChunk> window)
     {

@@ -1,4 +1,5 @@
 using Coven.Core;
+using Coven.Core.Streaming;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
 
@@ -9,6 +10,7 @@ internal sealed class DiscordChatSession(
     IScrivener<DiscordEntry> discordJournal,
     IScrivener<ChatEntry> chatJournal,
     IBiDirectionalTransmuter<DiscordEntry, ChatEntry> transmuter,
+    IShatterPolicy<ChatEntry> shatterPolicy,
     ILogger<DiscordChatSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
 {
@@ -16,6 +18,7 @@ internal sealed class DiscordChatSession(
     private readonly IScrivener<DiscordEntry> _discordJournal = discordJournal ?? throw new ArgumentNullException(nameof(discordJournal));
     private readonly IScrivener<ChatEntry> _chatJournal = chatJournal ?? throw new ArgumentNullException(nameof(chatJournal));
     private readonly IBiDirectionalTransmuter<DiscordEntry, ChatEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
+    private readonly IShatterPolicy<ChatEntry> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
 
@@ -68,6 +71,31 @@ internal sealed class DiscordChatSession(
                     }
 
                     DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
+
+                    // Shatter ChatOutgoing before appending to Discord journal
+                    if (entry is ChatOutgoing)
+                    {
+                        bool emittedShard = false;
+                        IEnumerable<ChatEntry> shards = _shatterPolicy.Shatter(entry) ?? [];
+                        foreach (ChatEntry shardEntry in shards)
+                        {
+                            if (shardEntry is not ChatOutgoing shard)
+                            {
+                                continue; // only forward ChatOutgoing shards to Discord
+                            }
+                            emittedShard = true;
+                            DiscordEntry shardDiscord = await _transmuter.TransmuteOut(shard, ct).ConfigureAwait(false);
+                            DiscordLog.ChatToDiscordTransmuted(_logger, shard.GetType().Name, shardDiscord.GetType().Name);
+                            long shardPos = await _discordJournal.WriteAsync(shardDiscord, ct).ConfigureAwait(false);
+                            DiscordLog.ChatToDiscordAppended(_logger, shardDiscord.GetType().Name, shardPos);
+                        }
+
+                        if (emittedShard)
+                        {
+                            continue; // do not forward original when shards were emitted
+                        }
+                    }
+
                     DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
                     DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
                     long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);

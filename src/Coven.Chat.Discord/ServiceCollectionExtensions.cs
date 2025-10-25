@@ -7,6 +7,7 @@ using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat.Windowing;
+using Coven.Chat.Shattering;
 
 namespace Coven.Chat.Discord;
 
@@ -45,16 +46,20 @@ public static class ServiceCollectionExtensions
         services.AddChatShattering();
         services.AddChatWindowing();
 
-        // Prefer sentence/paragraph boundaries with a hard max-length guard (Discord 2k)
-        services.AddScoped<IWindowPolicy<ChatChunk>>(_ =>
-            new CompositeWindowPolicy<ChatChunk>(
-                new ChatMaxLengthWindowPolicy(2000),
-                new ChatParagraphWindowPolicy(),
-                new ChatSentenceWindowPolicy()
+        // Discord shattering:
+        // - Incoming: paragraph boundaries -> ChatChunk
+        // - Outgoing: enforce 2k max per message -> ChatOutgoing shards
+        services.AddScoped<IShatterPolicy<ChatEntry>>(sp =>
+            new ChainedShatterPolicy<ChatEntry>(
+                new ChatParagraphShatterPolicy(),
+                new ChatOutgoingMaxLengthShatterPolicy(2000)
             ));
 
-        // Override the default Chat chunk batch transmuter with a Discord-aware splitter (<=2000 chars)
-        services.AddScoped<ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>>, DiscordChatChunkBatchTransmuter>();
+        services.TryAddScoped<IWindowPolicy<ChatChunk>>(_ =>
+            new CompositeWindowPolicy<ChatChunk>(
+                new ChatParagraphWindowPolicy()
+            ));
+
 
         return services;
     }
