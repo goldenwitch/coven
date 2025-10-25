@@ -15,15 +15,13 @@ public sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntr
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return string.IsNullOrWhiteSpace(Input.Text)
-            ? Task.FromResult<ResponseItem?>(null)
-            : Input switch
-            {
-                OpenAIOutgoing u => Task.FromResult<ResponseItem?>(ResponseItem.CreateUserMessageItem(u.Text)),
-                OpenAIIncoming a => Task.FromResult<ResponseItem?>(ResponseItem.CreateAssistantMessageItem(a.Text)),
-                // Thoughts/acks do not participate in prompt construction.
-                _ => Task.FromResult<ResponseItem?>(null)
-            };
+        return Input switch
+        {
+            OpenAIOutgoing u => Task.FromResult<ResponseItem?>(ResponseItem.CreateUserMessageItem(u.Text)),
+            OpenAIIncoming a => Task.FromResult<ResponseItem?>(ResponseItem.CreateAssistantMessageItem(a.Text)),
+            // Thoughts/acks do not participate in prompt construction.
+            _ => Task.FromResult<ResponseItem?>(null)
+        };
     }
 }
 
