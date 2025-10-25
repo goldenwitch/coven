@@ -14,7 +14,7 @@ using Coven.Chat;
 DiscordClientConfig discordClientConfig = new()
 {
     BotToken = "", // set your Discord bot token
-    ChannelId = 123   // set your channel id
+    ChannelId = 0   // set your channel id
 };
 
 // Register all of our DI stuff
@@ -22,15 +22,15 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddDiscordChat(discordClientConfig);
 
-// Toy overrides: Paragraph then 2k shatter; paragraph+2k windowing
+// Toy overrides: Sentence then 2k shatter; sentence+2k windowing
 builder.Services.AddScoped<IShatterPolicy<ChatEntry>>(sp =>
     new ChainedShatterPolicy<ChatEntry>(
-        new ChatParagraphShatterPolicy(),
+        new ChatSentenceShatterPolicy(),
         new ChatChunkMaxLengthShatterPolicy(2000)
     ));
 builder.Services.AddScoped<IWindowPolicy<ChatChunk>>(_ =>
     new CompositeWindowPolicy<ChatChunk>(
-        new ChatParagraphWindowPolicy(),
+        new ChatSentenceWindowPolicy(),
         new ChatMaxLengthWindowPolicy(2000))
     );
 

@@ -17,14 +17,15 @@ public sealed class StreamingBlock(IEnumerable<ContractDaemon> daemons, IScriven
             await d.Start(cancellationToken).ConfigureAwait(false);
         }
 
-        // Keep the ritual alive by tailing the chat journal.
-        // We do not echo manually; shattering + windowing will emit ChatOutgoing automatically.
-        await foreach ((long _, ChatEntry _) in _scrivener.TailAsync(0, cancellationToken))
+        // Tail the chat journal and convert incoming to draft outgoing.
+        await foreach ((long _, ChatEntry entry) in _scrivener.TailAsync(0, cancellationToken))
         {
-            // No-op: presence loop
+            if (entry is ChatIncoming i)
+            {
+                await _scrivener.WriteAsync(new ChatOutgoingDraft("BOT", i.Text), cancellationToken).ConfigureAwait(false);
+            }
         }
 
         return input;
     }
 }
-
