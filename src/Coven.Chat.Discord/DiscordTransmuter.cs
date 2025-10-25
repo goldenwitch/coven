@@ -22,8 +22,14 @@ public class DiscordTransmuter : IBiDirectionalTransmuter<DiscordEntry, ChatEntr
 
         return Output switch
         {
-            ChatIncoming incoming => Task.FromResult<DiscordEntry>(new DiscordAck(incoming.Sender, incoming.Text)),
             ChatOutgoing outgoing => Task.FromResult<DiscordEntry>(new DiscordOutgoing(outgoing.Sender, outgoing.Text)),
+
+            // Internal/unfixed artifacts: acknowledge only to prevent loops
+            ChatOutgoingDraft draft => Task.FromResult<DiscordEntry>(new DiscordAck(draft.Sender, draft.Text)),
+            ChatChunk chunk => Task.FromResult<DiscordEntry>(new DiscordAck(chunk.Sender, chunk.Text)),
+            ChatStreamCompleted done => Task.FromResult<DiscordEntry>(new DiscordAck(done.Sender, string.Empty)),
+            ChatIncoming incoming => Task.FromResult<DiscordEntry>(new DiscordAck(incoming.Sender, incoming.Text)),
+            ChatIncomingDraft incomingDraft => Task.FromResult<DiscordEntry>(new DiscordAck(incomingDraft.Sender, incomingDraft.Text)),
             _ => throw new ArgumentOutOfRangeException(nameof(Output))
         };
     }

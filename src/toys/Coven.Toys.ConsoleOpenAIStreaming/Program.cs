@@ -6,7 +6,6 @@ using Coven.Toys.ConsoleOpenAIStreaming;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Coven.Agents.Streaming.Segmenters;
 
 // Configuration
 ConsoleClientConfig consoleConfig = new()
@@ -29,13 +28,7 @@ builder.Services.AddConsoleChat(consoleConfig);
 // Enable OpenAI streaming with sensible segmentation
 builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
-    registration.EnableStreaming(
-        Segmenters.Compose(
-            Segmenters.SentenceBoundary(minLen: 64),
-            Segmenters.DoubleNewline(),
-            Segmenters.CodeFence()
-        )
-    );
+    registration.EnableStreaming(); // default: final-only segmentation
 });
 
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
@@ -45,4 +38,3 @@ IHost host = builder.Build();
 // Execute ritual
 ICoven coven = host.Services.GetRequiredService<ICoven>();
 await coven.Ritual<Empty, Empty>(new Empty());
-

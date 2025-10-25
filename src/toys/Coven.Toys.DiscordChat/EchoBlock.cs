@@ -4,14 +4,17 @@ using Coven.Daemonology;
 
 namespace Coven.Toys.DiscordChat;
 
-public class EchoBlock(ContractDaemon discordDaemon, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
+public class EchoBlock(IEnumerable<ContractDaemon> daemons, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
 {
-    private readonly ContractDaemon _discordDaemon = discordDaemon ?? throw new ArgumentNullException(nameof(discordDaemon));
+    private readonly IEnumerable<ContractDaemon> _daemons = daemons ?? throw new ArgumentNullException(nameof(daemons));
     private readonly IScrivener<ChatEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));
     public async Task<Empty> DoMagik(Empty input, CancellationToken cancellationToken = default)
     {
-        // Start our contract Daemon
-        await _discordDaemon.Start(cancellationToken);
+        // Start all contract daemons
+        foreach (ContractDaemon d in _daemons)
+        {
+            await d.Start(cancellationToken).ConfigureAwait(false);
+        }
 
         // Tail our chat scrivener and echo all of the messages to it that aren't sent by us.
         await foreach ((long _, ChatEntry? entry) in _scrivener.TailAsync(0, cancellationToken))
@@ -28,7 +31,7 @@ public class EchoBlock(ContractDaemon discordDaemon, IScrivener<ChatEntry> scriv
             }
         }
 
-        // When we exit the scope, it should automatically cancel and dispose our boys.
+        // When we exit the scope, cooperative shutdown disposes daemons.
         return input;
     }
 }

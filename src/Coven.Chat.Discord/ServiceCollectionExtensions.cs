@@ -1,10 +1,13 @@
 using Coven.Core;
+using Coven.Core.Streaming;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using Coven.Chat.Windowing;
+using Coven.Chat.Shattering;
 
 namespace Coven.Chat.Discord;
 
@@ -38,6 +41,25 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();
+
+        // Enable windowing; session performs shattering for drafts
+        services.AddChatWindowing();
+
+        // Session-local shattering policy (drafts -> chunks): Paragraph first, then 2k safety split
+        services.TryAddScoped<IShatterPolicy<ChatEntry>>(sp =>
+            new ChainedShatterPolicy<ChatEntry>(
+                new ChatParagraphShatterPolicy(),
+                new ChatChunkMaxLengthShatterPolicy(2000)
+            ));
+
+        // Compose paragraph boundary with Discord-safe 2k cap
+        services.TryAddScoped<IWindowPolicy<ChatChunk>>(_ =>
+            new CompositeWindowPolicy<ChatChunk>(
+                new ChatParagraphWindowPolicy(),
+                new ChatMaxLengthWindowPolicy(2000)
+            ));
+
+
         return services;
     }
 }

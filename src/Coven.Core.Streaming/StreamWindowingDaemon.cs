@@ -1,0 +1,164 @@
+// SPDX-License-Identifier: BUSL-1.1
+using Coven.Daemonology;
+using Coven.Transmutation;
+
+namespace Coven.Core.Streaming;
+
+public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
+    IScrivener<DaemonEvent> daemonEvents,
+    IScrivener<TEntry> journal,
+    IWindowPolicy<TChunk> windowPolicy,
+    ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> batchTransmuter
+) : ContractDaemon(daemonEvents), IAsyncDisposable
+    where TEntry : notnull
+    where TChunk : TEntry
+    where TOutput : TEntry
+    where TCompleted : TEntry
+{
+    private readonly IScrivener<TEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
+    private readonly IWindowPolicy<TChunk> _windowPolicy = windowPolicy ?? throw new ArgumentNullException(nameof(windowPolicy));
+    private readonly ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> _batchTransmuter = batchTransmuter ?? throw new ArgumentNullException(nameof(batchTransmuter));
+    private CancellationTokenSource? _linkedCancellationSource;
+    private Task? _pumpTask;
+
+    public override async Task Start(CancellationToken cancellationToken)
+    {
+        _linkedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        CancellationToken linkedToken = _linkedCancellationSource.Token;
+
+        long startPosition = 0;
+        await foreach ((long position, _) in _journal.ReadBackwardAsync(long.MaxValue, linkedToken))
+        {
+            startPosition = position;
+            break;
+        }
+
+        _pumpTask = Task.Run(() => RunAsync(startPosition, linkedToken), linkedToken);
+        await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
+    }
+
+    public override async Task Shutdown(CancellationToken cancellationToken)
+    {
+        _linkedCancellationSource?.Cancel();
+        if (_pumpTask is not null)
+        {
+            try
+            {
+                await _pumpTask.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // cooperative shutdown
+            }
+            finally
+            {
+                _pumpTask = null;
+            }
+        }
+        await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task RunAsync(long startAfterPosition, CancellationToken cancellationToken)
+    {
+        List<TChunk> buffer = [];
+        int lookbackCount = Math.Max(1, _windowPolicy.MinChunkLookback);
+
+        long lastEmittedPosition = startAfterPosition;
+        DateTimeOffset startedAt = DateTimeOffset.UtcNow;
+        DateTimeOffset lastEmitAt = startedAt;
+        long lastObservedChunkPosition = startAfterPosition;
+
+        try
+        {
+            await foreach ((long position, TEntry entry) in _journal.TailAsync(startAfterPosition, cancellationToken))
+            {
+                switch (entry)
+                {
+                    case TChunk chunk:
+                        lastObservedChunkPosition = position;
+                        buffer.Add(chunk);
+
+                        IEnumerable<TChunk> windowChunks = buffer.Count <= lookbackCount
+                            ? buffer
+                            : buffer.Skip(buffer.Count - lookbackCount);
+
+                        if (_windowPolicy.ShouldEmit(new StreamWindow<TChunk>(windowChunks, buffer.Count, startedAt, lastEmitAt)))
+                        {
+                            await EmitBufferAsync(buffer, cancellationToken).ConfigureAwait(false);
+                            lastEmittedPosition = position;
+                            lastEmitAt = DateTimeOffset.UtcNow;
+                        }
+                        break;
+                    case TCompleted:
+                        long flushUpToPosition = lastObservedChunkPosition > lastEmittedPosition ? lastObservedChunkPosition : lastEmittedPosition;
+                        if (flushUpToPosition > lastEmittedPosition && buffer.Count > 0)
+                        {
+                            // Drain the buffer fully on completion, emitting as many outputs as needed
+                            while (buffer.Count > 0)
+                            {
+                                int before = buffer.Count;
+                                await EmitBufferAsync(buffer, cancellationToken).ConfigureAwait(false);
+                                if (buffer.Count >= before)
+                                {
+                                    break; // prevent infinite loop if transmuter does not reduce buffer
+                                }
+                            }
+                            lastEmittedPosition = flushUpToPosition;
+                            lastEmitAt = DateTimeOffset.UtcNow;
+                        }
+                        break;
+                    default:
+                        // ignore other entry types
+                        break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // cooperative shutdown
+        }
+        catch (Exception ex)
+        {
+            await Fail(ex, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    private async Task EmitBufferAsync(List<TChunk> buffer, CancellationToken cancellationToken)
+    {
+        if (buffer.Count == 0)
+        {
+            return;
+        }
+
+        BatchTransmuteResult<TChunk, TOutput> result = await _batchTransmuter.Transmute(buffer, cancellationToken).ConfigureAwait(false);
+        await _journal.WriteAsync(result.Output, cancellationToken).ConfigureAwait(false);
+
+        if (result.HasRemainder && result.Remainder is not null)
+        {
+            TChunk remainder = result.Remainder;
+            buffer.Clear();
+            buffer.Add(remainder);
+        }
+        else
+        {
+            buffer.Clear();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            if (Status != Status.Completed)
+            {
+                await Shutdown(CancellationToken.None).ConfigureAwait(false);
+            }
+        }
+        finally
+        {
+            _linkedCancellationSource?.Dispose();
+            GC.SuppressFinalize(this);
+        }
+    }
+}
+

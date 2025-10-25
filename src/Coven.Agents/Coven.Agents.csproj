@@ -3,7 +3,9 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Coven.Core.Streaming\Coven.Core.Streaming.csproj" />
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />
+    <ProjectReference Include="..\Coven.Transmutation\Coven.Transmutation.csproj" />
   </ItemGroup>
 </Project>

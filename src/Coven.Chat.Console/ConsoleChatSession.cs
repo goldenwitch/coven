@@ -29,35 +29,62 @@ internal sealed class ConsoleChatSession(
 
         _consoleToChatPump = Task.Run(async () =>
         {
-            await foreach ((long position, ConsoleEntry entry) in _consoleJournal.TailAsync(0, ct))
+            try
             {
-                if (entry is ConsoleAck)
+                await foreach ((long position, ConsoleEntry entry) in _consoleJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    if (entry is ConsoleAck)
+                    {
+                        continue;
+                    }
 
-                ConsoleLog.ConsoleToChatObserved(_logger, entry.GetType().Name, position);
-                ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
-                ConsoleLog.ConsoleToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
-                long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
-                ConsoleLog.ConsoleToChatAppended(_logger, chat.GetType().Name, chatPos);
+                    ConsoleLog.ConsoleToChatObserved(_logger, entry.GetType().Name, position);
+                    ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    ConsoleLog.ConsoleToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
+                    long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
+                    ConsoleLog.ConsoleToChatAppended(_logger, chat.GetType().Name, chatPos);
+                }
+                ConsoleLog.ConsoleToChatPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                ConsoleLog.ConsoleToChatPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                ConsoleLog.ConsoleToChatPumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
 
         _chatToConsolePump = Task.Run(async () =>
         {
-            await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
+            try
             {
-                if (entry is ChatAck)
+                await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
                 {
-                    continue;
-                }
+                    // Forward only fixed ChatOutgoing to console
+                    if (entry is not ChatOutgoing)
+                    {
+                        continue;
+                    }
 
-                ConsoleLog.ChatToConsoleObserved(_logger, entry.GetType().Name, position);
-                ConsoleEntry console = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
-                ConsoleLog.ChatToConsoleTransmuted(_logger, entry.GetType().Name, console.GetType().Name);
-                long consolePos = await _consoleJournal.WriteAsync(console, ct).ConfigureAwait(false);
-                ConsoleLog.ChatToConsoleAppended(_logger, console.GetType().Name, consolePos);
+                    ConsoleLog.ChatToConsoleObserved(_logger, entry.GetType().Name, position);
+                    ConsoleEntry console = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    ConsoleLog.ChatToConsoleTransmuted(_logger, entry.GetType().Name, console.GetType().Name);
+                    long consolePos = await _consoleJournal.WriteAsync(console, ct).ConfigureAwait(false);
+                    ConsoleLog.ChatToConsoleAppended(_logger, console.GetType().Name, consolePos);
+                }
+                ConsoleLog.ChatToConsolePumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                ConsoleLog.ChatToConsolePumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                ConsoleLog.ChatToConsolePumpFailed(_logger, ex);
+                throw;
             }
         }, ct);
     }
