@@ -41,7 +41,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();
 
-        // Enable chat windowing by default
+        // Enable chat shattering + windowing by default
+        services.AddChatShattering();
         services.AddChatWindowing();
 
         // Prefer sentence/paragraph boundaries with a hard max-length guard (Discord 2k)

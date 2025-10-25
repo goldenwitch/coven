@@ -9,6 +9,31 @@ namespace Coven.Chat;
 
 public static class ServiceCollectionExtensions
 {
+    public static IServiceCollection AddChatShattering(this IServiceCollection services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
+        services.TryAddSingleton<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
+
+        services.TryAddScoped<IShatterPolicy<ChatIncoming, ChatChunk>, Shattering.ChatSentenceShatterPolicy>();
+
+        services.AddScoped<ContractDaemon>(sp =>
+        {
+            IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
+            IScrivener<ChatEntry> chatJournal = sp.GetRequiredService<IScrivener<ChatEntry>>();
+            IShatterPolicy<ChatIncoming, ChatChunk> policy = sp.GetRequiredService<IShatterPolicy<ChatIncoming, ChatChunk>>();
+
+            return new StreamShatteringDaemon<ChatEntry, ChatIncoming, ChatChunk, ChatStreamCompleted>(
+                daemonEvents,
+                chatJournal,
+                policy,
+                src => new ChatStreamCompleted(src.Sender));
+        });
+
+        return services;
+    }
+
     public static IServiceCollection AddChatWindowing(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
