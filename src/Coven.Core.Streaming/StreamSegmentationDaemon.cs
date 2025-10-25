@@ -1,17 +1,26 @@
 // SPDX-License-Identifier: BUSL-1.1
 using System.Text;
-using Coven.Core;
 using Coven.Daemonology;
+using Coven.Transmutation;
 
-namespace Coven.Agents.Streaming;
+namespace Coven.Core.Streaming;
 
-public sealed class AgentStreamSegmentationDaemon(
+public sealed class StreamSegmentationDaemon<TEntry, TChunk, TOutput, TCompleted>(
     IScrivener<DaemonEvent> daemonEvents,
-    IScrivener<AgentEntry> agentJournal,
-    IStreamSegmenter segmenter) : ContractDaemon(daemonEvents), IAsyncDisposable
+    IScrivener<TEntry> journal,
+    IStreamSegmenter<TChunk> segmenter,
+    ITransmuter<TChunk, (string Sender, string Text)> chunkTransmuter,
+    ITransmuter<(string Sender, string Text), TOutput> outputTransmuter
+) : ContractDaemon(daemonEvents), IAsyncDisposable
+    where TEntry : notnull
+    where TChunk : TEntry
+    where TOutput : TEntry
+    where TCompleted : TEntry
 {
-    private readonly IScrivener<AgentEntry> _agentJournal = agentJournal ?? throw new ArgumentNullException(nameof(agentJournal));
-    private readonly IStreamSegmenter _segmenter = segmenter ?? throw new ArgumentNullException(nameof(segmenter));
+    private readonly IScrivener<TEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
+    private readonly IStreamSegmenter<TChunk> _segmenter = segmenter ?? throw new ArgumentNullException(nameof(segmenter));
+    private readonly ITransmuter<TChunk, (string Sender, string Text)> _chunkTransmuter = chunkTransmuter ?? throw new ArgumentNullException(nameof(chunkTransmuter));
+    private readonly ITransmuter<(string Sender, string Text), TOutput> _outputTransmuter = outputTransmuter ?? throw new ArgumentNullException(nameof(outputTransmuter));
 
     private CancellationTokenSource? _linkedCancellationSource;
     private Task? _pumpTask;
@@ -21,9 +30,8 @@ public sealed class AgentStreamSegmentationDaemon(
         _linkedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         CancellationToken linkedToken = _linkedCancellationSource.Token;
 
-        // Determine start position (logical end at start time)
         long startPosition = 0;
-        await foreach ((long position, _) in _agentJournal.ReadBackwardAsync(long.MaxValue, linkedToken))
+        await foreach ((long position, _) in _journal.ReadBackwardAsync(long.MaxValue, linkedToken))
         {
             startPosition = position;
             break;
@@ -56,7 +64,7 @@ public sealed class AgentStreamSegmentationDaemon(
 
     private async Task RunAsync(long startAfterPosition, CancellationToken cancellationToken)
     {
-        Queue<string> pendingChunks = new();
+        Queue<TChunk> pendingChunks = new();
         int lookbackCount = Math.Max(1, _segmenter.MinChunkLookback);
 
         long lastEmittedPosition = startAfterPosition;
@@ -66,18 +74,18 @@ public sealed class AgentStreamSegmentationDaemon(
 
         try
         {
-            await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(startAfterPosition, cancellationToken))
+            await foreach ((long position, TEntry entry) in _journal.TailAsync(startAfterPosition, cancellationToken))
             {
                 switch (entry)
                 {
-                    case AgentChunk chunk:
+                    case TChunk chunk:
                         lastObservedChunkPosition = position;
-                        pendingChunks.Enqueue(chunk.Text);
+                        pendingChunks.Enqueue(chunk);
                         while (pendingChunks.Count > lookbackCount)
                         {
                             pendingChunks.Dequeue();
                         }
-                        if (_segmenter.ShouldEmit(new StreamWindow(pendingChunks, (int)(lastObservedChunkPosition - lastEmittedPosition), startedAt, lastEmitAt)))
+                        if (_segmenter.ShouldEmit(new StreamWindow<TChunk>(pendingChunks, pendingChunks.Count, startedAt, lastEmitAt)))
                         {
                             await EmitAsync(lastEmittedPosition, position, cancellationToken).ConfigureAwait(false);
                             lastEmittedPosition = position;
@@ -85,8 +93,7 @@ public sealed class AgentStreamSegmentationDaemon(
                             pendingChunks.Clear();
                         }
                         break;
-                    case AgentStreamCompleted completed:
-                        // Flush any remaining chunks up to the completion event position
+                    case TCompleted:
                         long flushUpToPosition = lastObservedChunkPosition > lastEmittedPosition ? lastObservedChunkPosition : lastEmittedPosition;
                         if (flushUpToPosition > lastEmittedPosition)
                         {
@@ -97,7 +104,7 @@ public sealed class AgentStreamSegmentationDaemon(
                         }
                         break;
                     default:
-                        // ignore AgentResponse/AgentPrompt/AgentThought/Ack
+                        // ignore other entry types
                         break;
                 }
             }
@@ -116,22 +123,22 @@ public sealed class AgentStreamSegmentationDaemon(
     {
         StringBuilder stringBuilder = new();
         string sender = string.Empty;
-        await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(fromExclusive, cancellationToken))
+        await foreach ((long position, TEntry entry) in _journal.TailAsync(fromExclusive, cancellationToken))
         {
             if (position > toInclusive)
             {
                 break;
             }
-            if (entry is AgentChunk chunkEntry)
+            if (entry is TChunk chunkEntry)
             {
-                // Track sender from the latest chunk we see in-range
-                if (!string.IsNullOrEmpty(chunkEntry.Sender))
+                (string Sender, string Text) = await _chunkTransmuter.Transmute(chunkEntry, cancellationToken).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(Sender))
                 {
-                    sender = chunkEntry.Sender;
+                    sender = Sender;
                 }
-                if (!string.IsNullOrEmpty(chunkEntry.Text))
+                if (!string.IsNullOrEmpty(Text))
                 {
-                    stringBuilder.Append(chunkEntry.Text);
+                    stringBuilder.Append(Text);
                 }
             }
         }
@@ -141,8 +148,9 @@ public sealed class AgentStreamSegmentationDaemon(
         {
             return;
         }
-        // Preserve the originating sender to keep this daemon agent-agnostic
-        await _agentJournal.WriteAsync(new AgentResponse(sender, text), cancellationToken).ConfigureAwait(false);
+
+        TOutput output = await _outputTransmuter.Transmute((sender, text), cancellationToken).ConfigureAwait(false);
+        await _journal.WriteAsync(output, cancellationToken).ConfigureAwait(false);
     }
 
     public async ValueTask DisposeAsync()

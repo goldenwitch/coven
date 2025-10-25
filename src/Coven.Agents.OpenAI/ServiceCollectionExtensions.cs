@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using OpenAI;
 using System.ClientModel;
 using OpenAI.Responses;
-using Coven.Agents.Streaming;
+using Coven.Core.Streaming;
 
 namespace Coven.Agents.OpenAI;
 
@@ -36,11 +36,6 @@ public static class ServiceCollectionExtensions
         // Optional streaming configuration
         OpenAIRegistration registration = new();
         configure?.Invoke(registration);
-        services.AddScoped(_ => new AgentStreamingOptions
-        {
-            Enabled = registration.StreamingEnabled,
-            Segmenter = registration.Segmenter
-        });
 
         // OpenAI client (official SDK)
         services.AddScoped(sp =>
@@ -83,14 +78,23 @@ public static class ServiceCollectionExtensions
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();
 
-        // When streaming is enabled, include agent-agnostic segmentation daemon
+        // When streaming is enabled, include generic segmentation daemon bound to Agent types
         if (registration.StreamingEnabled)
         {
-            services.AddScoped<ContractDaemon, AgentStreamSegmentationDaemon>();
-            if (registration.Segmenter is not null)
+            services.AddScoped<ContractDaemon>(sp =>
             {
-                services.AddScoped(_ => registration.Segmenter);
-            }
+                IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
+                IScrivener<AgentEntry> agentJournal = sp.GetRequiredService<IScrivener<AgentEntry>>();
+
+                IStreamSegmenter<AgentChunk> segmenter = Segmenters.FinalOnly<AgentChunk>();
+                LambdaTransmuter<AgentChunk, (string Sender, string Text)> chunkTransmuter = new((chunk, ct) =>
+                    Task.FromResult((chunk.Sender, chunk.Text)));
+                LambdaTransmuter<(string Sender, string Text), AgentResponse> outputTransmuter = new((input, ct) =>
+                    Task.FromResult(new AgentResponse(input.Sender, input.Text)));
+
+                return new StreamSegmentationDaemon<AgentEntry, AgentChunk, AgentResponse, AgentStreamCompleted>(
+                    daemonEvents, agentJournal, segmenter, chunkTransmuter, outputTransmuter);
+            });
         }
         return services;
     }
