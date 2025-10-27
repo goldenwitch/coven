@@ -28,7 +28,7 @@ internal sealed class OpenAIRequestGatewayConnection(
         return Task.CompletedTask;
     }
 
-    public async Task SendAsync(OpenAIOutgoing outgoing, CancellationToken cancellationToken)
+    public async Task SendAsync(OpenAIEfferent outgoing, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -60,7 +60,7 @@ internal sealed class OpenAIRequestGatewayConnection(
 
         string text = response.GetOutputText() ?? string.Empty;
 
-        OpenAIIncoming incoming = new(
+        OpenAIAfferent incoming = new(
             Sender: "openai",
             Text: text,
             ResponseId: response.Id,

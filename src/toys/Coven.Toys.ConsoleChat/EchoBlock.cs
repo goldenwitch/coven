@@ -15,9 +15,9 @@ public class EchoBlock(ContractDaemon consoleDaemon, IScrivener<ChatEntry> scriv
 
         await foreach ((long _, ChatEntry? entry) in _scrivener.TailAsync(0, cancellationToken))
         {
-            if (entry is ChatIncoming r)
+            if (entry is ChatAfferent r)
             {
-                await _scrivener.WriteAsync(new ChatOutgoing("BOT", "Echo: " + r.Text), cancellationToken);
+                await _scrivener.WriteAsync(new ChatEfferent("BOT", "Echo: " + r.Text), cancellationToken);
             }
         }
 

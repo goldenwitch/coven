@@ -17,8 +17,8 @@ public sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntr
 
         return Input switch
         {
-            OpenAIOutgoing u => Task.FromResult<ResponseItem?>(ResponseItem.CreateUserMessageItem(u.Text)),
-            OpenAIIncoming a => Task.FromResult<ResponseItem?>(ResponseItem.CreateAssistantMessageItem(a.Text)),
+            OpenAIEfferent u => Task.FromResult<ResponseItem?>(ResponseItem.CreateUserMessageItem(u.Text)),
+            OpenAIAfferent a => Task.FromResult<ResponseItem?>(ResponseItem.CreateAssistantMessageItem(a.Text)),
             // Thoughts/acks do not participate in prompt construction.
             _ => Task.FromResult<ResponseItem?>(null)
         };

@@ -14,7 +14,7 @@ public interface IBiDirectionalTransmuter<TIn, TOut>
     /// <param name="Input">The input value.</param>
     /// <param name="cancellationToken">Token to observe for cooperative cancellation.</param>
     /// <returns>A task producing the transmuted <typeparamref name="TOut"/>.</returns>
-    Task<TOut> TransmuteIn(TIn Input, CancellationToken cancellationToken = default);
+    Task<TOut> TransmuteAfferent(TIn Input, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Transmutes a value of <typeparamref name="TOut"/> back to <typeparamref name="TIn"/>.
@@ -22,5 +22,5 @@ public interface IBiDirectionalTransmuter<TIn, TOut>
     /// <param name="Output">The output value to reverse-transmute.</param>
     /// <param name="cancellationToken">Token to observe for cooperative cancellation.</param>
     /// <returns>A task producing the transmuted <typeparamref name="TIn"/>.</returns>
-    Task<TIn> TransmuteOut(TOut Output, CancellationToken cancellationToken = default);
+    Task<TIn> TransmuteEfferent(TOut Output, CancellationToken cancellationToken = default);
 }

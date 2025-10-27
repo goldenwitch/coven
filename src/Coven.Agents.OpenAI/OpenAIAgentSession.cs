@@ -41,7 +41,7 @@ internal sealed class OpenAIAgentSession(
                     }
 
                     OpenAILog.OpenAIToAgentsObserved(_logger, entry.GetType().Name, position);
-                    AgentEntry agent = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    AgentEntry agent = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
                     OpenAILog.OpenAIToAgentsTransmuted(_logger, entry.GetType().Name, agent.GetType().Name);
                     long agentPos = await _agentJournal.WriteAsync(agent, ct).ConfigureAwait(false);
                     OpenAILog.OpenAIToAgentsAppended(_logger, agent.GetType().Name, agentPos);
@@ -71,7 +71,7 @@ internal sealed class OpenAIAgentSession(
                     }
 
                     OpenAILog.AgentsToOpenAIObserved(_logger, entry.GetType().Name, position);
-                    OpenAIEntry openAI = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    OpenAIEntry openAI = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
                     OpenAILog.AgentsToOpenAITransmuted(_logger, entry.GetType().Name, openAI.GetType().Name);
                     long aiPos = await _openAIJournal.WriteAsync(openAI, ct).ConfigureAwait(false);
                     OpenAILog.AgentsToOpenAIAppended(_logger, openAI.GetType().Name, aiPos);

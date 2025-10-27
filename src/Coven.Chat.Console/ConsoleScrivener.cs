@@ -25,7 +25,7 @@ internal sealed class ConsoleScrivener : IScrivener<ConsoleEntry>
 
     public async Task<long> WriteAsync(ConsoleEntry entry, CancellationToken cancellationToken = default)
     {
-        if (entry is ConsoleOutgoing)
+        if (entry is ConsoleEfferent)
         {
             await _gateway.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
         }

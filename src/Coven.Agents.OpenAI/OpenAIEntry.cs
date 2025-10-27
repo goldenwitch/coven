@@ -6,12 +6,12 @@ public abstract record OpenAIEntry(
     string Sender
 );
 
-public sealed record OpenAIOutgoing(
+public sealed record OpenAIEfferent(
     string Sender,
     string Text
 ) : OpenAIEntry(Sender);
 
-public sealed record OpenAIIncoming(
+public sealed record OpenAIAfferent(
     string Sender,
     string Text,
     string ResponseId,
@@ -19,7 +19,7 @@ public sealed record OpenAIIncoming(
     string Model
 ) : OpenAIEntry(Sender);
 
-public sealed record OpenAIIncomingChunk(
+public sealed record OpenAIAfferentChunk(
     string Sender,
     string Text,
     string ResponseId,

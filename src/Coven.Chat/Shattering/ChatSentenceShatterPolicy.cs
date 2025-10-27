@@ -18,13 +18,13 @@ public sealed class ChatSentenceShatterPolicy : IShatterPolicy<ChatEntry>
     {
         switch (entry)
         {
-            case ChatOutgoingDraft outgoingDraft:
+            case ChatEfferentDraft outgoingDraft:
                 foreach (string s in SplitSentences(outgoingDraft.Text))
                 {
                     yield return new ChatChunk(outgoingDraft.Sender, s);
                 }
                 yield break;
-            case ChatIncomingDraft incomingDraft:
+            case ChatAfferentDraft incomingDraft:
                 foreach (string s in SplitSentences(incomingDraft.Text))
                 {
                     yield return new ChatChunk(incomingDraft.Sender, s);

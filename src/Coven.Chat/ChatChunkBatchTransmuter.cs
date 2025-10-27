@@ -5,9 +5,9 @@ using Coven.Transmutation;
 
 namespace Coven.Chat;
 
-public sealed class ChatChunkBatchTransmuter : ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>>
+public sealed class ChatChunkBatchTransmuter : ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatEfferent>>
 {
-    public Task<BatchTransmuteResult<ChatChunk, ChatOutgoing>> Transmute(IEnumerable<ChatChunk> Input, CancellationToken cancellationToken = default)
+    public Task<BatchTransmuteResult<ChatChunk, ChatEfferent>> Transmute(IEnumerable<ChatChunk> Input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(Input);
 
@@ -26,7 +26,7 @@ public sealed class ChatChunkBatchTransmuter : ITransmuter<IEnumerable<ChatChunk
             }
         }
 
-        ChatOutgoing output = new(sender, sb.ToString());
-        return Task.FromResult(new BatchTransmuteResult<ChatChunk, ChatOutgoing>(output, false, null));
+        ChatEfferent output = new(sender, sb.ToString());
+        return Task.FromResult(new BatchTransmuteResult<ChatChunk, ChatEfferent>(output, false, null));
     }
 }

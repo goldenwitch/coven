@@ -27,7 +27,7 @@ internal sealed class OpenAIStreamingGatewayConnection(
         return Task.CompletedTask;
     }
 
-    public async Task SendAsync(OpenAIOutgoing outgoing, CancellationToken cancellationToken)
+    public async Task SendAsync(OpenAIEfferent outgoing, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
@@ -62,7 +62,7 @@ internal sealed class OpenAIStreamingGatewayConnection(
                     case StreamingResponseOutputTextDeltaUpdate textDelta:
                         if (!string.IsNullOrEmpty(textDelta.Delta))
                         {
-                            OpenAIIncomingChunk chunk = new(
+                            OpenAIAfferentChunk chunk = new(
                                 Sender: "openai",
                                 Text: textDelta.Delta,
                                 ResponseId: responseId,

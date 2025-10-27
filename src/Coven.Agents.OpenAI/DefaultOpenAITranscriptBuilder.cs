@@ -14,7 +14,7 @@ internal sealed class DefaultOpenAITranscriptBuilder(
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly ITransmuter<OpenAIEntry, ResponseItem?> _entryToItem = entryToItem ?? throw new ArgumentNullException(nameof(entryToItem));
 
-    public async Task<List<ResponseItem>> BuildAsync(OpenAIOutgoing newest, int maxMessages, CancellationToken cancellationToken)
+    public async Task<List<ResponseItem>> BuildAsync(OpenAIEfferent newest, int maxMessages, CancellationToken cancellationToken)
     {
         List<ResponseItem> buffer = [];
 

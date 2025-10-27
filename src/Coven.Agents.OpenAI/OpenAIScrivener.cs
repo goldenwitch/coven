@@ -27,7 +27,7 @@ internal sealed class OpenAIScrivener : IScrivener<OpenAIEntry>
 
     public async Task<long> WriteAsync(OpenAIEntry entry, CancellationToken cancellationToken = default)
     {
-        if (entry is OpenAIOutgoing outgoing)
+        if (entry is OpenAIEfferent outgoing)
         {
             await _gateway.SendAsync(outgoing, cancellationToken).ConfigureAwait(false);
         }

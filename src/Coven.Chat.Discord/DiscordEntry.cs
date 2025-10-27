@@ -11,12 +11,12 @@ public sealed record DiscordAck(
     string Text
 ) : DiscordEntry(Sender, Text);
 
-public sealed record DiscordIncoming(
+public sealed record DiscordAfferent(
     string Sender,
     string Text,
     string MessageId,
     DateTimeOffset Timestamp) : DiscordEntry(Sender, Text);
 
-public sealed record DiscordOutgoing(
+public sealed record DiscordEfferent(
     string Sender,
     string Text) : DiscordEntry(Sender, Text);

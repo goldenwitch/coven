@@ -78,9 +78,24 @@ public static class ServiceCollectionExtensions
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();
 
-        // When streaming is enabled, include generic windowing daemon bound to Agent types
+        // When streaming is enabled, include generic windowing daemons for OpenAI and Agent types
         if (registration.StreamingEnabled)
         {
+            // OpenAI incoming chunk -> thought windowing (configurable policy)
+            services.AddScoped<ContractDaemon>(sp =>
+            {
+                IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
+                IScrivener<OpenAIEntry> openAIJournal = sp.GetRequiredService<IScrivener<OpenAIEntry>>();
+
+                IWindowPolicy<OpenAIAfferentChunk> openAiPolicy =
+                    sp.GetService<IWindowPolicy<OpenAIAfferentChunk>>() ?? new LambdaWindowPolicy<OpenAIAfferentChunk>(1, _ => false);
+                ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>> openAiBatchTransmuter =
+                    sp.GetRequiredService<ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>>>();
+
+                return new StreamWindowingDaemon<OpenAIEntry, OpenAIAfferentChunk, OpenAIThought, OpenAIStreamCompleted>(
+                    daemonEvents, openAIJournal, openAiPolicy, openAiBatchTransmuter);
+            });
+
             services.AddScoped<ContractDaemon>(sp =>
             {
                 IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
@@ -96,6 +111,7 @@ public static class ServiceCollectionExtensions
                     daemonEvents, agentJournal, policy, batchTransmuter);
             });
         }
+        services.TryAddScoped<ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>>, OpenAIChunkBatchTransmuter>();
         services.TryAddScoped<ITransmuter<IEnumerable<AgentChunk>, BatchTransmuteResult<AgentChunk, AgentResponse>>, AgentChunkBatchTransmuter>();
         return services;
     }

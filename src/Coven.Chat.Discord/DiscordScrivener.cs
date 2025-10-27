@@ -29,7 +29,7 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
     public async Task<long> WriteAsync(DiscordEntry entry, CancellationToken cancellationToken = default)
     {
         // Only send actual outbound messages to Discord. ACKs and inbound entries must not be sent.
-        if (entry is DiscordOutgoing)
+        if (entry is DiscordEfferent)
         {
             await _discordClient.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
         }

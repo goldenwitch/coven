@@ -23,8 +23,8 @@ public class EchoBlock(IEnumerable<ContractDaemon> daemons, IScrivener<ChatEntry
             // It's also okay to take the extra cycle to look at them rather than short circuiting, we might use them as confirmation of receipt in the future.
             switch (entry)
             {
-                case ChatIncoming r:
-                    await _scrivener.WriteAsync(new ChatOutgoing("BOT", r.Text), cancellationToken);
+                case ChatAfferent r:
+                    await _scrivener.WriteAsync(new ChatEfferent("BOT", r.Text), cancellationToken);
                     break;
                 default:
                     break;

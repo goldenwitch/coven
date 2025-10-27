@@ -6,6 +6,6 @@ namespace Coven.Agents.OpenAI;
 
 internal interface IOpenAITranscriptBuilder
 {
-    Task<List<ResponseItem>> BuildAsync(OpenAIOutgoing newest, int maxMessages, CancellationToken cancellationToken);
+    Task<List<ResponseItem>> BuildAsync(OpenAIEfferent newest, int maxMessages, CancellationToken cancellationToken);
 }
 
