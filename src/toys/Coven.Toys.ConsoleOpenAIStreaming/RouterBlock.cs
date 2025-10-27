@@ -35,7 +35,6 @@ public sealed class RouterBlock(
         }, cancellationToken);
 
         // Pump 2: Agents -> Chat (responses)
-        // For streaming, we surface segmented AgentResponse entries (emitted by the segmentation daemon).
         Task agentsToChat = Task.Run(async () =>
         {
             await foreach ((long _, AgentEntry? entry) in _agents.TailAsync(0, cancellationToken))
@@ -59,4 +58,3 @@ public sealed class RouterBlock(
         return input;
     }
 }
-

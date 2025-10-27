@@ -81,14 +81,27 @@ public static class ServiceCollectionExtensions
         // When streaming is enabled, include generic windowing daemons for OpenAI and Agent types
         if (registration.StreamingEnabled)
         {
+            // Provide default window policies that can be overridden by the host.
+            // Paragraph boundary first, then a safety cap to avoid unbounded buffers.
+            services.TryAddScoped<IWindowPolicy<OpenAIAfferentChunk>>(_ =>
+                new CompositeWindowPolicy<OpenAIAfferentChunk>(
+                    new OpenAIParagraphWindowPolicy(),
+                    new OpenAIMaxLengthWindowPolicy(4096)
+                ));
+
+            services.TryAddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
+                new CompositeWindowPolicy<AgentAfferentChunk>(
+                    new AgentParagraphWindowPolicy(),
+                    new AgentMaxLengthWindowPolicy(4096)
+                ));
+
             // OpenAI incoming chunk -> thought windowing (configurable policy)
             services.AddScoped<ContractDaemon>(sp =>
             {
                 IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
                 IScrivener<OpenAIEntry> openAIJournal = sp.GetRequiredService<IScrivener<OpenAIEntry>>();
 
-                IWindowPolicy<OpenAIAfferentChunk> openAiPolicy =
-                    sp.GetService<IWindowPolicy<OpenAIAfferentChunk>>() ?? new LambdaWindowPolicy<OpenAIAfferentChunk>(1, _ => false);
+                IWindowPolicy<OpenAIAfferentChunk> openAiPolicy = sp.GetRequiredService<IWindowPolicy<OpenAIAfferentChunk>>();
                 ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>> openAiBatchTransmuter =
                     sp.GetRequiredService<ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>>>();
 
@@ -101,18 +114,17 @@ public static class ServiceCollectionExtensions
                 IScrivener<DaemonEvent> daemonEvents = sp.GetRequiredService<IScrivener<DaemonEvent>>();
                 IScrivener<AgentEntry> agentJournal = sp.GetRequiredService<IScrivener<AgentEntry>>();
 
-                // Allow DI to provide a custom window policy; fall back to final-only
-                IWindowPolicy<AgentChunk> policy =
-                    sp.GetService<IWindowPolicy<AgentChunk>>() ?? new LambdaWindowPolicy<AgentChunk>(1, _ => false);
-                ITransmuter<IEnumerable<AgentChunk>, BatchTransmuteResult<AgentChunk, AgentResponse>> batchTransmuter =
-                    sp.GetRequiredService<ITransmuter<IEnumerable<AgentChunk>, BatchTransmuteResult<AgentChunk, AgentResponse>>>();
+                // Allow DI to provide a custom window policy via registration
+                IWindowPolicy<AgentAfferentChunk> policy = sp.GetRequiredService<IWindowPolicy<AgentAfferentChunk>>();
+                ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>> batchTransmuter =
+                    sp.GetRequiredService<ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>>>();
 
-                return new StreamWindowingDaemon<AgentEntry, AgentChunk, AgentResponse, AgentStreamCompleted>(
+                return new StreamWindowingDaemon<AgentEntry, AgentAfferentChunk, AgentResponse, AgentStreamCompleted>(
                     daemonEvents, agentJournal, policy, batchTransmuter);
             });
         }
         services.TryAddScoped<ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>>, OpenAIChunkBatchTransmuter>();
-        services.TryAddScoped<ITransmuter<IEnumerable<AgentChunk>, BatchTransmuteResult<AgentChunk, AgentResponse>>, AgentChunkBatchTransmuter>();
+        services.TryAddScoped<ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>>, AgentAfferentBatchTransmuter>();
         return services;
     }
 }

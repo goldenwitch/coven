@@ -41,6 +41,21 @@ internal sealed class OpenAIStreamingGatewayConnection(
             MaxOutputTokenCount = _configuration.MaxOutputTokens
         };
 
+        // Map reasoning effort without exposing SDK types to consumers.
+        if (_configuration.ReasoningEffort is not null)
+        {
+            options.ReasoningOptions = new ResponseReasoningOptions()
+            {
+                ReasoningEffortLevel = _configuration.ReasoningEffort switch
+                {
+                    ReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
+                    ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
+                    ReasoningEffort.High => ResponseReasoningEffortLevel.High,
+                    _ => null
+                }
+            };
+        }
+
         string model = _configuration.Model;
         string responseId = string.Empty;
         DateTimeOffset createdAt = DateTimeOffset.UtcNow;
@@ -59,6 +74,7 @@ internal sealed class OpenAIStreamingGatewayConnection(
                         createdAt = created.Response.CreatedAt == default ? createdAt : created.Response.CreatedAt;
                         break;
 
+
                     case StreamingResponseOutputTextDeltaUpdate textDelta:
                         if (!string.IsNullOrEmpty(textDelta.Delta))
                         {
@@ -69,6 +85,40 @@ internal sealed class OpenAIStreamingGatewayConnection(
                                 Timestamp: createdAt,
                                 Model: model);
                             await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
+                        }
+                        break;
+
+                    // Surface reasoning updates as OpenAIThought entries when available.
+                    case StreamingResponseOutputItemAddedUpdate itemAdded when itemAdded.Item is ReasoningResponseItem reasoningAdded:
+                        {
+                            string summary = reasoningAdded.GetSummaryText();
+                            if (!string.IsNullOrEmpty(summary))
+                            {
+                                OpenAIThought thought = new(
+                                    Sender: "openai",
+                                    Text: summary,
+                                    ResponseId: responseId,
+                                    Timestamp: createdAt,
+                                    Model: model);
+                                await _journal.WriteAsync(thought, cancellationToken).ConfigureAwait(false);
+                            }
+                        }
+                        break;
+
+                    case StreamingResponseOutputItemDoneUpdate itemDone when itemDone.Item is ReasoningResponseItem reasoningDone:
+                        {
+                            // Emit a final reasoning summary when completed/incomplete, if any text is present.
+                            string summary = reasoningDone.GetSummaryText();
+                            if (!string.IsNullOrEmpty(summary))
+                            {
+                                OpenAIThought thought = new(
+                                    Sender: "openai",
+                                    Text: summary,
+                                    ResponseId: responseId,
+                                    Timestamp: createdAt,
+                                    Model: model);
+                                await _journal.WriteAsync(thought, cancellationToken).ConfigureAwait(false);
+                            }
                         }
                         break;
 

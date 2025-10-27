@@ -5,15 +5,15 @@ using Coven.Transmutation;
 
 namespace Coven.Agents;
 
-public sealed class AgentChunkBatchTransmuter : ITransmuter<IEnumerable<AgentChunk>, BatchTransmuteResult<AgentChunk, AgentResponse>>
+public sealed class AgentEfferentBatchTransmuter : ITransmuter<IEnumerable<AgentEfferentChunk>, BatchTransmuteResult<AgentEfferentChunk, AgentPrompt>>
 {
-    public Task<BatchTransmuteResult<AgentChunk, AgentResponse>> Transmute(IEnumerable<AgentChunk> Input, CancellationToken cancellationToken = default)
+    public Task<BatchTransmuteResult<AgentEfferentChunk, AgentPrompt>> Transmute(IEnumerable<AgentEfferentChunk> Input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(Input);
 
         string sender = string.Empty;
         StringBuilder sb = new();
-        foreach (AgentChunk chunk in Input)
+        foreach (AgentEfferentChunk chunk in Input)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!string.IsNullOrEmpty(chunk.Sender))
@@ -26,7 +26,7 @@ public sealed class AgentChunkBatchTransmuter : ITransmuter<IEnumerable<AgentChu
             }
         }
 
-        AgentResponse output = new(sender, sb.ToString());
-        return Task.FromResult(new BatchTransmuteResult<AgentChunk, AgentResponse>(output, false, null));
+        AgentPrompt output = new(sender, sb.ToString());
+        return Task.FromResult(new BatchTransmuteResult<AgentEfferentChunk, AgentPrompt>(output, false, null));
     }
 }

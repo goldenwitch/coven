@@ -42,6 +42,21 @@ internal sealed class OpenAIRequestGatewayConnection(
             MaxOutputTokenCount = _configuration.MaxOutputTokens
         };
 
+        // Map reasoning effort without exposing SDK types to consumers.
+        if (_configuration.ReasoningEffort is not null)
+        {
+            options.ReasoningOptions = new ResponseReasoningOptions()
+            {
+                ReasoningEffortLevel = _configuration.ReasoningEffort switch
+                {
+                    ReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
+                    ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
+                    ReasoningEffort.High => ResponseReasoningEffortLevel.High,
+                    _ => null
+                }
+            };
+        }
+
         OpenAIResponse response;
         try
         {
@@ -58,6 +73,28 @@ internal sealed class OpenAIRequestGatewayConnection(
             throw;
         }
 
+        // Surface any reasoning/thought summaries if present in the non-streaming response.
+        if (response.OutputItems is not null)
+        {
+            foreach (ResponseItem item in response.OutputItems)
+            {
+                if (item is ReasoningResponseItem reasoning)
+                {
+                    string summary = reasoning.GetSummaryText();
+                    if (!string.IsNullOrEmpty(summary))
+                    {
+                        OpenAIThought thought = new(
+                            Sender: "openai",
+                            Text: summary,
+                            ResponseId: response.Id,
+                            Timestamp: response.CreatedAt,
+                            Model: response.Model);
+                        await _journal.WriteAsync(thought, cancellationToken).ConfigureAwait(false);
+                    }
+                }
+            }
+        }
+
         string text = response.GetOutputText() ?? string.Empty;
 
         OpenAIAfferent incoming = new(
@@ -66,7 +103,6 @@ internal sealed class OpenAIRequestGatewayConnection(
             ResponseId: response.Id,
             Timestamp: response.CreatedAt,
             Model: response.Model);
-
         await _journal.WriteAsync(incoming, cancellationToken).ConfigureAwait(false);
     }
 }
