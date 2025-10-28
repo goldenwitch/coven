@@ -1,7 +1,9 @@
+using Coven.Agents;
 using Coven.Agents.OpenAI;
 using Coven.Chat.Console;
 using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Streaming;
 using Coven.Toys.ConsoleOpenAIStreaming;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -30,6 +32,20 @@ builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
     registration.EnableStreaming();
 });
+
+// Override windowing policies independently for outputs and thoughts
+// Output chunk policy: paragraph-first with a tighter max length cap
+builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
+    new CompositeWindowPolicy<AgentAfferentChunk>(
+        new AgentParagraphWindowPolicy(),
+        new AgentMaxLengthWindowPolicy(1024)));
+
+// Thought chunk policy: summary-marker, sentence, paragraph; independent cap
+builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
+    new CompositeWindowPolicy<AgentAfferentThoughtChunk>(
+        new AgentThoughtSummaryMarkerWindowPolicy(),
+        new AgentThoughtSentenceWindowPolicy(),
+        new AgentThoughtMaxLengthWindowPolicy(2048)));
 
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
 

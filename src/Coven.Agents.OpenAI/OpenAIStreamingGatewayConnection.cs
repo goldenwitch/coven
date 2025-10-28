@@ -86,13 +86,13 @@ internal sealed class OpenAIStreamingGatewayConnection(
 
                     case var rsDelta when TryGetReasoningSummaryTextDelta(update, out string? rDelta) && !string.IsNullOrEmpty(rDelta):
                         {
-                            OpenAIAfferentChunk chunk = new(
+                            OpenAIAfferentThoughtChunk tChunk = new(
                                 Sender: "openai",
                                 Text: rDelta,
                                 ResponseId: responseId,
                                 Timestamp: createdAt,
                                 Model: model);
-                            await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
+                            await _journal.WriteAsync(tChunk, cancellationToken).ConfigureAwait(false);
                             break;
                         }
 

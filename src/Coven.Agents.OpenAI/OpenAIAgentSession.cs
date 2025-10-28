@@ -45,17 +45,17 @@ internal sealed class OpenAIAgentSession(
 
                     OpenAILog.OpenAIToAgentsObserved(_logger, entry.GetType().Name, position);
 
-                    // Session-local shattering for OpenAI chunks on paragraph boundary
-                    if (entry is OpenAIAfferentChunk)
+                    // Session-local shattering for OpenAI thought chunks on paragraph boundary
+                    if (entry is OpenAIAfferentThoughtChunk)
                     {
                         bool produced = false;
                         IEnumerable<OpenAIEntry> outputs = _shatterPolicy.Shatter(entry) ?? [];
-                        foreach (OpenAIEntry o in outputs)
+                        foreach (OpenAIEntry openAIEntry in outputs)
                         {
-                            if (o is OpenAIAfferentChunk)
+                            if (openAIEntry is OpenAIAfferentThoughtChunk)
                             {
                                 produced = true;
-                                AgentEntry agentChunk = await _transmuter.TransmuteAfferent(o, ct).ConfigureAwait(false);
+                                AgentEntry agentChunk = await _transmuter.TransmuteAfferent(openAIEntry, ct).ConfigureAwait(false);
                                 long pos = await _agentJournal.WriteAsync(agentChunk, ct).ConfigureAwait(false);
                                 OpenAILog.OpenAIToAgentsAppended(_logger, agentChunk.GetType().Name, pos);
                             }

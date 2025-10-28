@@ -20,5 +20,8 @@ public sealed record AgentAck(string Sender) : AgentEntry(Sender);
 public sealed record AgentEfferentChunk(string Sender, string Text) : AgentEntryDraft(Sender);
 
 public sealed record AgentAfferentChunk(string Sender, string Text) : AgentEntryDraft(Sender);
+public sealed record AgentEfferentThoughtChunk(string Sender, string Text) : AgentEntryDraft(Sender);
+
+public sealed record AgentAfferentThoughtChunk(string Sender, string Text) : AgentEntryDraft(Sender);
 
 public sealed record AgentStreamCompleted(string Sender) : AgentEntryDraft(Sender);

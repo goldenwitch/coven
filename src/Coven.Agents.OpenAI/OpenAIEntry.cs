@@ -27,6 +27,15 @@ public sealed record OpenAIAfferentChunk(
     string Model
 ) : OpenAIEntry(Sender);
 
+// Streaming thought chunks (afferent): model streams thoughts back
+public sealed record OpenAIAfferentThoughtChunk(
+    string Sender,
+    string Text,
+    string ResponseId,
+    DateTimeOffset Timestamp,
+    string Model
+) : OpenAIEntry(Sender);
+
 public sealed record OpenAIThought(
     string Sender,
     string Text,
@@ -36,6 +45,12 @@ public sealed record OpenAIThought(
 ) : OpenAIEntry(Sender);
 
 public sealed record OpenAIAck(
+    string Sender,
+    string Text
+) : OpenAIEntry(Sender);
+
+// Streaming thought chunks (efferent): agent streams thoughts out
+public sealed record OpenAIEfferentThoughtChunk(
     string Sender,
     string Text
 ) : OpenAIEntry(Sender);

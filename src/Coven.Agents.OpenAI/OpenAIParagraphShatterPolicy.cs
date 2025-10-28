@@ -11,11 +11,11 @@ namespace Coven.Agents.OpenAI;
 /// - Second: remainder of the original text
 /// If no boundary exists, produces no outputs (forward unchanged).
 /// </summary>
-public sealed class OpenAIParagraphShatterPolicy : IShatterPolicy<OpenAIEntry>
+public sealed class OpenAIThoughtParagraphShatterPolicy : IShatterPolicy<OpenAIEntry>
 {
     public IEnumerable<OpenAIEntry> Shatter(OpenAIEntry entry)
     {
-        if (entry is not OpenAIAfferentChunk chunk || string.IsNullOrEmpty(chunk.Text))
+        if (entry is not OpenAIAfferentThoughtChunk chunk || string.IsNullOrEmpty(chunk.Text))
         {
             yield break;
         }
@@ -35,11 +35,11 @@ public sealed class OpenAIParagraphShatterPolicy : IShatterPolicy<OpenAIEntry>
 
         if (first.Length > 0)
         {
-            yield return new OpenAIAfferentChunk(chunk.Sender, first, chunk.ResponseId, chunk.Timestamp, chunk.Model);
+            yield return new OpenAIAfferentThoughtChunk(chunk.Sender, first, chunk.ResponseId, chunk.Timestamp, chunk.Model);
         }
         if (second.Length > 0)
         {
-            yield return new OpenAIAfferentChunk(chunk.Sender, second, chunk.ResponseId, chunk.Timestamp, chunk.Model);
+            yield return new OpenAIAfferentThoughtChunk(chunk.Sender, second, chunk.ResponseId, chunk.Timestamp, chunk.Model);
         }
     }
 
