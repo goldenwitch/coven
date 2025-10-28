@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Reflection;
 using Coven.Core;
+using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI;
@@ -13,13 +15,15 @@ internal sealed class OpenAIStreamingGatewayConnection(
     [FromKeyedServices("Coven.InternalOpenAIScrivener")] IScrivener<OpenAIEntry> journal,
     ILogger<OpenAIStreamingGatewayConnection> logger,
     OpenAIClient openAIClient,
-    IOpenAITranscriptBuilder transcriptBuilder) : IOpenAIGatewayConnection
+    IOpenAITranscriptBuilder transcriptBuilder,
+    ITransmuter<OpenAIClientConfig, ResponseCreationOptions> responseOptionsTransmuter) : IOpenAIGatewayConnection
 {
     private readonly OpenAIClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly OpenAIResponseClient _client = openAIClient.GetOpenAIResponseClient(configuration.Model) ?? throw new ArgumentNullException(nameof(openAIClient));
     private readonly IOpenAITranscriptBuilder _transcriptBuilder = transcriptBuilder ?? throw new ArgumentNullException(nameof(transcriptBuilder));
+    private readonly ITransmuter<OpenAIClientConfig, ResponseCreationOptions> _responseOptionsTransmuter = responseOptionsTransmuter ?? throw new ArgumentNullException(nameof(responseOptionsTransmuter));
 
     public Task ConnectAsync()
     {
@@ -31,30 +35,10 @@ internal sealed class OpenAIStreamingGatewayConnection(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        List<ResponseItem> input = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip ?? int.MaxValue, cancellationToken).ConfigureAwait(false);
+        List<ResponseItem> input = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         OpenAILog.OutboundSendStart(_logger, input.Count);
 
-        ResponseCreationOptions options = new()
-        {
-            Temperature = _configuration.Temperature,
-            TopP = _configuration.TopP,
-            MaxOutputTokenCount = _configuration.MaxOutputTokens
-        };
-
-        // Map reasoning effort without exposing SDK types to consumers.
-        if (_configuration.ReasoningEffort is not null)
-        {
-            options.ReasoningOptions = new ResponseReasoningOptions()
-            {
-                ReasoningEffortLevel = _configuration.ReasoningEffort switch
-                {
-                    ReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
-                    ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
-                    ReasoningEffort.High => ResponseReasoningEffortLevel.High,
-                    _ => null
-                }
-            };
-        }
+        ResponseCreationOptions options = await _responseOptionsTransmuter.Transmute(_configuration, cancellationToken).ConfigureAwait(false);
 
         string model = _configuration.Model;
         string responseId = string.Empty;
@@ -74,7 +58,6 @@ internal sealed class OpenAIStreamingGatewayConnection(
                         createdAt = created.Response.CreatedAt == default ? createdAt : created.Response.CreatedAt;
                         break;
 
-
                     case StreamingResponseOutputTextDeltaUpdate textDelta:
                         if (!string.IsNullOrEmpty(textDelta.Delta))
                         {
@@ -85,40 +68,6 @@ internal sealed class OpenAIStreamingGatewayConnection(
                                 Timestamp: createdAt,
                                 Model: model);
                             await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
-                        }
-                        break;
-
-                    // Surface reasoning updates as OpenAIThought entries when available.
-                    case StreamingResponseOutputItemAddedUpdate itemAdded when itemAdded.Item is ReasoningResponseItem reasoningAdded:
-                        {
-                            string summary = reasoningAdded.GetSummaryText();
-                            if (!string.IsNullOrEmpty(summary))
-                            {
-                                OpenAIThought thought = new(
-                                    Sender: "openai",
-                                    Text: summary,
-                                    ResponseId: responseId,
-                                    Timestamp: createdAt,
-                                    Model: model);
-                                await _journal.WriteAsync(thought, cancellationToken).ConfigureAwait(false);
-                            }
-                        }
-                        break;
-
-                    case StreamingResponseOutputItemDoneUpdate itemDone when itemDone.Item is ReasoningResponseItem reasoningDone:
-                        {
-                            // Emit a final reasoning summary when completed/incomplete, if any text is present.
-                            string summary = reasoningDone.GetSummaryText();
-                            if (!string.IsNullOrEmpty(summary))
-                            {
-                                OpenAIThought thought = new(
-                                    Sender: "openai",
-                                    Text: summary,
-                                    ResponseId: responseId,
-                                    Timestamp: createdAt,
-                                    Model: model);
-                                await _journal.WriteAsync(thought, cancellationToken).ConfigureAwait(false);
-                            }
                         }
                         break;
 
@@ -134,6 +83,18 @@ internal sealed class OpenAIStreamingGatewayConnection(
 
                     case StreamingResponseFailedUpdate failed when failed.Response is not null:
                         throw new InvalidOperationException($"OpenAI streaming failed: {failed.Response.Status}");
+
+                    case var rsDelta when TryGetReasoningSummaryTextDelta(update, out string? rDelta) && !string.IsNullOrEmpty(rDelta):
+                        {
+                            OpenAIAfferentChunk chunk = new(
+                                Sender: "openai",
+                                Text: rDelta,
+                                ResponseId: responseId,
+                                Timestamp: createdAt,
+                                Model: model);
+                            await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
+                            break;
+                        }
 
                     default:
                         break;
@@ -155,5 +116,31 @@ internal sealed class OpenAIStreamingGatewayConnection(
             Timestamp: createdAt,
             Model: model);
         await _journal.WriteAsync(done, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Filthy shim. Do not copy this, this is bad code. We just have this here to handle people being too slow to update the official SDK.
+    /// </summary>
+    /// <param name="update"></param>
+    /// <param name="delta"></param>
+    /// <returns></returns>
+    private static bool TryGetReasoningSummaryTextDelta(object? update, out string? delta)
+    {
+        delta = null;
+        if (update is null)
+        {
+            return false;
+        }
+
+        Type t = update.GetType();
+        // Current SDK keeps these types internal; detect by simple name to avoid tight coupling.
+        if (t.Name is "StreamingResponseReasoningSummaryTextDeltaUpdate" or "InternalResponseReasoningSummaryTextDeltaEvent")
+        {
+            // internal/public both expose a string Delta; grab it reflexively
+            PropertyInfo? prop = t.GetProperty("Delta", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            delta = prop?.GetValue(update)?.ToString();
+            return !string.IsNullOrEmpty(delta);
+        }
+        return false;
     }
 }

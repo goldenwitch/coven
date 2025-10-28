@@ -13,7 +13,8 @@ public sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, Age
         return Input switch
         {
             OpenAIAfferent incoming => Task.FromResult<AgentEntry>(new AgentResponse(incoming.Sender, incoming.Text)),
-            OpenAIAfferentChunk chunk => Task.FromResult<AgentEntry>(new AgentEfferentChunk(chunk.Sender, chunk.Text)),
+            // Today, Afferent chunks include thoughts, tomorrow who knows.
+            OpenAIAfferentChunk chunk => Task.FromResult<AgentEntry>(new AgentAfferentChunk(chunk.Sender, chunk.Text)),
             // A full OpenAIThought should surface as a fixed AgentThought
             OpenAIThought thought => Task.FromResult<AgentEntry>(new AgentThought(thought.Sender, thought.Text)),
             OpenAIStreamCompleted done => Task.FromResult<AgentEntry>(new AgentStreamCompleted(done.Sender)),

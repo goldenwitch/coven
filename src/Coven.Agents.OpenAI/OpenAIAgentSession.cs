@@ -2,6 +2,7 @@
 
 using Coven.Core;
 using Coven.Transmutation;
+using Coven.Core.Streaming;
 using Microsoft.Extensions.Logging;
 
 namespace Coven.Agents.OpenAI;
@@ -10,6 +11,7 @@ internal sealed class OpenAIAgentSession(
     IOpenAIGatewayConnection gateway,
     IScrivener<OpenAIEntry> openAIJournal,
     IScrivener<AgentEntry> agentJournal,
+    IShatterPolicy<OpenAIEntry> shatterPolicy,
     IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> transmuter,
     ILogger<OpenAIAgentSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
@@ -17,6 +19,7 @@ internal sealed class OpenAIAgentSession(
     private readonly IOpenAIGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     private readonly IScrivener<OpenAIEntry> _openAIJournal = openAIJournal ?? throw new ArgumentNullException(nameof(openAIJournal));
     private readonly IScrivener<AgentEntry> _agentJournal = agentJournal ?? throw new ArgumentNullException(nameof(agentJournal));
+    private readonly IShatterPolicy<OpenAIEntry> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
     private readonly IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
@@ -41,6 +44,29 @@ internal sealed class OpenAIAgentSession(
                     }
 
                     OpenAILog.OpenAIToAgentsObserved(_logger, entry.GetType().Name, position);
+
+                    // Session-local shattering for OpenAI chunks on paragraph boundary
+                    if (entry is OpenAIAfferentChunk)
+                    {
+                        bool produced = false;
+                        IEnumerable<OpenAIEntry> outputs = _shatterPolicy.Shatter(entry) ?? [];
+                        foreach (OpenAIEntry o in outputs)
+                        {
+                            if (o is OpenAIAfferentChunk)
+                            {
+                                produced = true;
+                                AgentEntry agentChunk = await _transmuter.TransmuteAfferent(o, ct).ConfigureAwait(false);
+                                long pos = await _agentJournal.WriteAsync(agentChunk, ct).ConfigureAwait(false);
+                                OpenAILog.OpenAIToAgentsAppended(_logger, agentChunk.GetType().Name, pos);
+                            }
+                        }
+
+                        if (produced)
+                        {
+                            continue; // do not forward the original chunk
+                        }
+                    }
+
                     AgentEntry agent = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
                     OpenAILog.OpenAIToAgentsTransmuted(_logger, entry.GetType().Name, agent.GetType().Name);
                     long agentPos = await _agentJournal.WriteAsync(agent, ct).ConfigureAwait(false);

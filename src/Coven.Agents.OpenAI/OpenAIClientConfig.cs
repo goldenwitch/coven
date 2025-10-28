@@ -5,7 +5,7 @@ namespace Coven.Agents.OpenAI;
 /// <summary>
 /// Minimal configuration for the OpenAI Responses integration.
 /// </summary>
-public sealed class OpenAIClientConfig
+public sealed record OpenAIClientConfig
 {
     public required string ApiKey { get; init; }
     public required string Model { get; init; }
@@ -16,8 +16,9 @@ public sealed class OpenAIClientConfig
     public float? Temperature { get; init; }
     public float? TopP { get; init; }
     public int? MaxOutputTokens { get; init; }
-    public int? HistoryClip { get; init; }
+    // Max number of transcript items to include; default is unlimited
+    public int HistoryClip { get; init; } = int.MaxValue;
 
-    // Configures reasoning effort for models that support it.
-    public ReasoningEffort? ReasoningEffort { get; init; }
+    // Configures reasoning options for models that support it.
+    public ReasoningConfig Reasoning { get; init; } = new ReasoningConfig();
 }

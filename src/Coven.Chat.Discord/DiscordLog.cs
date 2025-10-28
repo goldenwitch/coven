@@ -19,13 +19,13 @@ internal static class DiscordLog
     // Outbound send breadcrumbs
     private static readonly Action<ILogger, ulong, int, Exception?> _outboundSendStart =
         LoggerMessage.Define<ulong, int>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2006, nameof(OutboundSendStart)),
             "Sending message to channel {ChannelId} (length {Length}).");
 
     private static readonly Action<ILogger, ulong, Exception?> _outboundSendSucceeded =
         LoggerMessage.Define<ulong>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2007, nameof(OutboundSendSucceeded)),
             "Sent message to channel {ChannelId}.");
 
@@ -44,25 +44,25 @@ internal static class DiscordLog
     // Channel resolution breadcrumbs
     private static readonly Action<ILogger, ulong, Exception?> _channelCacheHit =
         LoggerMessage.Define<ulong>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2010, nameof(ChannelCacheHit)),
             "Channel cache hit for {ChannelId}.");
 
     private static readonly Action<ILogger, ulong, Exception?> _channelCacheMiss =
         LoggerMessage.Define<ulong>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2011, nameof(ChannelCacheMiss)),
             "Channel cache miss for {ChannelId}; falling back to REST.");
 
     private static readonly Action<ILogger, ulong, Exception?> _channelRestFetchStart =
         LoggerMessage.Define<ulong>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2012, nameof(ChannelRestFetchStart)),
             "Fetching channel {ChannelId} via REST.");
 
     private static readonly Action<ILogger, ulong, Exception?> _channelRestFetchSuccess =
         LoggerMessage.Define<ulong>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2013, nameof(ChannelRestFetchSuccess)),
             "Fetched channel {ChannelId} via REST.");
 
@@ -93,58 +93,58 @@ internal static class DiscordLog
 
     private static readonly Action<ILogger, string, int, Exception?> _inboundBotMessageObserved =
         LoggerMessage.Define<string, int>(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(2021, nameof(InboundBotMessageObserved)),
             "Observed bot-authored message from {Sender} (length {Length}); recording ACK.");
 
     private static readonly Action<ILogger, string, long, Exception?> _inboundAppendedToJournal =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2022, nameof(InboundAppendedToJournal)),
             "Appended inbound {EntryType} to Discord journal at position {Position}.");
 
     // Pump: Discord -> Chat
     private static readonly Action<ILogger, string, long, Exception?> _discordToChatObserved =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2030, nameof(DiscordToChatObserved)),
             "Discord→Chat observed {EntryType} at position {Position}.");
 
     private static readonly Action<ILogger, string, string, Exception?> _discordToChatTransmuted =
         LoggerMessage.Define<string, string>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2031, nameof(DiscordToChatTransmuted)),
             "Discord→Chat transmuted {FromType} → {ToType}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _discordToChatAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2032, nameof(DiscordToChatAppended)),
             "Discord→Chat appended {EntryType} to Chat journal at position {Position}.");
 
     // Pump: Chat -> Discord
     private static readonly Action<ILogger, string, long, Exception?> _chatToDiscordObserved =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2040, nameof(ChatToDiscordObserved)),
             "Chat→Discord observed {EntryType} at position {Position}.");
 
     private static readonly Action<ILogger, string, string, Exception?> _chatToDiscordTransmuted =
         LoggerMessage.Define<string, string>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2041, nameof(ChatToDiscordTransmuted)),
             "Chat→Discord transmuted {FromType} → {ToType}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _chatToDiscordAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2042, nameof(ChatToDiscordAppended)),
             "Chat→Discord appended {EntryType} to Discord journal at position {Position}.");
 
     // DiscordScrivener internal append
     private static readonly Action<ILogger, string, long, Exception?> _discordScrivenerAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(2050, nameof(DiscordScrivenerAppended)),
             "DiscordScrivener appended {EntryType} to internal journal at position {Position}.");
 

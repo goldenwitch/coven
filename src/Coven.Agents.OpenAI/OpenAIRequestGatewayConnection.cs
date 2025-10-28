@@ -2,6 +2,7 @@
 
 using System.ClientModel;
 using Coven.Core;
+using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OpenAI;
@@ -14,13 +15,15 @@ internal sealed class OpenAIRequestGatewayConnection(
     [FromKeyedServices("Coven.InternalOpenAIScrivener")] IScrivener<OpenAIEntry> journal,
     ILogger<OpenAIRequestGatewayConnection> logger,
     OpenAIClient openAIClient,
-    IOpenAITranscriptBuilder transcriptBuilder) : IOpenAIGatewayConnection
+    IOpenAITranscriptBuilder transcriptBuilder,
+    ITransmuter<OpenAIClientConfig, ResponseCreationOptions> responseOptionsTransmuter) : IOpenAIGatewayConnection
 {
     private readonly OpenAIClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly OpenAIResponseClient _client = openAIClient.GetOpenAIResponseClient(configuration.Model) ?? throw new ArgumentNullException(nameof(openAIClient));
     private readonly IOpenAITranscriptBuilder _transcriptBuilder = transcriptBuilder ?? throw new ArgumentNullException(nameof(transcriptBuilder));
+    private readonly ITransmuter<OpenAIClientConfig, ResponseCreationOptions> _responseOptionsTransmuter = responseOptionsTransmuter ?? throw new ArgumentNullException(nameof(responseOptionsTransmuter));
 
     public Task ConnectAsync()
     {
@@ -32,30 +35,10 @@ internal sealed class OpenAIRequestGatewayConnection(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        List<ResponseItem> input = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip ?? int.MaxValue, cancellationToken).ConfigureAwait(false);
+        List<ResponseItem> input = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         OpenAILog.OutboundSendStart(_logger, input.Count);
 
-        ResponseCreationOptions options = new()
-        {
-            Temperature = _configuration.Temperature,
-            TopP = _configuration.TopP,
-            MaxOutputTokenCount = _configuration.MaxOutputTokens
-        };
-
-        // Map reasoning effort without exposing SDK types to consumers.
-        if (_configuration.ReasoningEffort is not null)
-        {
-            options.ReasoningOptions = new ResponseReasoningOptions()
-            {
-                ReasoningEffortLevel = _configuration.ReasoningEffort switch
-                {
-                    ReasoningEffort.Low => ResponseReasoningEffortLevel.Low,
-                    ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
-                    ReasoningEffort.High => ResponseReasoningEffortLevel.High,
-                    _ => null
-                }
-            };
-        }
+        ResponseCreationOptions options = await _responseOptionsTransmuter.Transmute(_configuration, cancellationToken).ConfigureAwait(false);
 
         OpenAIResponse response;
         try

@@ -17,7 +17,7 @@ ConsoleClientConfig consoleConfig = new()
 OpenAIClientConfig openAiConfig = new()
 {
     ApiKey = "", // set your key
-    Model = "gpt-5-2025-08-07" // choose the model
+    Model = "gpt-5-2025-08-07"
 };
 
 // Register DI
@@ -25,10 +25,10 @@ HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddConsoleChat(consoleConfig);
 
-// Enable OpenAI streaming with sensible segmentation
+// Enable OpenAI streaming
 builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
-    registration.EnableStreaming(); // default: final-only segmentation
+    registration.EnableStreaming();
 });
 
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());

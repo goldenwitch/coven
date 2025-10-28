@@ -14,39 +14,21 @@ public sealed class AgentParagraphWindowPolicy : IWindowPolicy<AgentAfferentChun
 
     public bool ShouldEmit(StreamWindow<AgentAfferentChunk> window)
     {
-        StringBuilder sb = new();
+        StringBuilder stringBuilder = new();
         foreach (AgentAfferentChunk chunk in window.PendingChunks)
         {
             if (!string.IsNullOrEmpty(chunk.Text))
             {
-                sb.Append(chunk.Text);
+                stringBuilder.Append(chunk.Text);
             }
         }
 
-        if (sb.Length == 0)
+        if (stringBuilder.Length == 0)
         {
             return false;
         }
 
-        string s = TrimEndExceptNewlines(sb.ToString());
-        return s.EndsWith("\r\n\r\n", StringComparison.Ordinal) || s.EndsWith("\n\n", StringComparison.Ordinal);
-    }
-
-    private static string TrimEndExceptNewlines(string s)
-    {
-        int end = s.Length;
-        while (end > 0)
-        {
-            char c = s[end - 1];
-            if (c is ' ' or '\t')
-            {
-                end--;
-            }
-            else
-            {
-                break;
-            }
-        }
-        return end == s.Length ? s : s[..end];
+        string concatenatedWindow = stringBuilder.ToString();
+        return concatenatedWindow.EndsWith("\r\n\r\n", StringComparison.Ordinal) || concatenatedWindow.EndsWith("\n\n", StringComparison.Ordinal);
     }
 }
