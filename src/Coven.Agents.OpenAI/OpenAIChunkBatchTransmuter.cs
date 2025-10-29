@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 using System.Text;
-using Coven.Core.Streaming;
 using Coven.Transmutation;
 
 namespace Coven.Agents.OpenAI;
 
-public sealed class OpenAIChunkBatchTransmuter : ITransmuter<IEnumerable<OpenAIAfferentChunk>, BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>>
+public sealed class OpenAIChunkBatchTransmuter : IBatchTransmuter<OpenAIAfferentChunk, OpenAIThought>
 {
     public Task<BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>> Transmute(IEnumerable<OpenAIAfferentChunk> Input, CancellationToken cancellationToken = default)
     {
@@ -46,4 +45,3 @@ public sealed class OpenAIChunkBatchTransmuter : ITransmuter<IEnumerable<OpenAIA
         return Task.FromResult(new BatchTransmuteResult<OpenAIAfferentChunk, OpenAIThought>(output, false, null));
     }
 }
-

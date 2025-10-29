@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 using System.Text;
-using Coven.Core.Streaming;
 using Coven.Transmutation;
 
 namespace Coven.Chat;
 
-public sealed class ChatChunkBatchTransmuter : ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatEfferent>>
+public sealed class ChatChunkBatchTransmuter : IBatchTransmuter<ChatChunk, ChatEfferent>
 {
     public Task<BatchTransmuteResult<ChatChunk, ChatEfferent>> Transmute(IEnumerable<ChatChunk> Input, CancellationToken cancellationToken = default)
     {

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 using System.Text;
-using Coven.Core.Streaming;
 using Coven.Transmutation;
 
 namespace Coven.Agents;
 
-public sealed class AgentAfferentBatchTransmuter : ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>>
+public sealed class AgentAfferentBatchTransmuter : IBatchTransmuter<AgentAfferentChunk, AgentResponse>
 {
     public Task<BatchTransmuteResult<AgentAfferentChunk, AgentResponse>> Transmute(IEnumerable<AgentAfferentChunk> Input, CancellationToken cancellationToken = default)
     {

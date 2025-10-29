@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 using System.Text;
-using Coven.Core.Streaming;
 using Coven.Transmutation;
 
 namespace Coven.Agents;
 
-public sealed class AgentAfferentThoughtBatchTransmuter : ITransmuter<IEnumerable<AgentAfferentThoughtChunk>, BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>>
+public sealed class AgentAfferentThoughtBatchTransmuter : IBatchTransmuter<AgentAfferentThoughtChunk, AgentThought>
 {
     public Task<BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>> Transmute(IEnumerable<AgentAfferentThoughtChunk> Input, CancellationToken cancellationToken = default)
     {
@@ -30,4 +29,3 @@ public sealed class AgentAfferentThoughtBatchTransmuter : ITransmuter<IEnumerabl
         return Task.FromResult(new BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>(output, false, null));
     }
 }
-
