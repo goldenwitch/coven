@@ -42,7 +42,8 @@ public sealed class RouterBlock(
                         await _chat.WriteAsync(new ChatEfferentDraft("BOT", r.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     case AgentThought t:
-                        await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken).ConfigureAwait(false);
+                        // Uncomment below if you want to output thoughts :)
+                        // await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         break;

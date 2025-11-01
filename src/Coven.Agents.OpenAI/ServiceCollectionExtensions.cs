@@ -76,6 +76,8 @@ public static class ServiceCollectionExtensions
         services.TryAddScoped<IOpenAITranscriptBuilder, DefaultOpenAITranscriptBuilder>();
         // Session-local shattering for OpenAI chunks: split on paragraph boundary
         services.TryAddScoped<IShatterPolicy<OpenAIEntry>>(_ => new OpenAIThoughtParagraphShatterPolicy());
+        // Windowed output shattering for Agent thoughts: split on summary marker
+        services.TryAddScoped<IShatterPolicy<AgentEntry>>(_ => new AgentThoughtSummaryShatterPolicy());
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<OpenAIAgentSessionFactory>();
         services.AddScoped<ContractDaemon, OpenAIAgentDaemon>();
@@ -103,11 +105,12 @@ public static class ServiceCollectionExtensions
 
                 // Allow DI to provide a custom window policy via registration
                 IWindowPolicy<AgentAfferentChunk> policy = sp.GetRequiredService<IWindowPolicy<AgentAfferentChunk>>();
-                ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>> batchTransmuter =
-                    sp.GetRequiredService<ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>>>();
+                IBatchTransmuter<AgentAfferentChunk, AgentResponse> batchTransmuter =
+                    sp.GetRequiredService<IBatchTransmuter<AgentAfferentChunk, AgentResponse>>();
+                IShatterPolicy<AgentEntry>? shatterPolicy = sp.GetService<IShatterPolicy<AgentEntry>>();
 
                 return new StreamWindowingDaemon<AgentEntry, AgentAfferentChunk, AgentResponse, AgentStreamCompleted>(
-                    daemonEvents, agentJournal, policy, batchTransmuter);
+                    daemonEvents, agentJournal, policy, batchTransmuter, shatterPolicy);
             });
 
             services.AddScoped<ContractDaemon>(sp =>
@@ -116,15 +119,16 @@ public static class ServiceCollectionExtensions
                 IScrivener<AgentEntry> agentJournal = sp.GetRequiredService<IScrivener<AgentEntry>>();
 
                 IWindowPolicy<AgentAfferentThoughtChunk> policy = sp.GetRequiredService<IWindowPolicy<AgentAfferentThoughtChunk>>();
-                ITransmuter<IEnumerable<AgentAfferentThoughtChunk>, BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>> batchTransmuter =
-                    sp.GetRequiredService<ITransmuter<IEnumerable<AgentAfferentThoughtChunk>, BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>>>();
+                IBatchTransmuter<AgentAfferentThoughtChunk, AgentThought> batchTransmuter =
+                    sp.GetRequiredService<IBatchTransmuter<AgentAfferentThoughtChunk, AgentThought>>();
+                IShatterPolicy<AgentEntry>? shatterPolicy = sp.GetService<IShatterPolicy<AgentEntry>>();
 
                 return new StreamWindowingDaemon<AgentEntry, AgentAfferentThoughtChunk, AgentThought, AgentStreamCompleted>(
-                    daemonEvents, agentJournal, policy, batchTransmuter);
+                    daemonEvents, agentJournal, policy, batchTransmuter, shatterPolicy);
             });
         }
-        services.TryAddScoped<ITransmuter<IEnumerable<AgentAfferentChunk>, BatchTransmuteResult<AgentAfferentChunk, AgentResponse>>, AgentAfferentBatchTransmuter>();
-        services.TryAddScoped<ITransmuter<IEnumerable<AgentAfferentThoughtChunk>, BatchTransmuteResult<AgentAfferentThoughtChunk, AgentThought>>, AgentAfferentThoughtBatchTransmuter>();
+        services.TryAddScoped<IBatchTransmuter<AgentAfferentChunk, AgentResponse>, AgentAfferentBatchTransmuter>();
+        services.TryAddScoped<IBatchTransmuter<AgentAfferentThoughtChunk, AgentThought>, AgentAfferentThoughtBatchTransmuter>();
         services.TryAddScoped<ITransmuter<OpenAIClientConfig, ResponseCreationOptions>, OpenAIResponseOptionsTransmuter>();
         return services;
     }

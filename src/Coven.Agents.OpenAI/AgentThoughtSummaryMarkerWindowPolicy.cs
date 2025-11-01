@@ -11,60 +11,73 @@ namespace Coven.Agents.OpenAI;
 /// </summary>
 public sealed class AgentThoughtSummaryMarkerWindowPolicy : IWindowPolicy<AgentAfferentThoughtChunk>
 {
-    public int MinChunkLookback => 1200;
+    public int MinChunkLookback => 10;
 
     public bool ShouldEmit(StreamWindow<AgentAfferentThoughtChunk> window)
     {
-        StringBuilder sb = new();
+        StringBuilder stringBuilder = new();
         foreach (AgentAfferentThoughtChunk chunk in window.PendingChunks)
         {
             if (!string.IsNullOrEmpty(chunk.Text))
             {
-                sb.Append(chunk.Text);
+                stringBuilder.Append(chunk.Text);
             }
         }
 
-        if (sb.Length == 0)
+        if (stringBuilder.Length == 0)
         {
             return false;
         }
 
-        string text = sb.ToString();
+        string text = stringBuilder.ToString();
+        ReadOnlySpan<char> span = text.AsSpan();
+        return HasBoldFollowedByNewline(span);
+    }
 
-        // Scan for any bold segment **...** followed immediately by a newline sequence
-        int pos = 0;
-        while (pos < text.Length)
+    private static bool HasBoldFollowedByNewline(ReadOnlySpan<char> span)
+    {
+        int position = 0;
+        while (position < span.Length)
         {
-            int start = text.IndexOf("**", pos, StringComparison.Ordinal);
+            int start = span[position..].IndexOf("**");
             if (start < 0)
             {
-                break;
+                return false;
             }
-            int end = text.IndexOf("**", start + 2, StringComparison.Ordinal);
+            start += position;
+
+            int afterOpen = start + 2;
+            if (afterOpen >= span.Length)
+            {
+                return false;
+            }
+
+            int end = span[afterOpen..].IndexOf("**");
             if (end < 0)
             {
-                break; // no closing marker yet
+                // Unmatched opener; advance past it and continue scanning later content
+                position = start + 2;
+                continue;
             }
-            // Require non-empty content between the markers
+            end += afterOpen;
+
+            // Require non-empty content between markers
             if (end > start + 2)
             {
                 int after = end + 2;
-                if (after <= text.Length - 2)
-                {
-                    // Check for CRLF CRLF or LF LF
-                    if ((after + 3 <= text.Length && text.AsSpan(after, 4).SequenceEqual("\r\n\r\n")) ||
-                        (after + 1 <= text.Length && text.AsSpan(after, 2).SequenceEqual("\n\n")))
-                    {
-                        return true;
-                    }
-                }
-                if (after + 1 <= text.Length && text.AsSpan(after, 2).SequenceEqual("\r\n"))
+                ReadOnlySpan<char> tail = after <= span.Length ? span[after..] : [];
+
+                if (tail.StartsWith("\r\n\r\n", StringComparison.Ordinal) ||
+                    tail.StartsWith("\n\n", StringComparison.Ordinal) ||
+                    tail.StartsWith("\r\n", StringComparison.Ordinal))
                 {
                     return true;
                 }
             }
-            pos = end + 2; // continue searching after the closing marker
+
+            position = end + 2;
         }
+
         return false;
     }
 }
