@@ -18,13 +18,13 @@ internal static class ConsoleLog
 
     private static readonly Action<ILogger, int, Exception?> _outboundSendStart =
         LoggerMessage.Define<int>(
-            LogLevel.Debug,
+            LogLevel.Information,
             new EventId(3006, nameof(OutboundSendStart)),
             "Sending console line (length {Length}).");
 
     private static readonly Action<ILogger, Exception?> _outboundSendSucceeded =
         LoggerMessage.Define(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(3007, nameof(OutboundSendSucceeded)),
             "Sent console line.");
 
@@ -48,55 +48,55 @@ internal static class ConsoleLog
 
     private static readonly Action<ILogger, Exception?> _inboundEmptySkipped =
         LoggerMessage.Define(
-            LogLevel.Debug,
+            LogLevel.Trace,
             new EventId(3011, nameof(InboundEmptySkipped)),
             "Inbound empty/whitespace line skipped.");
 
     private static readonly Action<ILogger, string, long, Exception?> _inboundAppendedToJournal =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3012, nameof(InboundAppendedToJournal)),
             "Appended inbound {EntryType} to Console journal at position {Position}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _consoleToChatObserved =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3020, nameof(ConsoleToChatObserved)),
             "Console→Chat observed {EntryType} at position {Position}.");
 
     private static readonly Action<ILogger, string, string, Exception?> _consoleToChatTransmuted =
         LoggerMessage.Define<string, string>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3021, nameof(ConsoleToChatTransmuted)),
             "Console→Chat transmuted {FromType} → {ToType}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _consoleToChatAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3022, nameof(ConsoleToChatAppended)),
             "Console→Chat appended {EntryType} to Chat journal at position {Position}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _chatToConsoleObserved =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3030, nameof(ChatToConsoleObserved)),
             "Chat→Console observed {EntryType} at position {Position}.");
 
     private static readonly Action<ILogger, string, string, Exception?> _chatToConsoleTransmuted =
         LoggerMessage.Define<string, string>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3031, nameof(ChatToConsoleTransmuted)),
             "Chat→Console transmuted {FromType} → {ToType}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _chatToConsoleAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3032, nameof(ChatToConsoleAppended)),
             "Chat→Console appended {EntryType} to Console journal at position {Position}.");
 
     private static readonly Action<ILogger, string, long, Exception?> _consoleScrivenerAppended =
         LoggerMessage.Define<string, long>(
-            LogLevel.Information,
+            LogLevel.Trace,
             new EventId(3040, nameof(ConsoleScrivenerAppended)),
             "ConsoleScrivener appended {EntryType} to internal journal at position {Position}.");
 

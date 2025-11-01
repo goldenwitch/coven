@@ -41,7 +41,7 @@ internal sealed class DiscordChatSession(
                     }
 
                     DiscordLog.DiscordToChatObserved(_logger, entry.GetType().Name, position);
-                    ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    ChatEntry chat = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
                     DiscordLog.DiscordToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
                     long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
                     DiscordLog.DiscordToChatAppended(_logger, chat.GetType().Name, chatPos);
@@ -68,7 +68,7 @@ internal sealed class DiscordChatSession(
                     DiscordLog.ChatToDiscordObserved(_logger, entry.GetType().Name, position);
 
                     // Session-local shattering for drafts
-                    if (entry is ChatOutgoingDraft draft)
+                    if (entry is ChatEfferentDraft draft)
                     {
                         bool produced = false;
                         IEnumerable<ChatEntry> outputs = _shatterPolicy.Shatter(draft) ?? [];
@@ -90,18 +90,18 @@ internal sealed class DiscordChatSession(
                         }
 
                         // Fallback: convert draft to fixed and write for forwarding
-                        long fixedPos = await _chatJournal.WriteAsync(new ChatOutgoing(draft.Sender, draft.Text), ct).ConfigureAwait(false);
-                        DiscordLog.ChatToDiscordAppended(_logger, nameof(ChatOutgoing), fixedPos);
+                        long fixedPos = await _chatJournal.WriteAsync(new ChatEfferent(draft.Sender, draft.Text), ct).ConfigureAwait(false);
+                        DiscordLog.ChatToDiscordAppended(_logger, nameof(ChatEfferent), fixedPos);
                         continue; // handled by subsequent iterations
                     }
 
                     // Forward only fixed ChatOutgoing to Discord
-                    if (entry is not ChatOutgoing)
+                    if (entry is not ChatEfferent)
                     {
                         continue;
                     }
 
-                    DiscordEntry discord = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    DiscordEntry discord = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
                     DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
                     long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
                     DiscordLog.ChatToDiscordAppended(_logger, discord.GetType().Name, discPos);

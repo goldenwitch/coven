@@ -135,7 +135,7 @@ internal sealed class DiscordGatewayConnection(
             throw new InvalidOperationException("Discord message author username is missing.");
         }
 
-        DiscordIncoming incoming = new(
+        DiscordAfferent incoming = new(
             Sender: sender,
             Text: message.Content ?? string.Empty,
             MessageId: message.Id.ToString(CultureInfo.InvariantCulture),
@@ -145,7 +145,7 @@ internal sealed class DiscordGatewayConnection(
         // Scrivener is responsible for synchronizing etc
         DiscordLog.InboundUserMessageReceived(_logger, sender, incoming.Text.Length);
         long position = await _scrivener.WriteAsync(incoming).ConfigureAwait(false);
-        DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordIncoming), position);
+        DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordAfferent), position);
     }
 
     public void Dispose()

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-namespace Coven.Core.Streaming;
+namespace Coven.Transmutation;
 
 /// <summary>
 /// Result of batch-transmuting a set of chunks into a single output,

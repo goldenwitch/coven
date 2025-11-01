@@ -8,6 +8,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Coven.Transmutation;
 using OpenAI.Responses;
+using Coven.Core.Streaming;
+using Coven.Agents;
 
 // Configuration
 DiscordClientConfig discordConfig = new()
@@ -26,7 +28,24 @@ OpenAIClientConfig openAiConfig = new()
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
 builder.Services.AddDiscordChat(discordConfig);
-builder.Services.AddOpenAIAgents(openAiConfig);
+builder.Services.AddOpenAIAgents(openAiConfig, registration =>
+{
+    registration.EnableStreaming();
+});
+
+// Override windowing policies independently for outputs and thoughts
+// Output chunk policy: paragraph-first with a tighter max length cap
+builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
+    new CompositeWindowPolicy<AgentAfferentChunk>(
+        new AgentParagraphWindowPolicy(),
+        new AgentMaxLengthWindowPolicy(1024)));
+
+// // Thought chunk policy: summary-marker, sentence, paragraph; independent cap
+// builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
+//     new CompositeWindowPolicy<AgentAfferentThoughtChunk>(
+//         new AgentThoughtSummaryMarkerWindowPolicy(),
+//         new AgentThoughtMaxLengthWindowPolicy(2048)));
+
 // Override default OpenAI entry → ResponseItem mapping with sample templating
 builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());

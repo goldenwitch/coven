@@ -25,7 +25,7 @@ public sealed class RouterBlock(
         {
             await foreach ((long _, ChatEntry? entry) in _chat.TailAsync(0, cancellationToken))
             {
-                if (entry is ChatIncoming inc)
+                if (entry is ChatAfferent inc)
                 {
                     await _agents.WriteAsync(new AgentPrompt(inc.Sender, inc.Text), cancellationToken).ConfigureAwait(false);
                 }
@@ -39,10 +39,11 @@ public sealed class RouterBlock(
                 switch (entry)
                 {
                     case AgentResponse r:
-                        await _chat.WriteAsync(new ChatOutgoingDraft("BOT", r.Text), cancellationToken).ConfigureAwait(false);
+                        await _chat.WriteAsync(new ChatEfferentDraft("BOT", r.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     case AgentThought t:
-                        await _chat.WriteAsync(new ChatOutgoingDraft("BOT", t.Text), cancellationToken).ConfigureAwait(false);
+                        // Uncomment below if you want to output thoughts :)
+                        // await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         break;

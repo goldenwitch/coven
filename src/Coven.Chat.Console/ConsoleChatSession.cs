@@ -39,7 +39,7 @@ internal sealed class ConsoleChatSession(
                     }
 
                     ConsoleLog.ConsoleToChatObserved(_logger, entry.GetType().Name, position);
-                    ChatEntry chat = await _transmuter.TransmuteIn(entry, ct).ConfigureAwait(false);
+                    ChatEntry chat = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
                     ConsoleLog.ConsoleToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
                     long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
                     ConsoleLog.ConsoleToChatAppended(_logger, chat.GetType().Name, chatPos);
@@ -64,13 +64,13 @@ internal sealed class ConsoleChatSession(
                 await foreach ((long position, ChatEntry entry) in _chatJournal.TailAsync(0, ct))
                 {
                     // Forward only fixed ChatOutgoing to console
-                    if (entry is not ChatOutgoing)
+                    if (entry is not ChatEfferent)
                     {
                         continue;
                     }
 
                     ConsoleLog.ChatToConsoleObserved(_logger, entry.GetType().Name, position);
-                    ConsoleEntry console = await _transmuter.TransmuteOut(entry, ct).ConfigureAwait(false);
+                    ConsoleEntry console = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
                     ConsoleLog.ChatToConsoleTransmuted(_logger, entry.GetType().Name, console.GetType().Name);
                     long consolePos = await _consoleJournal.WriteAsync(console, ct).ConfigureAwait(false);
                     ConsoleLog.ChatToConsoleAppended(_logger, console.GetType().Name, consolePos);

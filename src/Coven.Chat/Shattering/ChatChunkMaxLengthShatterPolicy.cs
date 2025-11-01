@@ -21,7 +21,7 @@ public sealed class ChatChunkMaxLengthShatterPolicy : IShatterPolicy<ChatEntry>
     {
         switch (entry)
         {
-            case ChatOutgoingDraft draft:
+            case ChatEfferentDraft draft:
                 foreach (string part in Split(draft.Text))
                 {
                     yield return new ChatChunk(draft.Sender, part);

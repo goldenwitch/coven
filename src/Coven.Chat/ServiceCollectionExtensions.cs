@@ -26,14 +26,15 @@ public static class ServiceCollectionExtensions
             // Prefer a DI-registered policy; fall back to final-only if none provided
             IWindowPolicy<ChatChunk> policy =
                 sp.GetService<IWindowPolicy<ChatChunk>>() ?? new LambdaWindowPolicy<ChatChunk>(1, _ => false);
-            ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>> batchTransmuter =
-                sp.GetRequiredService<ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>>>();
+            IBatchTransmuter<ChatChunk, ChatEfferent> batchTransmuter =
+                sp.GetRequiredService<IBatchTransmuter<ChatChunk, ChatEfferent>>();
+            IShatterPolicy<ChatEntry>? shatterPolicy = sp.GetService<IShatterPolicy<ChatEntry>>();
 
-            return new StreamWindowingDaemon<ChatEntry, ChatChunk, ChatOutgoing, ChatStreamCompleted>(
-                daemonEvents, chatJournal, policy, batchTransmuter);
+            return new StreamWindowingDaemon<ChatEntry, ChatChunk, ChatEfferent, ChatStreamCompleted>(
+                daemonEvents, chatJournal, policy, batchTransmuter, shatterPolicy);
         });
 
-        services.TryAddScoped<ITransmuter<IEnumerable<ChatChunk>, BatchTransmuteResult<ChatChunk, ChatOutgoing>>, ChatChunkBatchTransmuter>();
+        services.TryAddScoped<IBatchTransmuter<ChatChunk, ChatEfferent>, ChatChunkBatchTransmuter>();
 
         return services;
     }

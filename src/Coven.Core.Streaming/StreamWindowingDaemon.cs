@@ -8,7 +8,8 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
     IScrivener<DaemonEvent> daemonEvents,
     IScrivener<TEntry> journal,
     IWindowPolicy<TChunk> windowPolicy,
-    ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> batchTransmuter
+    IBatchTransmuter<TChunk, TOutput> batchTransmuter,
+    IShatterPolicy<TEntry>? shatterPolicy = null
 ) : ContractDaemon(daemonEvents), IAsyncDisposable
     where TEntry : notnull
     where TChunk : TEntry
@@ -17,7 +18,8 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
 {
     private readonly IScrivener<TEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly IWindowPolicy<TChunk> _windowPolicy = windowPolicy ?? throw new ArgumentNullException(nameof(windowPolicy));
-    private readonly ITransmuter<IEnumerable<TChunk>, BatchTransmuteResult<TChunk, TOutput>> _batchTransmuter = batchTransmuter ?? throw new ArgumentNullException(nameof(batchTransmuter));
+    private readonly IBatchTransmuter<TChunk, TOutput> _batchTransmuter = batchTransmuter ?? throw new ArgumentNullException(nameof(batchTransmuter));
+    private readonly IShatterPolicy<TEntry>? _shatterPolicy = shatterPolicy;
     private CancellationTokenSource? _linkedCancellationSource;
     private Task? _pumpTask;
 
@@ -131,7 +133,27 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
         }
 
         BatchTransmuteResult<TChunk, TOutput> result = await _batchTransmuter.Transmute(buffer, cancellationToken).ConfigureAwait(false);
-        await _journal.WriteAsync(result.Output, cancellationToken).ConfigureAwait(false);
+
+        if (_shatterPolicy is not null)
+        {
+            bool any = false;
+            IEnumerable<TEntry> shards = _shatterPolicy.Shatter(result.Output) ?? [];
+            foreach (TEntry shard in shards)
+            {
+                any = true;
+                await _journal.WriteAsync(shard, cancellationToken).ConfigureAwait(false);
+            }
+
+            if (!any)
+            {
+                // No shatter output produced; forward original output as-is
+                await _journal.WriteAsync(result.Output, cancellationToken).ConfigureAwait(false);
+            }
+        }
+        else
+        {
+            await _journal.WriteAsync(result.Output, cancellationToken).ConfigureAwait(false);
+        }
 
         if (result.HasRemainder && result.Remainder is not null)
         {
@@ -161,4 +183,3 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
         }
     }
 }
-

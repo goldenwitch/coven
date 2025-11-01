@@ -6,21 +6,21 @@ namespace Coven.Transmutation;
 /// </summary>
 /// <typeparam name="TIn">The primary input type.</typeparam>
 /// <typeparam name="TOut">The primary output type.</typeparam>
-/// <param name="InTramsuter">Transmuter used for <see cref="TransmuteIn(TIn, CancellationToken)"/>.</param>
-/// <param name="OutTransmuter">Transmuter used for <see cref="TransmuteOut(TOut, CancellationToken)"/>.</param>
+/// <param name="InTramsuter">Transmuter used for <see cref="TransmuteAfferent(TIn, CancellationToken)"/>.</param>
+/// <param name="OutTransmuter">Transmuter used for <see cref="TransmuteEfferent(TOut, CancellationToken)"/>.</param>
 public class CompositeBiDirectionalTransmuter<TIn, TOut>(ITransmuter<TIn, TOut> InTramsuter, ITransmuter<TOut, TIn> OutTransmuter) : IBiDirectionalTransmuter<TIn, TOut>
 {
     private readonly ITransmuter<TIn, TOut> _inTransmuter = InTramsuter;
     private readonly ITransmuter<TOut, TIn> _outTransmuter = OutTransmuter;
 
     /// <inheritdoc />
-    public Task<TOut> TransmuteIn(TIn Input, CancellationToken cancellationToken = default)
+    public Task<TOut> TransmuteAfferent(TIn Input, CancellationToken cancellationToken = default)
     {
         return _inTransmuter.Transmute(Input, cancellationToken);
     }
 
     /// <inheritdoc />
-    public Task<TIn> TransmuteOut(TOut Output, CancellationToken cancellationToken = default)
+    public Task<TIn> TransmuteEfferent(TOut Output, CancellationToken cancellationToken = default)
     {
         return _outTransmuter.Transmute(Output, cancellationToken);
     }

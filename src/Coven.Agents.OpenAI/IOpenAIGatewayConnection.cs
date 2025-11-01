@@ -5,6 +5,6 @@ namespace Coven.Agents.OpenAI;
 internal interface IOpenAIGatewayConnection
 {
     Task ConnectAsync();
-    Task SendAsync(OpenAIOutgoing outgoing, CancellationToken cancellationToken);
+    Task SendAsync(OpenAIEfferent outgoing, CancellationToken cancellationToken);
 }
 

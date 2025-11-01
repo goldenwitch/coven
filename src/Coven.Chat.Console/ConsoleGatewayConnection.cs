@@ -50,10 +50,10 @@ internal sealed class ConsoleGatewayConnection(
                 }
 
                 string sender = _configuration.InputSender;
-                ConsoleIncoming incoming = new(sender, line);
+                ConsoleAfferent incoming = new(sender, line);
                 ConsoleLog.InboundUserLineReceived(_logger, sender, line.Length);
                 long pos = await _scrivener.WriteAsync(incoming, ct).ConfigureAwait(false);
-                ConsoleLog.InboundAppendedToJournal(_logger, nameof(ConsoleIncoming), pos);
+                ConsoleLog.InboundAppendedToJournal(_logger, nameof(ConsoleAfferent), pos);
             }
         }, cancellationToken);
 

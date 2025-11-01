@@ -20,9 +20,9 @@ public sealed class StreamingBlock(IEnumerable<ContractDaemon> daemons, IScriven
         // Tail the chat journal and convert incoming to draft outgoing.
         await foreach ((long _, ChatEntry entry) in _scrivener.TailAsync(0, cancellationToken))
         {
-            if (entry is ChatIncoming i)
+            if (entry is ChatAfferent i)
             {
-                await _scrivener.WriteAsync(new ChatOutgoingDraft("BOT", i.Text), cancellationToken).ConfigureAwait(false);
+                await _scrivener.WriteAsync(new ChatEfferentDraft("BOT", i.Text), cancellationToken).ConfigureAwait(false);
             }
         }
 

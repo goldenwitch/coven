@@ -2,17 +2,17 @@
 using System.Text;
 using Coven.Transmutation;
 
-namespace Coven.Chat;
+namespace Coven.Agents;
 
-public sealed class ChatChunkBatchTransmuter : IBatchTransmuter<ChatChunk, ChatEfferent>
+public sealed class AgentAfferentBatchTransmuter : IBatchTransmuter<AgentAfferentChunk, AgentResponse>
 {
-    public Task<BatchTransmuteResult<ChatChunk, ChatEfferent>> Transmute(IEnumerable<ChatChunk> Input, CancellationToken cancellationToken = default)
+    public Task<BatchTransmuteResult<AgentAfferentChunk, AgentResponse>> Transmute(IEnumerable<AgentAfferentChunk> Input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(Input);
 
         string sender = string.Empty;
         StringBuilder sb = new();
-        foreach (ChatChunk chunk in Input)
+        foreach (AgentAfferentChunk chunk in Input)
         {
             cancellationToken.ThrowIfCancellationRequested();
             if (!string.IsNullOrEmpty(chunk.Sender))
@@ -25,7 +25,7 @@ public sealed class ChatChunkBatchTransmuter : IBatchTransmuter<ChatChunk, ChatE
             }
         }
 
-        ChatEfferent output = new(sender, sb.ToString());
-        return Task.FromResult(new BatchTransmuteResult<ChatChunk, ChatEfferent>(output, false, null));
+        AgentResponse output = new(sender, sb.ToString());
+        return Task.FromResult(new BatchTransmuteResult<AgentAfferentChunk, AgentResponse>(output, false, null));
     }
 }

@@ -27,7 +27,7 @@ public sealed class RouterBlock(
         {
             await foreach ((long _, ChatEntry? entry) in _chat.TailAsync(0, cancellationToken))
             {
-                if (entry is ChatIncoming inc)
+                if (entry is ChatAfferent inc)
                 {
                     await _agents.WriteAsync(new AgentPrompt(inc.Sender, inc.Text), cancellationToken).ConfigureAwait(false);
                 }
@@ -35,7 +35,6 @@ public sealed class RouterBlock(
         }, cancellationToken);
 
         // Pump 2: Agents -> Chat (responses)
-        // For streaming, we surface segmented AgentResponse entries (emitted by the segmentation daemon).
         Task agentsToChat = Task.Run(async () =>
         {
             await foreach ((long _, AgentEntry? entry) in _agents.TailAsync(0, cancellationToken))
@@ -43,10 +42,10 @@ public sealed class RouterBlock(
                 switch (entry)
                 {
                     case AgentResponse r:
-                        await _chat.WriteAsync(new ChatOutgoing("BOT", r.Text), cancellationToken).ConfigureAwait(false);
+                        await _chat.WriteAsync(new ChatEfferent("BOT", r.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     case AgentThought t:
-                        await _chat.WriteAsync(new ChatOutgoing("BOT", t.Text), cancellationToken).ConfigureAwait(false);
+                        await _chat.WriteAsync(new ChatEfferent("BOT", t.Text), cancellationToken).ConfigureAwait(false);
                         break;
                     default:
                         // Ignore prompts, acks, and raw chunks here to avoid duplicates
@@ -59,4 +58,3 @@ public sealed class RouterBlock(
         return input;
     }
 }
-

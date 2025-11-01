@@ -13,12 +13,12 @@ public sealed record ConsoleAck(
     string Text
 ) : ConsoleEntry(Sender, Text);
 
-public sealed record ConsoleIncoming(
+public sealed record ConsoleAfferent(
     string Sender,
     string Text
 ) : ConsoleEntry(Sender, Text);
 
-public sealed record ConsoleOutgoing(
+public sealed record ConsoleEfferent(
     string Sender,
     string Text
 ) : ConsoleEntry(Sender, Text);

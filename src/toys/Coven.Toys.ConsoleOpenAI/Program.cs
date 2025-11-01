@@ -17,7 +17,7 @@ ConsoleClientConfig consoleConfig = new()
 OpenAIClientConfig openAiConfig = new()
 {
     ApiKey = "", // set your key
-    Model = "gpt-5-2025-08-07" // choose the model
+    Model = "gpt-5-2025-08-07"
 };
 
 // Register DI
@@ -32,4 +32,3 @@ IHost host = builder.Build();
 // Execute ritual
 ICoven coven = host.Services.GetRequiredService<ICoven>();
 await coven.Ritual<Empty, Empty>(new Empty());
-

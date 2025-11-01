@@ -24,11 +24,11 @@ public sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry,
         return Input switch
         {
             // Decorate outgoing (user) content with a simple Discord marker.
-            OpenAIOutgoing u => Task.FromResult<ResponseItem?>(
+            OpenAIEfferent u => Task.FromResult<ResponseItem?>(
                 ResponseItem.CreateUserMessageItem($"[discord username:{u.Sender}] {u.Text}")),
 
             // Decorate assistant content for clarity in logs and evals.
-            OpenAIIncoming a => Task.FromResult<ResponseItem?>(
+            OpenAIAfferent a => Task.FromResult<ResponseItem?>(
                 ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
 
             // Drop thoughts/acks from the prompt input by returning null.
