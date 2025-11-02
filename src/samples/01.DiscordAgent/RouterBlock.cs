@@ -5,7 +5,7 @@ using Coven.Daemonology;
 
 namespace DiscordAgent;
 
-public sealed class RouterBlock(
+internal sealed class RouterBlock(
     IEnumerable<ContractDaemon> daemons,
     IScrivener<ChatEntry> chat,
     IScrivener<AgentEntry> agents) : IMagikBlock<Empty, Empty>

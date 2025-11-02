@@ -9,7 +9,7 @@ namespace Coven.Agents.OpenAI;
 /// Maps OpenAI journal entries to OpenAI SDK <see cref="ResponseItem"/> inputs.
 /// Only user/assistant textual entries are emitted; others return null.
 /// </summary>
-public sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
 {
     public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {

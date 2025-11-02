@@ -7,7 +7,7 @@ namespace Coven.Agents.OpenAI;
 /// Emits when the recent OpenAI chunk(s) length reaches a max.
 /// Minimal lookback of 1; intended as a safety cap in combination with semantic policies.
 /// </summary>
-public sealed class OpenAIMaxLengthWindowPolicy : IWindowPolicy<OpenAIAfferentChunk>
+internal sealed class OpenAIMaxLengthWindowPolicy : IWindowPolicy<OpenAIAfferentChunk>
 {
     private readonly int _max;
 

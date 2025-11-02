@@ -9,7 +9,7 @@ namespace Coven.Agents.OpenAI;
 /// A paragraph boundary is a double newline sequence ("\r\n\r\n" or "\n\n").
 /// Uses a minimal lookback of 2 to account for boundaries that straddle chunk edges.
 /// </summary>
-public sealed class OpenAIParagraphWindowPolicy : IWindowPolicy<OpenAIAfferentChunk>
+internal sealed class OpenAIParagraphWindowPolicy : IWindowPolicy<OpenAIAfferentChunk>
 {
     public int MinChunkLookback => 2;
 

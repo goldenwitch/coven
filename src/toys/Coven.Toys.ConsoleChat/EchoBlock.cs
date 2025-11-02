@@ -4,7 +4,7 @@ using Coven.Daemonology;
 
 namespace Coven.Toys.ConsoleChat;
 
-public class EchoBlock(ContractDaemon consoleDaemon, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
+internal sealed class EchoBlock(ContractDaemon consoleDaemon, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
 {
     private readonly ContractDaemon _consoleDaemon = consoleDaemon ?? throw new ArgumentNullException(nameof(consoleDaemon));
     private readonly IScrivener<ChatEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));

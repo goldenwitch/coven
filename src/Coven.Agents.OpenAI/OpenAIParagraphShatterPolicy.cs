@@ -11,7 +11,7 @@ namespace Coven.Agents.OpenAI;
 /// - Second: remainder of the original text
 /// If no boundary exists, produces no outputs (forward unchanged).
 /// </summary>
-public sealed class OpenAIThoughtParagraphShatterPolicy : IShatterPolicy<OpenAIEntry>
+internal sealed class OpenAIThoughtParagraphShatterPolicy : IShatterPolicy<OpenAIEntry>
 {
     public IEnumerable<OpenAIEntry> Shatter(OpenAIEntry entry)
     {

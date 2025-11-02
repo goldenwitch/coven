@@ -4,7 +4,7 @@ using Coven.Transmutation;
 
 namespace Coven.Agents.OpenAI;
 
-public sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>
+internal sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>
 {
     public Task<AgentEntry> TransmuteAfferent(OpenAIEntry Input, CancellationToken cancellationToken)
     {
