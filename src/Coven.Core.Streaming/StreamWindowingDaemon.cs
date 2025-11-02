@@ -4,6 +4,13 @@ using Coven.Transmutation;
 
 namespace Coven.Core.Streaming;
 
+/// <summary>
+/// Generic daemon that windows a stream of journal entries, emitting outputs based on a policy.
+/// </summary>
+/// <typeparam name="TEntry">Journal entry base type.</typeparam>
+/// <typeparam name="TChunk">Chunk entry type to window.</typeparam>
+/// <typeparam name="TOutput">Output entry type written when a window emits.</typeparam>
+/// <typeparam name="TCompleted">Completion marker entry type that flushes buffers.</typeparam>
 public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
     IScrivener<DaemonEvent> daemonEvents,
     IScrivener<TEntry> journal,
@@ -23,6 +30,9 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
     private CancellationTokenSource? _linkedCancellationSource;
     private Task? _pumpTask;
 
+    /// <summary>
+    /// Starts the daemon and begins tailing the journal.
+    /// </summary>
     public override async Task Start(CancellationToken cancellationToken)
     {
         _linkedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -39,6 +49,9 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Initiates cooperative shutdown and awaits the pump loop completion.
+    /// </summary>
     public override async Task Shutdown(CancellationToken cancellationToken)
     {
         _linkedCancellationSource?.Cancel();
@@ -167,6 +180,9 @@ public sealed class StreamWindowingDaemon<TEntry, TChunk, TOutput, TCompleted>(
         }
     }
 
+    /// <summary>
+    /// Ensures the daemon is shut down and disposes resources.
+    /// </summary>
     public async ValueTask DisposeAsync()
     {
         try

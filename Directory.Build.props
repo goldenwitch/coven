@@ -2,6 +2,8 @@
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Ensure all packable projects include the repository LICENSE -->
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <!-- Emit XML documentation for public APIs in packaged libraries -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
   <PropertyGroup>

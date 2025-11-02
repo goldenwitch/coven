@@ -6,8 +6,18 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Chat.Console;
 
+/// <summary>
+/// Dependency Injection helpers for wiring the Console chat adapter.
+/// Registers gateway/session components, journals, the Console↔Chat transmuter, and the console daemon.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Adds Console chat integration using the provided client configuration.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="config">Console client configuration (input/output sender labels).</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection AddConsoleChat(this IServiceCollection services, ConsoleClientConfig config)
     {
         ArgumentNullException.ThrowIfNull(services);

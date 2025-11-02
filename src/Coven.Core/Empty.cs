@@ -2,7 +2,9 @@
 
 namespace Coven.Core;
 
-// Marker type representing absence of input for rituals
+/// <summary>
+/// Marker type representing absence of input for rituals.
+/// </summary>
 public readonly struct Empty
 {
 }

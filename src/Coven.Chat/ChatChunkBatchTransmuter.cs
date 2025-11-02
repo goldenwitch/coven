@@ -4,8 +4,12 @@ using Coven.Transmutation;
 
 namespace Coven.Chat;
 
+/// <summary>
+/// Batches chat chunks into a single <see cref="ChatEfferent"/> message.
+/// </summary>
 public sealed class ChatChunkBatchTransmuter : IBatchTransmuter<ChatChunk, ChatEfferent>
 {
+    /// <inheritdoc />
     public Task<BatchTransmuteResult<ChatChunk, ChatEfferent>> Transmute(IEnumerable<ChatChunk> Input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(Input);

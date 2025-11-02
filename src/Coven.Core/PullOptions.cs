@@ -2,16 +2,20 @@
 
 namespace Coven.Core;
 
-// Options to tune Pull mode behavior.
+/// <summary>
+/// Options to tune Pull-mode ritual completion behavior.
+/// </summary>
 public sealed class PullOptions
 {
-    // If provided, this delegate decides whether the ritual should complete
-    // when a value (initial or step output) is assignable to the requested final type.
-    // Returning true completes the ritual with that value; returning false continues stepping.
-    // When null, default behavior is to complete immediately when assignable.
+    /// <summary>
+    /// Optional predicate deciding whether the ritual should complete when an assignable value is observed.
+    /// Returning <c>true</c> completes with that value; returning <c>false</c> continues stepping.
+    /// When <c>null</c>, completion occurs immediately upon first assignable value.
+    /// </summary>
     public Func<object, bool>? ShouldComplete { get; init; }
 
-    // Back-compat: if specified, only applies to the very first input before any steps.
-    // Prefer ShouldComplete for consistent behavior across all steps.
+    /// <summary>
+    /// Back-compat: only applied to the very first input (pre-step). Prefer <see cref="ShouldComplete"/>.
+    /// </summary>
     public Func<object, bool>? IsInitialComplete { get; init; }
 }

@@ -11,6 +11,9 @@ using Coven.Core.Builder;
 
 namespace Coven.Core;
 
+/// <summary>
+/// Orchestration board responsible for selecting and executing MagikBlocks.
+/// </summary>
 public class Board : IBoard
 {
     internal enum BoardMode
@@ -181,6 +184,7 @@ public class Board : IBoard
         return list;
     }
 
+    /// <inheritdoc />
     public bool WorkSupported<T>(List<string> tags)
     {
         // Until pull mode and richer admission logic are implemented, assume supported.
@@ -188,6 +192,7 @@ public class Board : IBoard
         return true;
     }
 
+    /// <inheritdoc />
     public Task GetWork<TIn>(GetWorkRequest<TIn> request, IOrchestratorSink sink, CancellationToken cancellationToken = default)
     {
         if (_currentMode != BoardMode.Pull)
@@ -209,6 +214,7 @@ public class Board : IBoard
         await GetWorkPullAsync(request.Input!, branchId, request.Tags, sink, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public async Task<TOutput> PostWork<T, TOutput>(T input, List<string>? tags = null, CancellationToken cancellationToken = default)
     {
         Type startType = typeof(T);

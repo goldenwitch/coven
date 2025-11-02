@@ -2,9 +2,18 @@
 
 namespace Coven.Agents.OpenAI;
 
+/// <summary>
+/// Reasoning configuration for models that support structured reasoning controls.
+/// </summary>
 public sealed class ReasoningConfig
 {
-    // When reasoning is provided, assume enabled and default required settings.
+    /// <summary>
+    /// Reasoning effort setting; defaults to <see cref="ReasoningEffort.Medium"/>.
+    /// </summary>
     public ReasoningEffort Effort { get; init; } = ReasoningEffort.Medium;
+
+    /// <summary>
+    /// Controls verbosity of returned reasoning summaries.
+    /// </summary>
     public ReasoningSummaryVerbosity SummaryVerbosity { get; init; } = ReasoningSummaryVerbosity.Auto;
 }

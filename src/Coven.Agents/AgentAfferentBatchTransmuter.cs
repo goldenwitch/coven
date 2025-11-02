@@ -4,8 +4,12 @@ using Coven.Transmutation;
 
 namespace Coven.Agents;
 
+/// <summary>
+/// Batches afferent agent chunks into a single <see cref="AgentResponse"/>.
+/// </summary>
 public sealed class AgentAfferentBatchTransmuter : IBatchTransmuter<AgentAfferentChunk, AgentResponse>
 {
+    /// <inheritdoc />
     public Task<BatchTransmuteResult<AgentAfferentChunk, AgentResponse>> Transmute(IEnumerable<AgentAfferentChunk> Input, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(Input);
