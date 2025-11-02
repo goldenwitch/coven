@@ -52,6 +52,7 @@ public interface IScrivener<TJournalEntryType> where TJournalEntryType : notnull
     /// </summary>
     /// <typeparam name="TDerived">The derived entry type to match.</typeparam>
     /// <param name="afterPosition">Only consider entries strictly after this position.</param>
+    /// <param name="match">Predicate to select the desired derived entry.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The first matching (journalPosition, entry) pair with the derived entry.</returns>
     Task<(long journalPosition, TDerived entry)> WaitForAsync<TDerived>(long afterPosition, Func<TDerived, bool> match, CancellationToken cancellationToken = default)

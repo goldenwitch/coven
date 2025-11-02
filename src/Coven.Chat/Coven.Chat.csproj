@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Chat primitives and windowing integration for Coven.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;chat;windowing;journal</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

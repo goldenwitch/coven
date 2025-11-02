@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Discord chat adapter for Coven using Discord.Net.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;chat;discord;adapter</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

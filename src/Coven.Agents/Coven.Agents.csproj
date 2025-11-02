@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Agent abstractions and helpers for Coven.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;abstractions</PackageTags>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Coven.Core.Streaming\Coven.Core.Streaming.csproj" />

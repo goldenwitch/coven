@@ -1,6 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>OpenAI agent integration for Coven.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;openai;llm;integration</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

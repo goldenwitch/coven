@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Streaming/windowing utilities and daemon for chunked message flows.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;streaming;windowing;batching</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,7 +5,7 @@ using System.Threading.Channels;
 namespace Coven.Core;
 
 /// <summary>
-/// In-memory implementation of IScrivener<T> journal with simple, single-process semantics;
+/// In-memory implementation of <see cref="IScrivener{TEntry}"/> with simple, single-process semantics;
 /// supports tailing, backward read, and predicate waits.
 /// </summary>
 /// <typeparam name="TEntry">The journal entry type.</typeparam>

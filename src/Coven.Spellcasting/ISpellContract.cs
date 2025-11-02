@@ -12,8 +12,5 @@ public interface ISpellContract
     /// Canonical spell definition (name and schemas). Prefer values supplied by the Spellbook.
     /// Default provides a friendly name; n-ary spell interfaces supply schema-aware defaults.
     /// </summary>
-    SpellDefinition Definition
-    {
-        get => new(SchemaGen.GetFriendlyName(GetType()));
-    }
+    SpellDefinition Definition => new(SchemaGen.GetFriendlyName(GetType()));
 }
