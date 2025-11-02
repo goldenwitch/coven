@@ -2,7 +2,7 @@ using Coven.Transmutation;
 
 namespace Coven.Chat.Console;
 
-public sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>
+internal sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>
 {
     private readonly ConsoleClientConfig _config = config ?? throw new ArgumentNullException(nameof(config));
 

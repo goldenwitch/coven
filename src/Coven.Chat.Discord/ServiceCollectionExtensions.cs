@@ -11,8 +11,18 @@ using Coven.Chat.Shattering;
 
 namespace Coven.Chat.Discord;
 
+/// <summary>
+/// Dependency Injection helpers for wiring the Discord chat adapter.
+/// Registers the Discord client, session factory, journals, transmuter, daemon, and default windowing policies.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Adds Discord chat integration using the provided client configuration.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="discordClientConfig">Configuration including bot token and channel id.</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection AddDiscordChat(this IServiceCollection services, DiscordClientConfig discordClientConfig)
     {
         ArgumentNullException.ThrowIfNull(services);

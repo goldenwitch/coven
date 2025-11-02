@@ -4,7 +4,7 @@ using Coven.Daemonology;
 
 namespace Coven.Toys.DiscordChat;
 
-public class EchoBlock(IEnumerable<ContractDaemon> daemons, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
+internal sealed class EchoBlock(IEnumerable<ContractDaemon> daemons, IScrivener<ChatEntry> scrivener) : IMagikBlock<Empty, Empty>
 {
     private readonly IEnumerable<ContractDaemon> _daemons = daemons ?? throw new ArgumentNullException(nameof(daemons));
     private readonly IScrivener<ChatEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));

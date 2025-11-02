@@ -2,8 +2,11 @@
 
 namespace Coven.Core.Tags;
 
-// Optional interface: blocks can advertise the tags they are capable of handling.
+/// <summary>
+/// Optional interface for blocks to advertise supported capability tags.
+/// </summary>
 public interface ITagCapabilities
 {
+    /// <summary>Capability tags supported by the block.</summary>
     IReadOnlyCollection<string> SupportedTags { get; }
 }

@@ -15,7 +15,7 @@ namespace DiscordAgent;
 ///   markers. Real apps could inject persona, routing hints, etc.
 /// - Return null to drop entries you don't want included in prompts.
 /// </summary>
-public sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
 {
     public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {

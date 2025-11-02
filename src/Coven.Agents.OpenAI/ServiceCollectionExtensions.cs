@@ -12,11 +12,28 @@ using Coven.Core.Streaming;
 
 namespace Coven.Agents.OpenAI;
 
+/// <summary>
+/// Dependency Injection helpers for wiring the OpenAI agent integration.
+/// Registers journals, gateway connection, transmuters, windowing daemons, and the official OpenAI client.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers OpenAI agents with required defaults.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="config">OpenAI client configuration (API key and model are required).</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection AddOpenAIAgents(this IServiceCollection services, OpenAIClientConfig config)
         => AddOpenAIAgents(services, config, null);
 
+    /// <summary>
+    /// Registers OpenAI agents with optional configuration of streaming/windowing behavior.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="config">OpenAI client configuration (API key and model are required).</param>
+    /// <param name="configure">Optional registration customization (e.g., enable streaming).</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection AddOpenAIAgents(this IServiceCollection services, OpenAIClientConfig config, Action<OpenAIRegistration>? configure)
     {
         ArgumentNullException.ThrowIfNull(services);

@@ -2,12 +2,18 @@
 
 namespace Coven.Core;
 
-// Orchestrator-facing completion callbacks for Pull mode.
+/// <summary>
+/// Orchestrator-facing completion callbacks for Pull mode.
+/// </summary>
 public interface IOrchestratorSink
 {
-    // Called when a single step completes; output type is preserved generically.
+    /// <summary>
+    /// Called when a single step completes; output type is preserved generically.
+    /// </summary>
     void Complete<TOut>(TOut output, string? branchId = null);
 
-    // Called when the Board reaches the final output type for the current Ritual.
+    /// <summary>
+    /// Called when the Board reaches the final output type for the current ritual.
+    /// </summary>
     void CompletedFinal<TFinal>(TFinal result);
 }

@@ -2,24 +2,28 @@
 
 namespace Coven.Chat.Console;
 
-// Base entry for Console journal.
+/// <summary>
+/// Base entry type for the Console chat journal.
+/// </summary>
 public abstract record ConsoleEntry(
     string Sender,
     string Text
 );
 
+/// <summary>Acknowledgement entry for internal synchronization.</summary>
 public sealed record ConsoleAck(
     string Sender,
     string Text
 ) : ConsoleEntry(Sender, Text);
 
+/// <summary>Incoming line read from stdin.</summary>
 public sealed record ConsoleAfferent(
     string Sender,
     string Text
 ) : ConsoleEntry(Sender, Text);
 
+/// <summary>Outgoing line written to stdout.</summary>
 public sealed record ConsoleEfferent(
     string Sender,
     string Text
 ) : ConsoleEntry(Sender, Text);
-

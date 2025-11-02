@@ -7,8 +7,18 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Chat;
 
+/// <summary>
+/// Adds generic chat windowing infrastructure (journal, daemon) with a DI-provided window policy.
+/// Useful for chunking and emitting grouped <see cref="ChatChunk"/> as <see cref="ChatEfferent"/> entries.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers chat windowing components and a windowing daemon for <see cref="ChatEntry"/>.
+    /// A custom <see cref="IWindowPolicy{TChunk}"/> can be supplied via DI; otherwise a final-only policy is used.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection AddChatWindowing(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);

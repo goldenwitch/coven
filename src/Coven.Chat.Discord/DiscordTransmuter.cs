@@ -2,6 +2,10 @@ using Coven.Transmutation;
 
 namespace Coven.Chat.Discord;
 
+/// <summary>
+/// Maps between Discord-specific entries and generic Chat entries.
+/// Afferent: Discord → Chat; Efferent: Chat → Discord.
+/// </summary>
 public class DiscordTransmuter : IBiDirectionalTransmuter<DiscordEntry, ChatEntry>
 {
     public Task<ChatEntry> TransmuteAfferent(DiscordEntry Input, CancellationToken cancellationToken)

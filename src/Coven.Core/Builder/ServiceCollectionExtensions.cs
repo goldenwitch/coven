@@ -8,8 +8,17 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Core.Builder;
 
+/// <summary>
+/// DI entry points for composing and finalizing a Coven runtime.
+/// </summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Composes a Coven using the provided builder action and ensures finalization.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="build">Callback to register MagikBlocks and options.</param>
+    /// <returns>The same service collection to enable fluent chaining.</returns>
     public static IServiceCollection BuildCoven(this IServiceCollection services, Action<CovenServiceBuilder> build)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -36,6 +45,9 @@ public static class ServiceCollectionExtensions
     }
 }
 
+/// <summary>
+/// Fluent builder used to register MagikBlocks and finalize the Coven runtime.
+/// </summary>
 public sealed class CovenServiceBuilder
 {
     private readonly IServiceCollection _services;
@@ -47,6 +59,15 @@ public sealed class CovenServiceBuilder
         _services = services;
     }
 
+    /// <summary>
+    /// Registers a MagikBlock type for the specified input/output pair.
+    /// </summary>
+    /// <typeparam name="TIn">Input type.</typeparam>
+    /// <typeparam name="TOut">Output type.</typeparam>
+    /// <typeparam name="TBlock">Concrete block implementing <see cref="IMagikBlock{T, TOutput}"/>.</typeparam>
+    /// <param name="lifetime">DI lifetime for the block type; transient by default.</param>
+    /// <param name="capabilities">Optional capability tags that influence selection.</param>
+    /// <returns>The same builder for chaining.</returns>
     public CovenServiceBuilder MagikBlock<TIn, TOut, TBlock>(ServiceLifetime lifetime = ServiceLifetime.Transient, IEnumerable<string>? capabilities = null)
         where TBlock : class, IMagikBlock<TIn, TOut>
     {
@@ -80,12 +101,25 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
+    /// <summary>
+    /// Overrides the default selection strategy used to choose blocks at runtime.
+    /// </summary>
+    /// <param name="strategy">The selection strategy.</param>
+    /// <returns>The same builder for chaining.</returns>
     public CovenServiceBuilder UseSelectionStrategy(ISelectionStrategy strategy)
     {
         _registry.SetSelectionStrategy(strategy);
         return this;
     }
 
+    /// <summary>
+    /// Registers an inline lambda-based MagikBlock for the specified input/output pair.
+    /// </summary>
+    /// <typeparam name="TIn">Input type.</typeparam>
+    /// <typeparam name="TOut">Output type.</typeparam>
+    /// <param name="func">Async function invoked to perform the work.</param>
+    /// <param name="capabilities">Optional capability tags that influence selection.</param>
+    /// <returns>The same builder for chaining.</returns>
     public CovenServiceBuilder LambdaBlock<TIn, TOut>(Func<TIn, CancellationToken, Task<TOut>> func, IEnumerable<string>? capabilities = null)
     {
         ArgumentNullException.ThrowIfNull(func);
@@ -95,6 +129,12 @@ public sealed class CovenServiceBuilder
         return this;
     }
 
+    /// <summary>
+    /// Finalizes the builder and registers the runtime services.
+    /// </summary>
+    /// <param name="pull">When true, creates a pull-oriented board.</param>
+    /// <param name="pullOptions">Optional configuration for pull mode.</param>
+    /// <returns>The service collection used by the builder.</returns>
     public IServiceCollection Done(bool pull = false, PullOptions? pullOptions = null)
     {
         if (finalized)
