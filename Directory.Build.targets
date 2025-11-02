@@ -1,0 +1,8 @@
+<Project>
+  <!-- Apply after project evaluation so $(IsTestProject) is available -->
+  <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+    <NoWarn>$(NoWarn);1591;CS1591</NoWarn>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);1591;CS1591</WarningsNotAsErrors>
+  </PropertyGroup>
+</Project>
+

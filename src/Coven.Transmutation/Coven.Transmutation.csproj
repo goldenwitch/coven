@@ -2,6 +2,12 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Transmutation interfaces for bridging domain types and protocols.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;transmutation;mapping;conversion</PackageTags>
   </PropertyGroup>
 
 </Project>

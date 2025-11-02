@@ -5,13 +5,13 @@ namespace Coven.Core.Streaming;
 /// Snapshot of the current streaming window passed to window policies.
 /// </summary>
 /// <typeparam name="TChunk">Chunk type under consideration.</typeparam>
+/// <param name="PendingChunks">Recent chunks in the window (respecting MinChunkLookback semantics).</param>
+/// <param name="ChunkCount">Total number of chunks observed in the current buffer.</param>
+/// <param name="StartedAt">Timestamp when windowing started.</param>
+/// <param name="LastEmitAt">Timestamp of the last emit.</param>
 public readonly record struct StreamWindow<TChunk>(
-/// <summary>Recent chunks in the window (respecting MinChunkLookback semantics).</summary>
-IEnumerable<TChunk> PendingChunks,
-/// <summary>Total number of chunks observed in the current buffer.</summary>
-int ChunkCount,
-/// <summary>Timestamp when windowing started.</summary>
-DateTimeOffset StartedAt,
-/// <summary>Timestamp of the last emit.</summary>
-DateTimeOffset LastEmitAt
+    IEnumerable<TChunk> PendingChunks,
+    int ChunkCount,
+    DateTimeOffset StartedAt,
+    DateTimeOffset LastEmitAt
 );

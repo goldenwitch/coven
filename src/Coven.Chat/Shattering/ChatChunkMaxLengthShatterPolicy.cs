@@ -4,19 +4,31 @@ using Coven.Core.Streaming;
 namespace Coven.Chat.Shattering;
 
 /// <summary>
-/// Splits long chat text into <= max-length ChatChunk segments.
-/// Applies to ChatOutgoingDraft and ChatChunk; other entries are ignored.
+/// Splits long chat text into segments with length less than or equal to the configured maximum.
+/// Applies to <see cref="ChatEfferentDraft"/> and <see cref="ChatChunk"/>; other entries are ignored.
 /// </summary>
 public sealed class ChatChunkMaxLengthShatterPolicy : IShatterPolicy<ChatEntry>
 {
     private readonly int _max;
 
+    /// <summary>
+    /// Creates a new shatter policy.
+    /// </summary>
+    /// <param name="max">Maximum characters per emitted chunk. Must be greater than zero.</param>
     public ChatChunkMaxLengthShatterPolicy(int max)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(max, 0);
         _max = max;
     }
 
+    /// <summary>
+    /// Splits supported entries into chunks not exceeding the configured maximum length.
+    /// </summary>
+    /// <param name="entry">The input entry to consider.</param>
+    /// <returns>
+    /// Zero or more <see cref="ChatEntry"/> instances representing the shattered output.
+    /// For unsupported entry types, yields nothing.
+    /// </returns>
     public IEnumerable<ChatEntry> Shatter(ChatEntry entry)
     {
         switch (entry)
@@ -38,6 +50,9 @@ public sealed class ChatChunkMaxLengthShatterPolicy : IShatterPolicy<ChatEntry>
         }
     }
 
+    /// <summary>
+    /// Helper that splits raw text into fixed-size parts.
+    /// </summary>
     private IEnumerable<string> Split(string? text)
     {
         string s = text ?? string.Empty;
@@ -57,4 +72,3 @@ public sealed class ChatChunkMaxLengthShatterPolicy : IShatterPolicy<ChatEntry>
         }
     }
 }
-

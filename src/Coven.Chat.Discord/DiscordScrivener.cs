@@ -11,10 +11,11 @@ internal sealed class DiscordScrivener : IScrivener<DiscordEntry>
     private readonly ILogger _logger;
 
     /// <summary>
-    /// 
+    /// Wraps a keyed inner scrivener and forwards outbound efferent messages to Discord.
     /// </summary>
-    /// <param name="scrivener"></param>
-    /// <param name="discordClient"></param>
+    /// <param name="scrivener">The keyed inner <see cref="IScrivener{TJournalEntryType}"/> used for storage.</param>
+    /// <param name="discordClient">The gateway connection for sending messages to Discord.</param>
+    /// <param name="logger">Logger for diagnostic breadcrumbs.</param>
     /// <remarks> Because we are what we utilize, ensure that the inner scrivener is keyed in DI.</remarks>
     public DiscordScrivener([FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener, DiscordGatewayConnection discordClient, ILogger<DiscordScrivener> logger)
     {

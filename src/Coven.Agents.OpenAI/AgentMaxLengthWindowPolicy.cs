@@ -10,14 +10,20 @@ public sealed class AgentMaxLengthWindowPolicy : IWindowPolicy<AgentAfferentChun
 {
     private readonly int _max;
 
+    /// <summary>
+    /// Creates a policy that emits when the total length of recent chunks reaches the maximum.
+    /// </summary>
+    /// <param name="max">Maximum total characters across the current window; must be greater than zero.</param>
     public AgentMaxLengthWindowPolicy(int max)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(max, 0);
         _max = max;
     }
 
+    /// <inheritdoc />
     public int MinChunkLookback => 1;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<AgentAfferentChunk> window)
     {
         int total = 0;

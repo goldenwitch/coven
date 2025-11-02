@@ -1,17 +1,17 @@
 <Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Ensure all packable projects include the repository LICENSE -->
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <!-- Emit XML documentation for public APIs in packaged libraries -->
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <Nullable>enable</Nullable>
-    <ImplicitUsings>enable</ImplicitUsings>
-  </PropertyGroup>
-  
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Include the root LICENSE in the package at the top level -->
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />

@@ -5,12 +5,15 @@ namespace Coven.Daemonology;
 /// <summary>
 /// Represents a Daemon that is capable of meeting a "Status contract" such that when status changes, promise are completed.
 /// </summary>
-/// <param name="scrivener">The IScrivener<DaemonEvent> that the contract Daemon uses to fulfill promises.</param>
+/// <param name="scrivener">The <see cref="IScrivener{DaemonEvent}"/> used by the daemon to fulfill status promises.</param>
 public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemon, IDisposable
 {
     private readonly IScrivener<DaemonEvent> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
 
+    /// <summary>
+    /// Current operational status of the daemon.
+    /// </summary>
     public Status Status { get; protected set; }
 
     /// <summary>
@@ -123,6 +126,9 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
         }
     }
 
+    /// <summary>
+    /// Releases resources held by the daemon.
+    /// </summary>
     public void Dispose()
     {
         _semaphoreSlim.Dispose();

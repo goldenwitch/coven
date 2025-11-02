@@ -23,7 +23,7 @@ internal static class BlockInvokerFactory
 
         Type taskOutType = typeof(Task<>).MakeGenericType(d.OutputType);
         ParameterExpression tParam = Expression.Parameter(taskOutType, "t");
-        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
+        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<>.Result));
         UnaryExpression toObj = Expression.Convert(resultProp, typeof(object));
         LambdaExpression mapLambda = Expression.Lambda(toObj, tParam);
 
@@ -64,7 +64,7 @@ internal static class BlockInvokerFactory
 
         // Build continuation: t => board.FinalizePullStep<TOut>(sink, t.Result, branchId, blockTypeName)
         ParameterExpression tParam = Expression.Parameter(taskOutType, "t");
-        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<object>.Result));
+        MemberExpression resultProp = Expression.Property(tParam, nameof(Task<>.Result));
         MethodInfo? boardFinalize = typeof(Board).GetMethod("FinalizePullStep", BindingFlags.Instance | BindingFlags.NonPublic) ?? throw new InvalidOperationException("Board.FinalizePullStep not found.");
 
         MethodInfo finalizeClosed = boardFinalize.MakeGenericMethod(d.OutputType);

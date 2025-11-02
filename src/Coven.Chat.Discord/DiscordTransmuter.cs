@@ -8,6 +8,12 @@ namespace Coven.Chat.Discord;
 /// </summary>
 public class DiscordTransmuter : IBiDirectionalTransmuter<DiscordEntry, ChatEntry>
 {
+    /// <summary>
+    /// Transmutes Discord-afferent entries into chat entries.
+    /// </summary>
+    /// <param name="Input">The source Discord entry.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The mapped <see cref="ChatEntry"/>.</returns>
     public Task<ChatEntry> TransmuteAfferent(DiscordEntry Input, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -20,6 +26,12 @@ public class DiscordTransmuter : IBiDirectionalTransmuter<DiscordEntry, ChatEntr
         };
     }
 
+    /// <summary>
+    /// Transmutes chat-efferent entries into Discord entries.
+    /// </summary>
+    /// <param name="Output">The source chat entry.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The mapped <see cref="DiscordEntry"/>.</returns>
     public Task<DiscordEntry> TransmuteEfferent(ChatEntry Output, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();

@@ -10,8 +10,10 @@ namespace Coven.Chat.Windowing;
 /// </summary>
 public sealed class ChatParagraphWindowPolicy : IWindowPolicy<ChatChunk>
 {
+    /// <inheritdoc />
     public int MinChunkLookback => int.MaxValue;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<ChatChunk> window)
     {
         StringBuilder sb = new();
@@ -52,4 +54,3 @@ public sealed class ChatParagraphWindowPolicy : IWindowPolicy<ChatChunk>
         return end == s.Length ? s : s[..end];
     }
 }
-
