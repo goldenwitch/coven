@@ -6,6 +6,7 @@
     <RootNamespace>DiscordAgent</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
  
   <ItemGroup>

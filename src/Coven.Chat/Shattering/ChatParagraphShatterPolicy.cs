@@ -14,6 +14,13 @@ namespace Coven.Chat.Shattering;
 /// </summary>
 public sealed class ChatParagraphShatterPolicy : IShatterPolicy<ChatEntry>
 {
+    /// <summary>
+    /// Splits supported draft entries into paragraph-sized <see cref="ChatChunk"/> segments.
+    /// </summary>
+    /// <param name="entry">The entry to consider for shattering.</param>
+    /// <returns>
+    /// Zero or more <see cref="ChatEntry"/> instances. For unsupported entry types, yields nothing.
+    /// </returns>
     public IEnumerable<ChatEntry> Shatter(ChatEntry entry)
     {
         switch (entry)

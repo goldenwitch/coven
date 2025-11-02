@@ -11,8 +11,10 @@ namespace Coven.Agents.OpenAI;
 public sealed class AgentThoughtSentenceWindowPolicy : IWindowPolicy<AgentAfferentThoughtChunk>
 {
     // 4 chunks should be generous for windowing sentence termination
+    /// <inheritdoc />
     public int MinChunkLookback => 4;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<AgentAfferentThoughtChunk> window)
     {
         StringBuilder sb = new();
@@ -44,4 +46,3 @@ public sealed class AgentThoughtSentenceWindowPolicy : IWindowPolicy<AgentAffere
         return c is '.' or '!' or '?';
     }
 }
-

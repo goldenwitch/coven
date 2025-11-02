@@ -10,14 +10,20 @@ public sealed class AgentThoughtMaxLengthWindowPolicy : IWindowPolicy<AgentAffer
 {
     private readonly int _max;
 
+    /// <summary>
+    /// Creates a policy that emits when the total length of recent thought chunks reaches the maximum.
+    /// </summary>
+    /// <param name="max">Maximum total characters across the current thought window; must be greater than zero.</param>
     public AgentThoughtMaxLengthWindowPolicy(int max)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(max, 0);
         _max = max;
     }
 
+    /// <inheritdoc />
     public int MinChunkLookback => 1;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<AgentAfferentThoughtChunk> window)
     {
         int total = 0;
@@ -35,4 +41,3 @@ public sealed class AgentThoughtMaxLengthWindowPolicy : IWindowPolicy<AgentAffer
         return false;
     }
 }
-

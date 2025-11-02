@@ -11,8 +11,10 @@ namespace Coven.Chat.Windowing;
 public sealed class ChatSentenceWindowPolicy : IWindowPolicy<ChatChunk>
 {
     // 4 chunks should be generous for windowing sentence termination
+    /// <inheritdoc />
     public int MinChunkLookback => 4;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<ChatChunk> window)
     {
         StringBuilder sb = new();
@@ -46,4 +48,3 @@ public sealed class ChatSentenceWindowPolicy : IWindowPolicy<ChatChunk>
         return c is '.' or '!' or '?';
     }
 }
-

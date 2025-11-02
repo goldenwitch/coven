@@ -10,8 +10,10 @@ namespace Coven.Agents.OpenAI;
 /// </summary>
 public sealed class AgentThoughtParagraphWindowPolicy : IWindowPolicy<AgentAfferentThoughtChunk>
 {
+    /// <inheritdoc />
     public int MinChunkLookback => 2;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<AgentAfferentThoughtChunk> window)
     {
         StringBuilder stringBuilder = new();
@@ -32,4 +34,3 @@ public sealed class AgentThoughtParagraphWindowPolicy : IWindowPolicy<AgentAffer
         return concatenatedWindow.EndsWith("\r\n\r\n", StringComparison.Ordinal) || concatenatedWindow.EndsWith("\n\n", StringComparison.Ordinal);
     }
 }
-

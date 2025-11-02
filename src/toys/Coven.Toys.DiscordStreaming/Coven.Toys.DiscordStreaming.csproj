@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,4 +13,3 @@
     <ProjectReference Include="..\..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
   </ItemGroup>
 </Project>
-

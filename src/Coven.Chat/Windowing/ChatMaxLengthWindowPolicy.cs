@@ -11,14 +11,20 @@ public sealed class ChatMaxLengthWindowPolicy : IWindowPolicy<ChatChunk>
 {
     private readonly int _max;
 
+    /// <summary>
+    /// Creates a policy that emits when the total length of recent chat chunks reaches the maximum.
+    /// </summary>
+    /// <param name="max">Maximum total characters across the current window; must be greater than zero.</param>
     public ChatMaxLengthWindowPolicy(int max)
     {
         ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(max, 0);
         _max = max;
     }
 
+    /// <inheritdoc />
     public int MinChunkLookback => int.MaxValue;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<ChatChunk> window)
     {
         int total = 0;
@@ -36,4 +42,3 @@ public sealed class ChatMaxLengthWindowPolicy : IWindowPolicy<ChatChunk>
         return false;
     }
 }
-

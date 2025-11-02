@@ -24,6 +24,14 @@ public sealed class AgentThoughtSummaryShatterPolicy : IShatterPolicy<AgentEntry
         public static readonly string[] _paragraphBoundaries = ["\r\n\r\n", "\n\n", "\r\n"];
     }
 
+    /// <summary>
+    /// Splits an <see cref="AgentThought"/> into up to two entries at the first detected summary marker boundary.
+    /// </summary>
+    /// <param name="entry">The source agent entry.</param>
+    /// <returns>
+    /// Zero or more <see cref="AgentEntry"/> instances: at most two <see cref="AgentThought"/> parts
+    /// when a boundary is present; otherwise no output.
+    /// </returns>
     public IEnumerable<AgentEntry> Shatter(AgentEntry entry)
     {
         if (entry is not AgentThought thought || string.IsNullOrEmpty(thought.Text))

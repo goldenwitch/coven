@@ -11,8 +11,10 @@ namespace Coven.Agents.OpenAI;
 /// </summary>
 public sealed class AgentThoughtSummaryMarkerWindowPolicy : IWindowPolicy<AgentAfferentThoughtChunk>
 {
+    /// <inheritdoc />
     public int MinChunkLookback => 10;
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<AgentAfferentThoughtChunk> window)
     {
         StringBuilder stringBuilder = new();

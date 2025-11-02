@@ -9,6 +9,12 @@ public sealed class CompositeWindowPolicy<TChunk> : IWindowPolicy<TChunk>
 {
     private readonly IReadOnlyList<IWindowPolicy<TChunk>> _policies;
 
+    /// <summary>
+    /// Creates a composite policy that emits when any child policy emits.
+    /// Uses the maximum <see cref="MinChunkLookback"/> across children.
+    /// </summary>
+    /// <param name="policies">One or more window policies to compose.</param>
+    /// <exception cref="ArgumentException">Thrown when no policies are provided.</exception>
     public CompositeWindowPolicy(params IWindowPolicy<TChunk>[] policies)
     {
         if (policies is null || policies.Length == 0)
@@ -19,9 +25,10 @@ public sealed class CompositeWindowPolicy<TChunk> : IWindowPolicy<TChunk>
         MinChunkLookback = _policies.Max(s => s.MinChunkLookback);
     }
 
+    /// <inheritdoc />
     public int MinChunkLookback { get; }
 
+    /// <inheritdoc />
     public bool ShouldEmit(StreamWindow<TChunk> window)
         => _policies.Any(s => s.ShouldEmit(window));
 }
-

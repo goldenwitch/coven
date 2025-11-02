@@ -8,8 +8,10 @@ namespace Coven.Agents.OpenAI;
 /// </summary>
 public enum ReasoningEffort
 {
+    /// <summary>Minimal additional compute for reasoning.</summary>
     Low,
+    /// <summary>Balanced additional compute for reasoning.</summary>
     Medium,
+    /// <summary>Maximum additional compute for reasoning.</summary>
     High
 }
-

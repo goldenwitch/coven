@@ -14,6 +14,12 @@ public sealed class ChainedShatterPolicy<TEntry>(params IShatterPolicy<TEntry>[]
 {
     private readonly IShatterPolicy<TEntry>[] _policies = policies ?? [];
 
+    /// <summary>
+    /// Applies each shatter policy in order to the provided entry, forwarding
+    /// unchanged entries to subsequent policies and yielding only transformed outputs.
+    /// </summary>
+    /// <param name="entry">The source entry to shatter.</param>
+    /// <returns>Zero or more transformed entries produced by the chain.</returns>
     public IEnumerable<TEntry> Shatter(TEntry entry)
     {
         if (_policies.Length == 0)
@@ -53,4 +59,3 @@ public sealed class ChainedShatterPolicy<TEntry>(params IShatterPolicy<TEntry>[]
         }
     }
 }
-
