@@ -11,17 +11,35 @@ using OpenAI.Responses;
 using Coven.Core.Streaming;
 using Coven.Agents;
 
-// Configuration
+// Configuration (env-first with fallback to defaults below)
+// Defaults: edit these to hardcode values when env vars are not present
+string defaultDiscordToken = ""; // set your Discord bot token
+ulong defaultDiscordChannelId = 0; // set your channel id
+string defaultOpenAiApiKey = ""; // set your OpenAI API key
+string defaultOpenAiModel = "gpt-5-2025-08-07"; // choose the model
+
+// Environment overrides (optional)
+string? envDiscordToken = Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
+string? envDiscordChannelId = Environment.GetEnvironmentVariable("DISCORD_CHANNEL_ID");
+string? envOpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+string? envOpenAiModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+
+ulong channelId = defaultDiscordChannelId;
+if (!string.IsNullOrWhiteSpace(envDiscordChannelId) && ulong.TryParse(envDiscordChannelId, out ulong parsed))
+{
+    channelId = parsed;
+}
+
 DiscordClientConfig discordConfig = new()
 {
-    BotToken = "", // set your Discord bot token
-    ChannelId = 0   // set your channel id
+    BotToken = string.IsNullOrWhiteSpace(envDiscordToken) ? defaultDiscordToken : envDiscordToken,
+    ChannelId = channelId
 };
 
 OpenAIClientConfig openAiConfig = new()
 {
-    ApiKey = "",            // set your OpenAI API key
-    Model = "gpt-5-2025-08-07" // choose the model
+    ApiKey = string.IsNullOrWhiteSpace(envOpenAiApiKey) ? defaultOpenAiApiKey : envOpenAiApiKey,
+    Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel
 };
 
 // Register DI

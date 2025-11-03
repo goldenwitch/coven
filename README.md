@@ -1,92 +1,250 @@
 # Coven
 
-A tiny, composable **.NET 10** engine for orchestrating multiple agents to achieve big things.
+A minimal, composable **.NET 10** engine for orchestrating multiple agents to achieve big things.
 
 > ___"With great power comes great responsibility"___ - _Uncle Ben_
 > <br> If you use this library, don't be evil.
 
-## Highlights
+## Covenants
 
-* **Typed MagikBlocks**: implement `IMagikBlock<TIn,TOut>.DoMagik(...)` and compose work as pure(ish) functions.
-* **Tag‑based routing**: a per‑ritual tag scope steers selection; blocks may also advertise **capabilities**.
-* **DI‑first**: one builder on `IServiceCollection` (`BuildCoven`) with `MagikBlock<…>` and `LambdaBlock<…>` helpers; finish with `.Done(pull?: bool)`.
-* **Journal Primitives**: reliable, distributable, and seamless to developers. Scriveners MUST support a long position.
-* **Spellcasting (optional)**: minimal `ISpell<…>` interfaces + JSON‑schema generation for tool contracts.
+* **Journal or it didn't happen** Every thought and output lands in a Scrivener for replay, audit, and time-travel.
+* **Compile time validation is better than vibes** Designed from the ground up to minimize side-effects.
+* **Daemons behave** Lifecycle, backpressure, graceful shutdown. Async and long-running by design.
+* **Hosts over ceremony** Use generic host and DI patterns to painlessly replace or extend functionality.
+* **Window/Shatter** Semantic windowing over streamed chats and agents.
 
 ## Quick Start
+Run Sample 01 (Discord Agent) to see Coven orchestrate a Discord chat channel with an OpenAI‑backed agent.
 
-### 1) Hello, MagikBlocks (DI)
+- Prerequisites:
+  - .NET 10 SDK installed.
+  - Discord Bot: token provisioned, bot invited to your server, Message Content Intent enabled in the Discord Developer Portal, and permission to read/write in a target channel.
+  - Channel ID: enable Discord Developer Mode, right‑click the target channel → Copy ID.
+  - OpenAI API key and a valid model (for example, `gpt-5-2025-08-07`).
+
+### 1) Configure secrets (env vars or defaults)
+
+- Easiest: set environment variables and keep `Program.cs` unchanged:
+  - `DISCORD_BOT_TOKEN`
+  - `DISCORD_CHANNEL_ID` (unsigned integer)
+  - `OPENAI_API_KEY`
+  - `OPENAI_MODEL` (defaults to `gpt-5-2025-08-07` if not set)
+- Or edit defaults at the top of `src/samples/01.DiscordAgent/Program.cs` (they’re used only if env vars are absent).
+
+Example from Sample 01 (`Program.cs`):
 
 ```csharp
-using Microsoft.Extensions.DependencyInjection;
-using Coven.Core;
-using Coven.Core.Builder;
+// Defaults used if env vars are not present
+string defaultDiscordToken = ""; // set your Discord bot token
+ulong defaultDiscordChannelId = 0; // set your channel id
+string defaultOpenAiApiKey = ""; // set your OpenAI API key
+string defaultOpenAiModel = "gpt-5-2025-08-07"; // choose the model
 
-sealed class BuildCodes : IMagikBlock<Empty, int[]>
+// Environment overrides (optional)
+string? envDiscordToken = Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
+string? envDiscordChannelId = Environment.GetEnvironmentVariable("DISCORD_CHANNEL_ID");
+string? envOpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+string? envOpenAiModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
+
+ulong channelId = defaultDiscordChannelId;
+if (!string.IsNullOrWhiteSpace(envDiscordChannelId) && ulong.TryParse(envDiscordChannelId, out ulong parsed))
 {
-    public Task<int[]> DoMagik(Empty _, CancellationToken ct = default)
+    channelId = parsed;
+}
+
+DiscordClientConfig discordConfig = new()
+{
+    BotToken = string.IsNullOrWhiteSpace(envDiscordToken) ? defaultDiscordToken : envDiscordToken,
+    ChannelId = channelId
+};
+
+OpenAIClientConfig openAiConfig = new()
+{
+    ApiKey = string.IsNullOrWhiteSpace(envOpenAiApiKey) ? defaultOpenAiApiKey : envOpenAiApiKey,
+    Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel
+};
+```
+
+### 2) Wire up Discord + OpenAI and run
+
+- From repo root: `dotnet run --project src/samples/01.DiscordAgent -c Release`
+- The app starts Discord and OpenAI daemons, then bridges chat↔agent in the configured channel. Type in the channel; the bot replies there.
+
+Minimal wiring from Sample 01 (`Program.cs`):
+
+```csharp
+HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddLogging(b => b.AddConsole());
+builder.Services.AddDiscordChat(discordConfig);
+builder.Services.AddOpenAIAgents(openAiConfig, registration =>
+{
+    registration.EnableStreaming();
+});
+
+// Optional: override OpenAI mapping with templating
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
+
+// Route chat ↔ agent via a simple MagikBlock
+builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
+
+IHost host = builder.Build();
+ICoven coven = host.Services.GetRequiredService<ICoven>();
+await coven.Ritual<Empty, Empty>(new Empty());
+```
+
+Router logic (Sample 01 `RouterBlock.cs`):
+
+```csharp
+await foreach ((long _, ChatEntry? entry) in _chat.TailAsync(0, cancellationToken))
+{
+    if (entry is ChatAfferent inc)
     {
-        int[] codes = new int[] {
-            73, 102, 32, 111, 110, 108, 121, 32, 73, 32, 99, 111, 117, 108, 100, 32, 98, 101, 32, 115, 111, 32, 103, 114, 111, 115, 115, 108, 121, 32, 105, 110, 99, 97, 110, 100, 101, 115, 99, 101, 110, 116, 46
-        };
-        return Task.FromResult(codes);
+        await _agents.WriteAsync(new AgentPrompt(inc.Sender, inc.Text), cancellationToken);
     }
 }
 
-sealed class CodesToChars : IMagikBlock<int[], char[]>
+await foreach ((long _, AgentEntry? entry) in _agents.TailAsync(0, cancellationToken))
 {
-    public Task<char[]> DoMagik(int[] codes, CancellationToken ct = default)
-        => Task.FromResult(codes.Select(c => (char)c).ToArray());
+    switch (entry)
+    {
+        case AgentResponse r:
+            await _chat.WriteAsync(new ChatEfferentDraft("BOT", r.Text), cancellationToken);
+            break;
+        case AgentThought t:
+            // optionally surface thoughts to chat
+            break;
+    }
 }
-
-sealed class JoinChars : IMagikBlock<char[], string>
-{
-    public Task<string> DoMagik(char[] chars, CancellationToken ct = default) => Task.FromResult(new string(chars));
-}
-
-var services = new ServiceCollection();
-services.BuildCoven(b =>
-{
-    b.MagikBlock<Empty, int[], BuildCodes>();
-    b.MagikBlock<int[], char[], CodesToChars>();
-    b.MagikBlock<char[], string, JoinChars>();
-    b.Done();
-});
-
-using var sp = services.BuildServiceProvider();
-
-// Avoid GetRequiredService in production code (unless you know exactly what you are doing).
-// Here we use it simply to keep the sample small and clear, but in production you should use a hosted service to run rituals.
-var coven = sp.GetRequiredService<ICoven>();
-var result = await coven.Ritual<string>();
-
-Console.WriteLine(result); //If only I could be so grossly incandescent.
 ```
 
----
+### Troubleshooting
 
-## Repository Layout
+- Discord: If no messages appear, verify the bot has access to the channel, Message Content Intent is enabled, and `ChannelId` is correct.
+- OpenAI: If errors occur on first response, confirm the API key and model name are valid for your account.
+- Networking: Corporate proxies/firewalls can block Discord/OpenAI APIs; ensure outbound HTTPS is allowed.
 
-* **src/Coven.Core/** — runtime
-* **src/Coven.Core.Tests/** — tests for core
-* **src/Coven.Spellcasting/** — minimal spellcasting layer
-* **src/Coven.Chat/** — chat primitives
-* **architecture/** — flat architecture docs (see below)
-* **build/** — CI/release scripts
-* **INDEX.md**, **README.md**, **CONTRIBUTING.md**, **AGENTS.md**, license files in repo root
+### Extensibility
 
-## Documentation
+Window policies: tune output chunking/summarization. Example (from Sample 01 `Program.cs`):
 
-Start here:
+```csharp
+// Paragraph-first + tighter max-length for agent outputs
+builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
+    new CompositeWindowPolicy<AgentAfferentChunk>(
+        new AgentParagraphWindowPolicy(),
+        new AgentMaxLengthWindowPolicy(1024)));
 
-* **Architecture Guide** → [`/architecture/README.md`](/architecture/README.md)
-* **Core** → [`/architecture/Coven.Core.md`](/architecture/Coven.Core.md)
-* **Spellcasting** → [`/architecture/Coven.Spellcasting.md`](/architecture/Coven.Spellcasting.md)
-* **Chat** → [`/architecture/Coven.Chat.md`](/architecture/Coven.Chat.md)
-* **Daemonology (hosts)** → [`/architecture/Coven.Daemonology.md`](/architecture/Coven.Daemonology.md)
-* **Integrations (docs only)** → [`/architecture/Coven.Codex.md`](/architecture/Coven.Codex.md), [`/architecture/Coven.OpenAI.md`](/architecture/Coven.OpenAI.md), [`/architecture/Coven.Spellcasting.MCP.md`](/architecture/Coven.Spellcasting.MCP.md)
+// Optionally tune thought chunking independently
+// builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
+//     new CompositeWindowPolicy<AgentAfferentThoughtChunk>(
+//         new AgentThoughtSummaryMarkerWindowPolicy(),
+//         new AgentThoughtMaxLengthWindowPolicy(2048)));
+```
 
----
+Custom OpenAI templating: override prompt/response item mapping to inject context (from `DiscordOpenAITemplatingTransmuter.cs`):
+
+```csharp
+internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+{
+    public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
+    {
+        return Input switch
+        {
+            OpenAIEfferent u => Task.FromResult<ResponseItem?>(
+                ResponseItem.CreateUserMessageItem($"[discord username:{u.Sender}] {u.Text}")),
+            OpenAIAfferent a => Task.FromResult<ResponseItem?>(
+                ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
+            _ => Task.FromResult<ResponseItem?>(null)
+        };
+    }
+}
+```
+
+Surface agent thoughts: optionally echo internal thinking to the chat (from `RouterBlock.cs`):
+
+```csharp
+case AgentThought t:
+    // Uncomment to stream thoughts to the channel
+    // await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken);
+    break;
+```
+### I don't want to make a discord bot.
+Don't use Discord? No problem. One line change to swap to using Console as your chat of choice.
+```csharp
+// Replace
+builder.Services.AddDiscordChat(discordConfig);
+// with
+builder.Services.AddConsoleChat(new ConsoleClientConfig
+{
+    InputSender = "console",
+    OutputSender = "BOT"
+});
+
+// Keep OpenAI registration as-is
+builder.Services.AddOpenAIAgents(openAiConfig);
+```
+
+### I want to configure my model to do different things
+You can use any settings available on the OpenAIClientConfig. For example, you could make the model chew longer by setting Effort = ReasoningEffort.High
+
+```csharp
+OpenAIClientConfig openAiConfig = new()
+{
+    ApiKey = "<your-openai-api-key>",
+    Model = "gpt-5-2025-08-07",
+    Reasoning = new ReasoningConfig { Effort = ReasoningEffort.High }
+};
+
+// Then register
+builder.Services.AddOpenAIAgents(openAiConfig);
+```
+
+## Overview
+Ever felt like it was too hard to get products that you pay for to talk to each other? Perhaps felt like they should just work together... magically? :P
+
+You are in the right place.
+
+### Structure
+Every Coven is organized into a "spine" of MagikBlocks, executing one after the other.
+Each MagikBlock execution represents a unique scope with a fixed input and output type.
+> _Cheatcodes_: Use Empty as an input if you want to route to a MagikBlock with no inputs.
+
+By starting Daemons and reading journals, your block executes the logic it needs, abstracted from the downstream implementation. The layers that define these abstractions are the "branches" that stretch off of your MagikBlock's execution. Coven offers two convenient abstractions:
+- **Coven.Chat**: Multi-user conversations.
+- **Coven.Agents**: Working with an AI powered Agent to complete your goals.
+
+Built on the other side of the "branch" abstractions are Coven's handcrafted integrations with external systems. These integrations are like the "leaves" of our twisted tree, they translate Coven standard abstractions to an external system.
+- **Coven.Chat.Discord**: Use discord to chat with your Coven.
+- **Coven.Chat.Console**: Use a terminal to chat with your Coven.
+- **Coven.Agents.OpenAI**: Send requests to an agent from your Coven.
+
+### Why use Coven?
+Anyone can write new branches or leaves and they will seamlessly integrate with your software.
+
+Alternatively, because we are the easiest way to get agents to collaborate with users and each other.
+
+### Vocabulary Cheatsheet
+> Core
+- MagikBlock: a unit of work with `DoMagik` that reads/writes journals.
+- Daemon (`ContractDaemon`): long‑running background service started by a block.
+- Scrivener (`IScrivener<T>`): append-only journal for typed entries; supports tailing.
+- Transmuter: pure mapping between types; `IBiDirectionalTransmuter` supports both directions.
+- Ritual: an invocation that executes a pipeline of MagikBlocks.
+- Entry: a record written to a journal (e.g., `ChatEntry`, `AgentEntry`).
+
+> Streaming and Window/Shatter
+- Window Policy: rules that group stream chunks into windows for emission.
+- Shatter Policy: rules that split entries into smaller chunks for windowing.
+- Chunk: stream fragment (e.g., `AgentAfferentChunk`, `AgentAfferentThoughtChunk`).
+- Batch Transmuter: combines a window of chunks into an output (response or thought).
+
+> Structure
+- Leaf: Connects your currently executing block to an external system. Lives at the end of a branch.
+- Branch: Services that connect your currently executing block to an external system via an abstraction. For example, Coven.Agents and Coven.Chat
+- Spine: Your executing ritual. Each vertebrae is a MagikBlock in your ritual.
+- Afferent/Efferent: The direction that a message is traveling. 
+    - Efferent: from spine to leaf.
+    - Afferent: from leaf to spine.
 
 ## Licensing
 
