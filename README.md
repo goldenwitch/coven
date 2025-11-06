@@ -16,6 +16,8 @@ A minimal, composable **.NET 10** engine for orchestrating multiple agents to ac
 ## Quick Start
 Run Sample 01 (Discord Agent) to see Coven orchestrate a Discord chat channel with an OpenAI‑backed agent.
 
+See detailed steps: [Sample 01 — Discord Agent README](src/samples/01.DiscordAgent/README.md).
+
 - Prerequisites:
   - .NET 10 SDK installed.
   - Discord Bot: token provisioned, bot invited to your server, Message Content Intent enabled in the Discord Developer Portal, and permission to read/write in a target channel.
