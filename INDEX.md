@@ -14,22 +14,10 @@ Project overview: see [README](/README.md).
 
 # Architecture Guide
 
-Explore by topic. All paths below are under `/architecture`.
+Explore cross‑cutting topics under `/architecture` and package docs in `src/<Package>/README.md`.
 
 - [Architecture README](/architecture/README.md)
-
-## Core Components
-- [Coven.Core](/architecture/Coven.Core.md)
-- [Coven.Chat](/architecture/Coven.Chat.md)
-- [Coven.Daemonology](/architecture/Coven.Daemonology.md)
-- [Coven.Spellcasting](/architecture/Coven.Spellcasting.md)
-
-## Integrations
-- [Coven.Chat.Console](/architecture/Coven.Chat.Console.md)
-- [Coven.Chat.Discord](/architecture/Coven.Chat.Discord.md)
-- [Coven.Codex](/architecture/Coven.Codex.md)
-- [Coven.OpenAI](/architecture/Coven.OpenAI.md)
-- [Coven.Spellcasting.MCP](/architecture/Coven.Spellcasting.MCP.md)
-
-## Meta
+- [Journaling and Scriveners](/architecture/Journaling-and-Scriveners.md)
+- [Abstractions: Chat and Agents](/architecture/Abstractions-and-Branches.md)
+- [Windowing and Shattering](/architecture/Windowing-and-Shattering.md)
 - [Licensing](/architecture/Licensing.md)

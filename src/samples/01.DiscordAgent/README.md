@@ -8,7 +8,7 @@ Run a Discord-backed chat agent powered by OpenAI, wired together using Coven’
 - Agent Integration: Uses `Coven.Agents.OpenAI` to map chat to `AgentEntry` prompts/thoughts/responses. Streaming is enabled for responsive output.
 - Router (MagikBlock): `RouterBlock` is a simple `IMagikBlock` that bridges chat ↔ agents by reading/writing via `IScrivener<T>` logs (journal-first design).
 - Daemons: Discord and OpenAI run as `ContractDaemon`s managed by the host lifecycle (start/shutdown cooperatively).
-- Windowing: Output chunking is governed by `IWindowPolicy<AgentAfferentChunk>` for paragraph-first aggregation and max-length capping.
+- Semantic windowing: Output chunking is governed by `IWindowPolicy<AgentAfferentChunk>` for paragraph-first aggregation and max-length capping.
 - Transmutation: `DiscordOpenAITemplatingTransmuter` customizes how OpenAI request/response items are templated (e.g., decorating with Discord username/model markers).
 
 Key files:

@@ -4,6 +4,10 @@ using Coven.Transmutation;
 
 namespace Coven.Agents.OpenAI;
 
+/// <summary>
+/// Maps between OpenAI-specific entries and generic Agent entries.
+/// Afferent: OpenAI → Agent; Efferent: Agent → OpenAI.
+/// </summary>
 internal sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>
 {
     public Task<AgentEntry> TransmuteAfferent(OpenAIEntry Input, CancellationToken cancellationToken)
@@ -34,8 +38,8 @@ internal sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, A
             AgentPrompt prompt => Task.FromResult<OpenAIEntry>(new OpenAIEfferent(prompt.Sender, prompt.Text)),
             AgentResponse response => Task.FromResult<OpenAIEntry>(new OpenAIAck(response.Sender, response.Text)),
             AgentThought thought => Task.FromResult<OpenAIEntry>(new OpenAIAck(thought.Sender, thought.Text)),
-            AgentEfferentChunk affChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(affChunk.Sender, affChunk.Text)),
-            AgentAfferentChunk effChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(effChunk.Sender, effChunk.Text)),
+            AgentEfferentChunk efferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(efferentChunk.Sender, efferentChunk.Text)),
+            AgentAfferentChunk afferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(afferentChunk.Sender, afferentChunk.Text)),
             // Streaming efferent thought drafts map to OpenAI efferent thought chunk (not forwarded by gateway today)
             AgentEfferentThoughtChunk etChunk => Task.FromResult<OpenAIEntry>(new OpenAIEfferentThoughtChunk(etChunk.Sender, etChunk.Text)),
             // Afferent thought drafts are not sent outward; ack for completeness

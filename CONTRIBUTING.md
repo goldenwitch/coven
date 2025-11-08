@@ -83,6 +83,8 @@ Use SemaphoreSlim over lock in async contexts.
 Use System.Threading.Lock for the lock.
 
 ## Misc
+All non‑standard library dependencies must be isolated to integrations. Only integrations may depend on integrations.
+
 One class per file unless describing "dumb" data types like records.
 
 We have enabled implicit usings globally.
