@@ -127,7 +127,7 @@ await foreach ((long _, AgentEntry? entry) in _agents.TailAsync(0, cancellationT
 
 ### Extensibility
 
-Window policies: tune output chunking/summarization. Example (from Sample 01 `Program.cs`):
+Semantic windowing: policies define when streamed messages are ready for decision‑making (not fixed turns). See: `architecture/Windowing-and-Shattering.md`.
 
 ```csharp
 // Paragraph-first + tighter max-length for agent outputs

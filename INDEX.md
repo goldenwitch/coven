@@ -1,35 +1,37 @@
-# Code
+# Index
 
 Project overview: see [README](/README.md).
 
-## Coven Engine (Coven.Core)
-- [Coven.Core](/src/Coven.Core/)
-- [Coven.Core.Tests](/src/Coven.Core.Tests/)
+## Documentation
+- Root: [README](/README.md), [CONTRIBUTING](/CONTRIBUTING.md), [AGENTS](/AGENTS.md)
+- Licensing: [COMMERCIAL-TERMS](/COMMERCIAL-TERMS.md), [LICENSE](/LICENSE), [NOTICE](/NOTICE)
+- Architecture: [README](/architecture/README.md), [Journaling and Scriveners](/architecture/Journaling-and-Scriveners.md), [Abstractions and Branches](/architecture/Abstractions-and-Branches.md), [Windowing and Shattering](/architecture/Windowing-and-Shattering.md), [Licensing](/architecture/Licensing.md)
+- Build/Release: [Release Process](/build/ReleaseProcess.md), [VERSION](/build/VERSION)
 
-## Coven with Agents (Coven.Spellcasting)
-- [Coven.Spellcasting](/src/Coven.Spellcasting/)
+## Projects (src)
+- Solution: [/src/Coven.sln](/src/Coven.sln)
 
-## Coven Infrastructure for Chat
-- [Coven.Chat](/src/Coven.Chat/)
+- Core: [/src/Coven.Core](/src/Coven.Core/) ([README](/src/Coven.Core/README.md))
+- Streaming: [/src/Coven.Core.Streaming](/src/Coven.Core.Streaming/) ([README](/src/Coven.Core.Streaming/README.md))
+- Daemonology: [/src/Coven.Daemonology](/src/Coven.Daemonology/) ([README](/src/Coven.Daemonology/README.md))
+- Transmutation: [/src/Coven.Transmutation](/src/Coven.Transmutation/) ([README](/src/Coven.Transmutation/README.md))
+- Spellcasting: [/src/Coven.Spellcasting](/src/Coven.Spellcasting/) ([README](/src/Coven.Spellcasting/README.md))
 
-# Architecture Guide
+- Chat (branch): [/src/Coven.Chat](/src/Coven.Chat/) ([README](/src/Coven.Chat/README.md))
+- Chat Console (leaf): [/src/Coven.Chat.Console](/src/Coven.Chat.Console/) ([README](/src/Coven.Chat.Console/README.md))
+- Chat Discord (leaf): [/src/Coven.Chat.Discord](/src/Coven.Chat.Discord/) ([README](/src/Coven.Chat.Discord/README.md))
 
-Explore by topic. All paths below are under `/architecture`.
+- Agents (branch): [/src/Coven.Agents](/src/Coven.Agents/) ([README](/src/Coven.Agents/README.md))
+- Agents OpenAI (leaf): [/src/Coven.Agents.OpenAI](/src/Coven.Agents.OpenAI/) ([README](/src/Coven.Agents.OpenAI/README.md))
 
-- [Architecture README](/architecture/README.md)
+- Tests: [/src/Coven.Core.Tests](/src/Coven.Core.Tests/), [/src/Coven.Daemonology.Tests](/src/Coven.Daemonology.Tests/)
 
-## Core Components
-- [Coven.Core](/architecture/Coven.Core.md)
-- [Coven.Chat](/architecture/Coven.Chat.md)
-- [Coven.Daemonology](/architecture/Coven.Daemonology.md)
-- [Coven.Spellcasting](/architecture/Coven.Spellcasting.md)
+## Samples
+- 01.DiscordAgent: [/src/samples/01.DiscordAgent](/src/samples/01.DiscordAgent/) ([README](/src/samples/01.DiscordAgent/README.md))
 
-## Integrations
-- [Coven.Chat.Console](/architecture/Coven.Chat.Console.md)
-- [Coven.Chat.Discord](/architecture/Coven.Chat.Discord.md)
-- [Coven.Codex](/architecture/Coven.Codex.md)
-- [Coven.OpenAI](/architecture/Coven.OpenAI.md)
-- [Coven.Spellcasting.MCP](/architecture/Coven.Spellcasting.MCP.md)
-
-## Meta
-- [Licensing](/architecture/Licensing.md)
+## Toys
+- [/src/toys/Coven.Toys.ConsoleChat](/src/toys/Coven.Toys.ConsoleChat/)
+- [/src/toys/Coven.Toys.ConsoleOpenAI](/src/toys/Coven.Toys.ConsoleOpenAI/)
+- [/src/toys/Coven.Toys.ConsoleOpenAIStreaming](/src/toys/Coven.Toys.ConsoleOpenAIStreaming/)
+- [/src/toys/Coven.Toys.DiscordChat](/src/toys/Coven.Toys.DiscordChat/)
+- [/src/toys/Coven.Toys.DiscordStreaming](/src/toys/Coven.Toys.DiscordStreaming/)

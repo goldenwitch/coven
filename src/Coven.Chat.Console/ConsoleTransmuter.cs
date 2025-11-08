@@ -2,6 +2,10 @@ using Coven.Transmutation;
 
 namespace Coven.Chat.Console;
 
+/// <summary>
+/// Maps between Console-specific entries and generic Chat entries.
+/// Afferent: Console → Chat; Efferent: Chat → Console.
+/// </summary>
 internal sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>
 {
     private readonly ConsoleClientConfig _config = config ?? throw new ArgumentNullException(nameof(config));
