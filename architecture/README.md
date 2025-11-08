@@ -10,7 +10,7 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 
 - Journaling & Scriveners: Append‑only, typed journals decouple producers from consumers, enable replay/time‑travel, and make streaming deterministic. Blocks, branches, and leaves communicate by writing/reading entries, not by callbacks. See: [Journaling and Scriveners](./Journaling-and-Scriveners.md).
 
-- Abstractions: Chat & Agents: Write app logic against branches (Chat/Agents) so you can swap leaves (Discord, Console, OpenAI) without touching your spine. Typed entries model afferent/efferent flows; templating and streaming are layered on top. See: [Abstractions: Chat and Agents](./Abstractions-Chat-and-Agents.md).
+- Abstractions: Chat & Agents: Write app logic against branches (Chat/Agents) so you can swap leaves (Discord, Console, OpenAI) without touching your spine. Typed entries model afferent/efferent flows; templating and streaming are layered on top. See: [Abstractions and Branches](./Abstractions-and-Branches.md).
 
 - Windowing & Shattering (Semantic Windowing): Policies define when buffered, streamed messages are ready for decision‑making. Optional shatter splits outputs (e.g., paragraphs). Completion markers ensure deterministic flush. See: [Windowing and Shattering](./Windowing-and-Shattering.md).
 
@@ -19,6 +19,45 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 - Efferent: messages flowing away from your block code (spine) toward leaves (adapters/integrations).
 - Afferent: messages flowing from leaves back toward your block code (spine).
 - Rule of thumb: block/user code lives at the spine; efferent goes out, afferent comes in.
+
+## Examples: Mapping Concepts to Sample 01 (Discord Agent)
+
+Concrete examples help ground the vocabulary above. The Sample 01 app wires Discord chat to an OpenAI‑backed agent via a simple router MagikBlock.
+
+- Spine: the ritual executes a single `RouterBlock` MagikBlock.
+  - File: `src/samples/01.DiscordAgent/RouterBlock.cs`
+
+- Branches: app logic targets Chat and Agents abstractions.
+  - Chat branch types used by the router: `ChatEntry`, `ChatAfferent`, `ChatEfferentDraft` (from `Coven.Chat`).
+  - Agents branch types used by the router: `AgentEntry`, `AgentPrompt`, `AgentResponse`, `AgentThought` (from `Coven.Agents`).
+
+- Leaves (adapters): concrete integrations that translate branches to external systems.
+  - Discord chat: `Coven.Chat.Discord` (gateway/session/scrivener/daemon). Configured via `DiscordClientConfig` in `Program.cs`.
+  - OpenAI agent: `Coven.Agents.OpenAI` (gateway/session/scrivener/daemon). Configured via `OpenAIClientConfig` in `Program.cs`.
+
+- Daemons: long‑running services started inside the router block.
+  - Discord chat daemon (`DiscordChatDaemon`) tails Discord and writes `ChatAfferent` entries.
+  - OpenAI agent daemon (`OpenAIAgentDaemon`) processes prompts and writes streamed agent chunks/entries.
+  - Optional streaming daemons (from `Coven.Core.Streaming`) may be registered by branches to window chunk streams into outputs.
+
+- Journals (Scriveners): append‑only logs connecting router↔branches↔leaves.
+  - Chat journal: `IScrivener<ChatEntry>` (Discord adapter implements its own scrivener; router reads/writes entries).
+  - Agent journal: `IScrivener<AgentEntry>` (OpenAI adapter scrivener; router reads/writes entries).
+
+- Directionality in the router logic:
+  - Afferent (inbound): Discord adapter writes `ChatAfferent` when a user posts in the channel; router reads and forwards as an `AgentPrompt`.
+  - Efferent (outbound): When the agent emits an `AgentResponse`, router writes a `ChatEfferentDraft` so the Discord adapter sends a message to the channel.
+  - Thoughts: `AgentThought` entries are internal by default; the sample shows how to optionally surface them to chat.
+
+- Streaming and windowing (semantic readiness):
+  - OpenAI adapter streams agent output as chunks. Window policies (e.g., paragraph or max‑length) determine when to emit a user‑visible response.
+  - Sample 01 demonstrates how to override windowing or templating via DI in `Program.cs`.
+
+- Transmutation/templating examples:
+  - Sample mapping of OpenAI entries to response items for prompt/answer templating: `DiscordOpenAITemplatingTransmuter` in `src/samples/01.DiscordAgent/DiscordOpenAITemplatingTransmuter.cs`.
+
+- Configuration entry points (minimal app wire‑up):
+  - File: `src/samples/01.DiscordAgent/Program.cs` — registers Discord chat and OpenAI agents, enables optional streaming behavior, and builds the ritual.
 
 ## Cancellation Tokens
 
@@ -47,7 +86,7 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 ## Topics
 - Cross‑cutting topics live here. Current topics include the guidance in this file (e.g., Cancellation Tokens) and the pages below:
   - [Journaling and Scriveners](./Journaling-and-Scriveners.md)
-  - [Abstractions: Chat and Agents](./Abstractions-Chat-and-Agents.md)
+  - [Abstractions and Branches](./Abstractions-and-Branches.md)
   - [Windowing and Shattering](./Windowing-and-Shattering.md)
 
 ## Where to Find Package Docs
