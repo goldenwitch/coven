@@ -18,7 +18,7 @@ Run Sample 01 (Discord Agent) to see Coven orchestrate a Discord chat channel wi
 
 See detailed steps: [Sample 01 — Discord Agent README](src/samples/01.DiscordAgent/README.md).
 
-![alt text](<assets/Sample 01 Diagram.svg>)
+![Diagram demonstrating how the 01 sample connects agents to Discord so they can answer user questions.](<assets/Sample 01 Diagram.svg>)
 
 - Prerequisites:
   - .NET 10 SDK installed.
