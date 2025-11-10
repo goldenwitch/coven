@@ -11,10 +11,13 @@ Run a Discord-backed chat agent powered by OpenAI, wired together using Coven’
 - Semantic windowing: Output chunking is governed by `IWindowPolicy<AgentAfferentChunk>` for paragraph-first aggregation and max-length capping.
 - Transmutation: `DiscordOpenAITemplatingTransmuter` customizes how OpenAI request/response items are templated (e.g., decorating with Discord username/model markers).
 
+![Diagram demonstrating how the 01 sample connects agents to Discord so they can answer user questions.](<../../../assets/Sample 01 Diagram.svg>)
+
 Key files:
 - `Program.cs`: configuration, DI registration, window policies, and Coven wiring.
 - `RouterBlock.cs`: the chat ↔ agent bridge.
 - `DiscordOpenAITemplatingTransmuter.cs`: optional OpenAI request/response templating.
+
 
 ## Setup
 

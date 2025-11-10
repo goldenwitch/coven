@@ -18,6 +18,8 @@ Run Sample 01 (Discord Agent) to see Coven orchestrate a Discord chat channel wi
 
 See detailed steps: [Sample 01 — Discord Agent README](src/samples/01.DiscordAgent/README.md).
 
+![Diagram demonstrating how the 01 sample connects agents to Discord so they can answer user questions.](<assets/Sample 01 Diagram.svg>)
+
 - Prerequisites:
   - .NET 10 SDK installed.
   - Discord Bot: token provisioned, bot invited to your server, Message Content Intent enabled in the Discord Developer Portal, and permission to read/write in a target channel.
@@ -211,6 +213,8 @@ Every Coven is organized into a "spine" of MagikBlocks, executing one after the 
 Each MagikBlock execution represents a unique scope with a fixed input and output type.
 > _Cheatcodes_: Use Empty as an input if you want to route to a MagikBlock with no inputs.
 
+![Diagram showing what a Coven "Branch" is. It shows a Spine Segment (where user code lives) connecting to a "branch" abstraction, isolating the user code from the integrations.](<assets/Normal Looking Branch.svg>)
+
 By starting Daemons and reading journals, your block executes the logic it needs, abstracted from the downstream implementation. The layers that define these abstractions are the "branches" that stretch off of your MagikBlock's execution. Coven offers two convenient abstractions:
 - **Coven.Chat**: Multi-user conversations.
 - **Coven.Agents**: Working with an AI powered Agent to complete your goals.
@@ -219,6 +223,10 @@ Built on the other side of the "branch" abstractions are Coven's handcrafted int
 - **Coven.Chat.Discord**: Use discord to chat with your Coven.
 - **Coven.Chat.Console**: Use a terminal to chat with your Coven.
 - **Coven.Agents.OpenAI**: Send requests to an agent from your Coven.
+
+![Diagram showing how multiple Branches and Leaves can be connected to each Spine Segment.](<assets/Normal Looking Spine Segment.svg>)
+
+![Diagram showing how multiple spine segments can be used to create complex flows where isolating each part of the flow to a single segment can remove complexity around the states of your application.](<assets/Normal Looking Coven.svg>)
 
 ### Why use Coven?
 Anyone can write new branches or leaves and they will seamlessly integrate with your software.

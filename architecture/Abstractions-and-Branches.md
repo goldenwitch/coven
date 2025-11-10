@@ -9,6 +9,8 @@ Single takeaway: Integrate with Chat and Agents; swap leaves (Discord, Console, 
 
 Your block logic writes/reads journal entries from Chat/Agents. The specific leaf is free to change (or multiply) behind the branch boundary.
 
+![Diagram showing what a Coven "Branch" is. It shows a Spine Segment (where user code lives) connecting to a "branch" abstraction, isolating the user code from the integrations.](<../assets/Normal Looking Branch.svg>)
+
 ## Directionality
 - Spine: your block/user code lives here.
 - Efferent: spine → leaves (outbound from your code to adapters).
