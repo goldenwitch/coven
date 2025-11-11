@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core;
+
 namespace Coven.Chat.Console;
 
 /// <summary>
@@ -8,7 +10,7 @@ namespace Coven.Chat.Console;
 public abstract record ConsoleEntry(
     string Sender,
     string Text
-);
+) : Entry;
 
 /// <summary>Acknowledgement entry for internal synchronization.</summary>
 public sealed record ConsoleAck(

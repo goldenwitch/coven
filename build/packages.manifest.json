@@ -1,7 +1,16 @@
 {
   "packages": [
-    { "id": "Coven.Core", "path": "src/Coven.Core" },
-    { "id": "Coven.Spellcasting", "path": "src/Coven.Spellcasting" },
-    { "id": "Coven.Chat", "path": "src/Coven.Chat" }
+    { "id": "Coven.Core",               "path": "src/Coven.Core" },
+    { "id": "Coven.Core.Streaming",     "path": "src/Coven.Core.Streaming" },
+    { "id": "Coven.Daemonology",        "path": "src/Coven.Daemonology" },
+    { "id": "Coven.Transmutation",      "path": "src/Coven.Transmutation" },
+    { "id": "Coven.Spellcasting",       "path": "src/Coven.Spellcasting" },
+
+    { "id": "Coven.Chat",               "path": "src/Coven.Chat" },
+    { "id": "Coven.Chat.Console",       "path": "src/Coven.Chat.Console" },
+    { "id": "Coven.Chat.Discord",       "path": "src/Coven.Chat.Discord" },
+
+    { "id": "Coven.Agents",             "path": "src/Coven.Agents" },
+    { "id": "Coven.Agents.OpenAI",      "path": "src/Coven.Agents.OpenAI" }
   ]
 }

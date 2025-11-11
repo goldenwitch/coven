@@ -5,6 +5,10 @@ root = true
 [*.{cs,vb}]
 dotnet_analyzer_diagnostic.severity = warning
 
+# License header
+dotnet_diagnostic.IDE0073.severity = error
+file_header_template = SPDX-License-Identifier: BUSL-1.1
+
 # 1) Unnecessary usings
 dotnet_diagnostic.IDE0005.severity = error
 

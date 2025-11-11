@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core;
+
 namespace Coven.Chat;
 
 /// <summary>
 /// Base entry type for chat journals (incoming/outgoing messages, acks, and streaming drafts/chunks).
 /// </summary>
-public abstract record ChatEntry(string Sender);
+public abstract record ChatEntry(string Sender) : Entry;
 
 /// <summary>
 /// Marker base for draft entries that should not be forwarded by adapters directly.
 /// </summary>
-public abstract record ChatEntryDraft(string Sender) : ChatEntry(Sender);
+public abstract record ChatEntryDraft(string Sender) : ChatEntry(Sender), IDraft;
 
 /// <summary>Outgoing chat message intended for users.</summary>
 public sealed record ChatEfferent(string Sender, string Text) : ChatEntry(Sender);

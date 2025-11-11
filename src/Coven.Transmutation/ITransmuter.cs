@@ -1,4 +1,6 @@
-﻿namespace Coven.Transmutation;
+﻿// SPDX-License-Identifier: BUSL-1.1
+
+namespace Coven.Transmutation;
 
 /// <summary>
 /// Defines a one-way transmutation from <typeparamref name="TIn"/> to <typeparamref name="TOut"/>,
