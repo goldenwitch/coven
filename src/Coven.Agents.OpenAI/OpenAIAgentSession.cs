@@ -92,7 +92,7 @@ internal sealed class OpenAIAgentSession(
                 await foreach ((long position, AgentEntry entry) in _agentJournal.TailAsync(0, ct))
                 {
                     // Early filtering: ignore drafts and acks to avoid loops/noise
-                    if (entry is AgentEntryDraft or AgentAck)
+                    if (entry is IDraft or AgentAck)
                     {
                         continue;
                     }

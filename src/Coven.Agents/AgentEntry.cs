@@ -1,16 +1,18 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core;
+
 namespace Coven.Agents;
 
 /// <summary>
 /// Base entry type for agent journals (prompts, responses, thoughts, acks, and streaming chunks).
 /// </summary>
-public abstract record AgentEntry(string Sender);
+public abstract record AgentEntry(string Sender) : Entry;
 
 /// <summary>
 /// Marker base for draft entries that should not be forwarded out of the agent journal directly.
 /// </summary>
-public abstract record AgentEntryDraft(string Sender) : AgentEntry(Sender);
+public abstract record AgentEntryDraft(string Sender) : AgentEntry(Sender), IDraft;
 
 /// <summary>Represents a user or upstream prompt destined for an agent.</summary>
 public sealed record AgentPrompt(string Sender, string Text) : AgentEntry(Sender);

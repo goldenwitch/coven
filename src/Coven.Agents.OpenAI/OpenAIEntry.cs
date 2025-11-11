@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core;
+
 namespace Coven.Agents.OpenAI;
 
 /// <summary>
@@ -7,7 +9,7 @@ namespace Coven.Agents.OpenAI;
 /// </summary>
 public abstract record OpenAIEntry(
     string Sender
-);
+) : Entry;
 
 /// <summary>Outgoing request payload destined for OpenAI.</summary>
 public sealed record OpenAIEfferent(
@@ -31,7 +33,7 @@ public sealed record OpenAIAfferentChunk(
     string ResponseId,
     DateTimeOffset Timestamp,
     string Model
-) : OpenAIEntry(Sender);
+) : OpenAIEntry(Sender), IDraft;
 
 // Streaming thought chunks (afferent): model streams thoughts back
 /// <summary>Incoming thought chunk from OpenAI.</summary>
@@ -41,7 +43,7 @@ public sealed record OpenAIAfferentThoughtChunk(
     string ResponseId,
     DateTimeOffset Timestamp,
     string Model
-) : OpenAIEntry(Sender);
+) : OpenAIEntry(Sender), IDraft;
 
 /// <summary>Full thought message from OpenAI (non-chunked).</summary>
 public sealed record OpenAIThought(
@@ -63,7 +65,7 @@ public sealed record OpenAIAck(
 public sealed record OpenAIEfferentThoughtChunk(
     string Sender,
     string Text
-) : OpenAIEntry(Sender);
+) : OpenAIEntry(Sender), IDraft;
 
 /// <summary>Marks completion of a streaming response from OpenAI.</summary>
 public sealed record OpenAIStreamCompleted(
@@ -71,4 +73,4 @@ public sealed record OpenAIStreamCompleted(
     string ResponseId,
     DateTimeOffset Timestamp,
     string Model
-) : OpenAIEntry(Sender);
+) : OpenAIEntry(Sender), IDraft;
