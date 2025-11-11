@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       bump:
-        description: "Semver bump to compute from build/VERSION"
+        description: "Semver bump computed from build/VERSION"
         required: true
         default: patch
         type: choice
@@ -13,37 +13,46 @@ on:
 permissions:
   contents: write
 
-concurrency:
-  group: promote-${{ github.ref_name }}
-  cancel-in-progress: false
-
 jobs:
   build-pack-release:
     runs-on: ubuntu-latest
 
+    # Expose secrets via env so we can use them in `if:` expressions
+    env:
+      NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+
     steps:
-      - name: Checkout (full history + tags)
-        uses: actions/checkout@v4
+      - name: Checkout (full history for tags)
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
-          fetch-tags: true
 
       - name: Setup .NET SDK (10 GA)
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
           dotnet-quality: 'ga'
 
-      
+      - name: Ensure tooling (jq)
+        run: |
+          set -euo pipefail
+          if ! command -v jq >/dev/null; then
+            sudo apt-get update
+            sudo apt-get install -y jq
+          fi
 
-      - name: Plan release (version and selection)
+      - name: Plan release (version & package dirs)
         id: plan
         shell: bash
         run: |
           set -euo pipefail
+
+          # Base version (strip any pre-release suffix like -alpha)
           base=$(tr -d '\r\n' < build/VERSION)
+          base_core="${base%%-*}"
+
           bump="${{ inputs.bump }}"
-          IFS='.' read -r MA MI PA <<< "${base%%-*}"
+          IFS='.' read -r MA MI PA <<< "${base_core}"
           MA=${MA:-0}; MI=${MI:-0}; PA=${PA:-0}
           case "$bump" in
             major) MA=$((MA+1)); MI=0; PA=0 ;;
@@ -53,10 +62,16 @@ jobs:
           version="$MA.$MI.$PA"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-          paths=$(jq -r '.packages[].path' build/packages.manifest.json | paste -sd, -)
+          # Comma-separated list of package roots from the manifest
+          paths=$(jq -r '.packages[].path // empty' build/packages.manifest.json | paste -sd, - || true)
           echo "paths=$paths" >> "$GITHUB_OUTPUT"
 
-          prev=$(git tag --list 'v*' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sed 's/^v//' | sort -V | tail -n1 || true)
+          # Last stable v* tag (may be empty for first release)
+          prev=$(git tag --list 'v*' \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | sed 's/^v//' \
+            | sort -V \
+            | tail -n1 || true)
           echo "prev=$prev" >> "$GITHUB_OUTPUT"
 
       - name: Validate version monotonicity
@@ -67,16 +82,11 @@ jobs:
           prev="${{ steps.plan.outputs.prev }}"
           if [[ -n "$prev" ]]; then
             max=$(printf '%s\n%s\n' "$prev" "$new" | sort -V | tail -n1)
-            if [[ "$max" != "$new" ]]; then
-              echo "Requested version $new must be greater than previous stable $prev" >&2
-              exit 1
-            fi
-            if [[ "$new" == "$prev" ]]; then
-              echo "Requested version $new equals previous stable $prev; must be greater." >&2
+            if [[ "$max" != "$new" || "$new" == "$prev" ]]; then
+              echo "::error::Requested version $new must be greater than previous stable $prev"
               exit 1
             fi
           fi
-
 
       - name: Pack stable
         shell: bash
@@ -84,14 +94,21 @@ jobs:
           set -euo pipefail
           mkdir -p artifacts/nupkg
           version="${{ steps.plan.outputs.version }}"
-      
+
+          # Read dirs from outputs
           IFS=',' read -ra dirs <<< "${{ steps.plan.outputs.paths }}"
+          if [[ ${#dirs[@]} -eq 0 || -z "${{ steps.plan.outputs.paths }}" ]]; then
+            echo "::error::No package directories found in build/packages.manifest.json (.packages[].path)."
+            exit 1
+          fi
+
           shopt -s nullglob
+          found=0
           for d in "${dirs[@]}"; do
             d="${d//[$'\r\n']/}"
             [[ -z "$d" ]] && continue
-      
             for csproj in "$d"/*.csproj; do
+              found=1
               echo "Packing: $csproj"
               dotnet pack "$csproj" -c Release -o artifacts/nupkg \
                 /p:Version="$version" \
@@ -101,29 +118,48 @@ jobs:
             done
           done
 
+          if [[ $found -eq 0 ]]; then
+            echo "::error::No .csproj files found under: ${{ steps.plan.outputs.paths }}"
+            exit 1
+          fi
 
-      - name: Upload artifacts
+      - name: Upload build artifacts (nupkgs)
         uses: actions/upload-artifact@v4
         with:
           name: nupkgs-stable
-          path: artifacts/nupkg/*
+          path: |
+            artifacts/nupkg/*.nupkg
+            artifacts/nupkg/*.snupkg
           if-no-files-found: error
+
+      # Publish to NuGet BEFORE creating the GitHub Release
+      - name: Publish to NuGet.org
+        if: ${{ env.NUGET_API_KEY != '' }}
+        env:
+          NUGET_API_KEY: ${{ env.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          dotnet nuget push "artifacts/nupkg/*.nupkg" \
+            --skip-duplicate \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json
+
+      - name: NuGet API key missing
+        if: ${{ env.NUGET_API_KEY == '' }}
+        run: |
+          echo "::error::NUGET_API_KEY secret is not set; refusing to publish to NuGet.org."
+          exit 1
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.plan.outputs.version }}
           name: v${{ steps.plan.outputs.version }}
-          prerelease: false
+          target_commitish: ${{ github.sha }}
           draft: false
+          prerelease: false
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/nupkg/*.nupkg
             artifacts/nupkg/*.snupkg
-
-      - name: Publish to NuGet.org
-        if: ${{ secrets.NUGET_API_KEY != '' }}
-        env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
-        run: |
-          dotnet nuget push "artifacts/nupkg/*.nupkg" --skip-duplicate --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
