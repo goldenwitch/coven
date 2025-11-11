@@ -10,10 +10,22 @@
   <PropertyGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Ensure all packable projects include the repository LICENSE -->
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
+
+    <!-- Common NuGet metadata -->
+    <RepositoryUrl>https://github.com/goldenwitch/coven</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/goldenwitch/coven</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(IsPackable)' == 'true'">
     <!-- Include the root LICENSE in the package at the top level -->
     <None Include="$(MSBuildThisFileDirectory)LICENSE" Pack="true" PackagePath="" Visible="false" />
+
+    <!-- Include per-package README if present -->
+    <None Include="$(MSBuildProjectDirectory)/README.md"
+          Condition="Exists('$(MSBuildProjectDirectory)/README.md')"
+          Pack="true" PackagePath="" Visible="false" />
   </ItemGroup>
 </Project>
