@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  packages: write
 
 jobs:
   build-pack-release:
@@ -131,6 +132,19 @@ jobs:
             artifacts/nupkg/*.nupkg
             artifacts/nupkg/*.snupkg
           if-no-files-found: error
+
+      # Publish to GitHub Packages (NuGet) using the repo-scoped GITHUB_TOKEN
+      - name: Publish to GitHub Packages
+        env:
+          OWNER: ${{ github.repository_owner }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # GitHub Packages does not accept symbol packages; push only .nupkg
+          dotnet nuget push "artifacts/nupkg/*.nupkg" \
+            --skip-duplicate \
+            --api-key "$GITHUB_TOKEN" \
+            --source "https://nuget.pkg.github.com/${OWNER}/index.json"
 
       # Publish to NuGet BEFORE creating the GitHub Release
       - name: Publish to NuGet.org
