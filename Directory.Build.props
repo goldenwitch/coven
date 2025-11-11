@@ -6,6 +6,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <!-- Toggle to prefer local project references in samples/toys -->
+  <PropertyGroup>
+    <PreferProjectReferences>false</PreferProjectReferences>
+  </PropertyGroup>
+
 
   <PropertyGroup Condition="'$(IsPackable)' != 'false'">
     <!-- Ensure all packable projects include the repository LICENSE -->
