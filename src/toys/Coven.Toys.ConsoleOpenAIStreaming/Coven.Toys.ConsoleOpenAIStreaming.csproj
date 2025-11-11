@@ -10,9 +10,15 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(PreferProjectReferences)' == 'true'">
     <ProjectReference Include="..\..\Coven.Chat.Console\Coven.Chat.Console.csproj" />
     <ProjectReference Include="..\..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(PreferProjectReferences)' != 'true'">
+    <PackageReference Include="Coven.Chat.Console" />
+    <PackageReference Include="Coven.Agents.OpenAI" />
+  </ItemGroup>
+
 </Project>
+

@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,8 +10,13 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
   </ItemGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(PreferProjectReferences)' == 'true'">
     <ProjectReference Include="..\..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(PreferProjectReferences)' != 'true'">
+    <PackageReference Include="Coven.Chat.Discord" />
+  </ItemGroup>
+
 </Project>
+
