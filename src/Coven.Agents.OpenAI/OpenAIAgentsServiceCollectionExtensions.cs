@@ -16,7 +16,7 @@ namespace Coven.Agents.OpenAI;
 /// Dependency Injection helpers for wiring the OpenAI agent integration.
 /// Registers journals, gateway connection, transmuters, windowing daemons, and the official OpenAI client.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class OpenAIAgentsServiceCollectionExtensions
 {
     /// <summary>
     /// Registers OpenAI agents with required defaults.

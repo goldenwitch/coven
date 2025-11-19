@@ -12,7 +12,7 @@ namespace Coven.Chat.Console;
 /// Dependency Injection helpers for wiring the Console chat adapter.
 /// Registers gateway/session components, journals, the Console↔Chat transmuter, and the console daemon.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class ConsoleChatServiceCollectionExtensions
 {
     /// <summary>
     /// Adds Console chat integration using the provided client configuration.

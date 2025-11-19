@@ -4,46 +4,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
 using Coven.Core.Activation;
 using Coven.Core.Routing;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Core.Builder;
-
-/// <summary>
-/// DI entry points for composing and finalizing a Coven runtime.
-/// </summary>
-public static class ServiceCollectionExtensions
-{
-    /// <summary>
-    /// Composes a Coven using the provided builder action and ensures finalization.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="build">Callback to register MagikBlocks and options.</param>
-    /// <returns>The same service collection to enable fluent chaining.</returns>
-    public static IServiceCollection BuildCoven(this IServiceCollection services, Action<CovenServiceBuilder> build)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(build);
-
-        CovenServiceBuilder builder = new(services);
-        build(builder);
-        // Idempotent finalize if user forgot to call Done()
-        builder.Done();
-        return services;
-    }
-
-    /// <summary>
-    /// Registers a singleton in-memory scrivener for the given entry type.
-    /// Uses TryAdd to avoid duplicate registrations.
-    /// </summary>
-    public static IServiceCollection AddInMemoryScrivener<TEntry>(this IServiceCollection services)
-        where TEntry : notnull
-    {
-        ArgumentNullException.ThrowIfNull(services);
-
-        services.TryAddSingleton<IScrivener<TEntry>, InMemoryScrivener<TEntry>>();
-        return services;
-    }
-}
 
 /// <summary>
 /// Fluent builder used to register MagikBlocks and finalize the Coven runtime.
@@ -160,3 +122,4 @@ public sealed class CovenServiceBuilder
 
     }
 }
+
