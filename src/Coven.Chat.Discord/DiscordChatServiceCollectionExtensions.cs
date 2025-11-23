@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
 using Coven.Core.Streaming;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Coven.Daemonology;
@@ -10,6 +9,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Coven.Chat.Windowing;
 using Coven.Chat.Shattering;
+using Coven.Core.Scrivener;
 
 namespace Coven.Chat.Discord;
 
@@ -45,11 +45,17 @@ public static class DiscordChatServiceCollectionExtensions
         services.AddScoped<DiscordGatewayConnection>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddScrivener<ChatEntry>();
-
-        services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
-        services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");
-
+        services.TryAddScoped(sp => sp.BuildScrivener<ChatEntry>().Build());
+        // Keyed inner for Discord gateway (storage-only), built via factory
+        services.AddKeyedScoped("Coven.InternalDiscordScrivener",
+            (sp, _) => sp.BuildScrivener<DiscordEntry>().WithType<InMemoryScrivener<DiscordEntry>>().Build());
+        // Expose tapped scrivener using the keyed inner; keep factory in the chain for consistency
+        services.AddScoped(sp =>
+        {
+            IScrivener<DiscordEntry> inner = sp.GetRequiredKeyedService<IScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");
+            DiscordScrivener tapper = ActivatorUtilities.CreateInstance<DiscordScrivener>(sp, inner);
+            return sp.BuildScrivener<DiscordEntry>().WithTap(tapper).Build();
+        });
         services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();

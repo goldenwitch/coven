@@ -94,9 +94,9 @@ internal sealed class PipelineCompiler
 
                     // Bump epoch so tags added by this block apply to the next selection.
                     Tag.IncrementEpoch();
-                    object instance = chosen.Activator.GetInstance(sp, cache, chosen);
                     try
                     {
+                        object instance = chosen.Activator.GetInstance(sp, cache, chosen);
                         if (logger is not null && logger.IsEnabled(LogLevel.Debug))
                         {
                             CoreLog.RitualInvoke(logger, chosen.BlockTypeName, ritualId);

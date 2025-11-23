@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
 using Coven.Transmutation;
 using Coven.Core.Streaming;
 using Microsoft.Extensions.Logging;
+using Coven.Core.Scrivener;
 
 namespace Coven.Agents.OpenAI;
 

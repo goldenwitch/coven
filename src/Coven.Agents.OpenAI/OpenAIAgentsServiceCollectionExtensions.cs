@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
@@ -9,6 +8,7 @@ using OpenAI;
 using System.ClientModel;
 using OpenAI.Responses;
 using Coven.Core.Streaming;
+using Coven.Core.Scrivener;
 
 namespace Coven.Agents.OpenAI;
 
@@ -75,9 +75,17 @@ public static class OpenAIAgentsServiceCollectionExtensions
         });
 
         // Journals and gateway
-        services.TryAddScrivener<AgentEntry>();
-        services.AddKeyedScoped<IScrivener<OpenAIEntry>, InMemoryScrivener<OpenAIEntry>>("Coven.InternalOpenAIScrivener");
-        services.AddScoped<IScrivener<OpenAIEntry>, OpenAIScrivener>();
+        services.TryAddScoped(sp => sp.BuildScrivener<AgentEntry>().Build());
+        // Keyed inner for OpenAI gateway (storage-only) via factory for consistency
+        services.AddKeyedScoped("Coven.InternalOpenAIScrivener",
+            (sp, _) => sp.BuildScrivener<OpenAIEntry>().WithType<InMemoryScrivener<OpenAIEntry>>().Build());
+        // Expose tapped scrivener using the keyed inner; keep factory in the chain for consistency
+        services.AddScoped(sp =>
+        {
+            IScrivener<OpenAIEntry> inner = sp.GetRequiredKeyedService<IScrivener<OpenAIEntry>>("Coven.InternalOpenAIScrivener");
+            OpenAIScrivener tapper = ActivatorUtilities.CreateInstance<OpenAIScrivener>(sp, inner);
+            return sp.BuildScrivener<OpenAIEntry>().WithTap(tapper).Build();
+        });
         if (registration.StreamingEnabled)
         {
             services.TryAddScoped<IOpenAIGatewayConnection, OpenAIStreamingGatewayConnection>();

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-namespace Coven.Core;
+namespace Coven.Core.Scrivener;
 
 /// <summary>
 /// Marker base type for journal entries.

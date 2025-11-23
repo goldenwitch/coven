@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
+using Coven.Core.Scrivener;
 using Coven.Daemonology.Tests.Infrastructure;
 
 namespace Coven.Daemonology.Tests;
