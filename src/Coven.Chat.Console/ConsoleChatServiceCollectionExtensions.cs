@@ -4,6 +4,7 @@ using Coven.Core;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Chat.Console;
 
@@ -28,7 +29,7 @@ public static class ConsoleChatServiceCollectionExtensions
         services.AddScoped<ConsoleChatSessionFactory>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddScrivener<ChatEntry>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
 
         services.AddScoped<IScrivener<ConsoleEntry>, ConsoleScrivener>();
         services.AddKeyedScoped<IScrivener<ConsoleEntry>, InMemoryScrivener<ConsoleEntry>>("Coven.InternalConsoleScrivener");

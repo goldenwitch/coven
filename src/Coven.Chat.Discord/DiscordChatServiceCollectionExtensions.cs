@@ -45,7 +45,7 @@ public static class DiscordChatServiceCollectionExtensions
         services.AddScoped<DiscordGatewayConnection>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddScrivener<ChatEntry>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
 
         services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
         services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");

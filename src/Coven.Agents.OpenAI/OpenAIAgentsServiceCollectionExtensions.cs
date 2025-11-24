@@ -75,7 +75,7 @@ public static class OpenAIAgentsServiceCollectionExtensions
         });
 
         // Journals and gateway
-        services.TryAddScrivener<AgentEntry>();
+        services.TryAddScoped<IScrivener<AgentEntry>, InMemoryScrivener<AgentEntry>>();
         services.AddKeyedScoped<IScrivener<OpenAIEntry>, InMemoryScrivener<OpenAIEntry>>("Coven.InternalOpenAIScrivener");
         services.AddScoped<IScrivener<OpenAIEntry>, OpenAIScrivener>();
         if (registration.StreamingEnabled)

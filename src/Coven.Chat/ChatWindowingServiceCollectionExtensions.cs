@@ -26,7 +26,7 @@ public static class ChatWindowingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         // Ensure required journals exist
-        services.TryAddScrivener<ChatEntry>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
         services.TryAddSingleton<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
 
         // Register generic windowing daemon for Chat using a DI-provided policy
