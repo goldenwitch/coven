@@ -8,7 +8,7 @@
 
   <!-- Toggle to prefer local project references in samples/toys -->
   <PropertyGroup>
-    <PreferProjectReferences>false</PreferProjectReferences>
+    <PreferProjectReferences>true</PreferProjectReferences>
   </PropertyGroup>
 
 
