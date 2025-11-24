@@ -12,6 +12,7 @@ Project overview: see [README](/README.md).
 - Solution: [/src/Coven.sln](/src/Coven.sln)
 
 - Core: [/src/Coven.Core](/src/Coven.Core/) ([README](/src/Coven.Core/README.md))
+- Core Debug: [/src/Coven.Core.Debug](/src/Coven.Core.Debug/) ([README](/src/Coven.Core.Debug/README.md))
 - Streaming: [/src/Coven.Core.Streaming](/src/Coven.Core.Streaming/) ([README](/src/Coven.Core.Streaming/README.md))
 - Daemonology: [/src/Coven.Daemonology](/src/Coven.Daemonology/) ([README](/src/Coven.Daemonology/README.md))
 - Transmutation: [/src/Coven.Transmutation](/src/Coven.Transmutation/) ([README](/src/Coven.Transmutation/README.md))

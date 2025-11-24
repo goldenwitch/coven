@@ -17,7 +17,7 @@ namespace Coven.Chat.Discord;
 /// Dependency Injection helpers for wiring the Discord chat adapter.
 /// Registers the Discord client, session factory, journals, transmuter, daemon, and default windowing policies.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class DiscordChatServiceCollectionExtensions
 {
     /// <summary>
     /// Adds Discord chat integration using the provided client configuration.
@@ -45,7 +45,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<DiscordGatewayConnection>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
 
         services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
         services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");

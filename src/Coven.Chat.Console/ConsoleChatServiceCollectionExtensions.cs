@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Chat.Console;
 
@@ -12,7 +12,7 @@ namespace Coven.Chat.Console;
 /// Dependency Injection helpers for wiring the Console chat adapter.
 /// Registers gateway/session components, journals, the Console↔Chat transmuter, and the console daemon.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class ConsoleChatServiceCollectionExtensions
 {
     /// <summary>
     /// Adds Console chat integration using the provided client configuration.
@@ -29,7 +29,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ConsoleChatSessionFactory>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
 
         services.AddScoped<IScrivener<ConsoleEntry>, ConsoleScrivener>();
         services.AddKeyedScoped<IScrivener<ConsoleEntry>, InMemoryScrivener<ConsoleEntry>>("Coven.InternalConsoleScrivener");

@@ -13,7 +13,7 @@ namespace Coven.Chat;
 /// Adds generic chat windowing infrastructure (journal, daemon) with a DI-provided window policy.
 /// Useful for chunking and emitting grouped <see cref="ChatChunk"/> as <see cref="ChatEfferent"/> entries.
 /// </summary>
-public static class ServiceCollectionExtensions
+public static class ChatWindowingServiceCollectionExtensions
 {
     /// <summary>
     /// Registers chat windowing components and a windowing daemon for <see cref="ChatEntry"/>.
@@ -26,7 +26,7 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         // Ensure required journals exist
-        services.TryAddSingleton<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
+        services.TryAddScoped<IScrivener<ChatEntry>, InMemoryScrivener<ChatEntry>>();
         services.TryAddSingleton<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
 
         // Register generic windowing daemon for Chat using a DI-provided policy
