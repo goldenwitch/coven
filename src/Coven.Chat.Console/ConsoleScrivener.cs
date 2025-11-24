@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core.Scrivener;
+using Coven.Core;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Console;
@@ -15,7 +16,7 @@ internal sealed class ConsoleScrivener : TappedScrivener<ConsoleEntry>
     private readonly ILogger _logger;
 
     public ConsoleScrivener(
-        IScrivener<ConsoleEntry> scrivener,
+        [FromKeyedServices("Coven.InternalConsoleScrivener")] IScrivener<ConsoleEntry> scrivener,
         ConsoleGatewayConnection gateway,
         ILogger<ConsoleScrivener> logger)
         : base(scrivener)

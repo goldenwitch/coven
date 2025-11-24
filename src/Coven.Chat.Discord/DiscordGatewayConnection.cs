@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Globalization;
-using Coven.Core.Scrivener;
+using Coven.Core;
 using Discord;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;

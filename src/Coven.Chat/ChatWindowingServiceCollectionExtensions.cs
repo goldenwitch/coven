@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core.Scrivener;
+using Coven.Core;
 using Coven.Core.Streaming;
 using Coven.Daemonology;
 using Coven.Transmutation;
@@ -26,8 +26,8 @@ public static class ChatWindowingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         // Ensure required journals exist
-        services.TryAddScoped(sp => sp.BuildScrivener<ChatEntry>().Build());
-        services.TryAddSingleton(sp => sp.BuildScrivener<DaemonEvent>().Build());
+        services.TryAddScrivener<ChatEntry>();
+        services.TryAddSingleton<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
 
         // Register generic windowing daemon for Chat using a DI-provided policy
         services.AddScoped<ContractDaemon>(sp =>

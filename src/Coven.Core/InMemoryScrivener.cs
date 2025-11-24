@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
 
-namespace Coven.Core.Scrivener;
+namespace Coven.Core;
 
 /// <summary>
 /// In-memory implementation of <see cref="IScrivener{TEntry}"/> with simple, single-process semantics;

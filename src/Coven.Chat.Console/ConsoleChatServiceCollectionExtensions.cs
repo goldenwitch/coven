@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core.Scrivener;
+using Coven.Core;
 using Coven.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Coven.Chat.Console;
 
@@ -29,18 +28,10 @@ public static class ConsoleChatServiceCollectionExtensions
         services.AddScoped<ConsoleChatSessionFactory>();
 
         // Default ChatEntry journal if none provided by host
-        services.TryAddScoped(sp => sp.BuildScrivener<ChatEntry>().Build());
-        // Keyed inner journal for gateways (storage-only, built via factory to keep consistency)
-        services.AddKeyedScoped("Coven.InternalConsoleScrivener",
-            (sp, _) => sp.BuildScrivener<ConsoleEntry>().WithType<InMemoryScrivener<ConsoleEntry>>().Build());
-        // Expose tapped scrivener using the keyed inner; keep factory in the chain for consistency
-        services.AddScoped(sp =>
-        {
-            IScrivener<ConsoleEntry> inner = sp.GetRequiredKeyedService<IScrivener<ConsoleEntry>>("Coven.InternalConsoleScrivener");
-            ConsoleScrivener tapper = ActivatorUtilities.CreateInstance<ConsoleScrivener>(sp, inner);
-            return sp.BuildScrivener<ConsoleEntry>().WithTap(tapper).Build();
-        });
+        services.TryAddScrivener<ChatEntry>();
 
+        services.AddScoped<IScrivener<ConsoleEntry>, ConsoleScrivener>();
+        services.AddKeyedScoped<IScrivener<ConsoleEntry>, InMemoryScrivener<ConsoleEntry>>("Coven.InternalConsoleScrivener");
 
         services.AddScoped<IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>, ConsoleTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();

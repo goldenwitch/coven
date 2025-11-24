@@ -3,7 +3,6 @@
 using Coven.Agents;
 using Coven.Chat;
 using Coven.Core;
-using Coven.Core.Scrivener;
 using Coven.Daemonology;
 
 namespace Coven.Toys.ConsoleOpenAI;

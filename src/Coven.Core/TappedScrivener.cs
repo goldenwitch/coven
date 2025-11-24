@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-namespace Coven.Core.Scrivener;
+namespace Coven.Core;
 
 /// <summary>
 /// Base scrivener wrapper that exposes the underlying scrivener while delegating
