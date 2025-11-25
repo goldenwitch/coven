@@ -54,4 +54,5 @@ await coven.Ritual<Empty, Empty>(new Empty());
 ## See Also
 
 - Architecture: Journaling and Scriveners; Windowing and Shattering.
+- Persistence: `/src/Coven.Scriveners.FileScrivener/` (file‑backed snapshots for journals).
 - Samples: `src/samples/01.DiscordAgent` for end‑to‑end orchestration.

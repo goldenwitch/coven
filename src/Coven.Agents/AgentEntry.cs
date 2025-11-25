@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Text.Json.Serialization;
 using Coven.Core;
 
 namespace Coven.Agents;
@@ -7,6 +8,16 @@ namespace Coven.Agents;
 /// <summary>
 /// Base entry type for agent journals (prompts, responses, thoughts, acks, and streaming chunks).
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(AgentPrompt), nameof(AgentPrompt))]
+[JsonDerivedType(typeof(AgentResponse), nameof(AgentResponse))]
+[JsonDerivedType(typeof(AgentThought), nameof(AgentThought))]
+[JsonDerivedType(typeof(AgentAck), nameof(AgentAck))]
+[JsonDerivedType(typeof(AgentEfferentChunk), nameof(AgentEfferentChunk))]
+[JsonDerivedType(typeof(AgentAfferentChunk), nameof(AgentAfferentChunk))]
+[JsonDerivedType(typeof(AgentEfferentThoughtChunk), nameof(AgentEfferentThoughtChunk))]
+[JsonDerivedType(typeof(AgentAfferentThoughtChunk), nameof(AgentAfferentThoughtChunk))]
+[JsonDerivedType(typeof(AgentStreamCompleted), nameof(AgentStreamCompleted))]
 public abstract record AgentEntry(string Sender) : Entry;
 
 /// <summary>
@@ -23,8 +34,8 @@ public sealed record AgentResponse(string Sender, string Text) : AgentEntry(Send
 /// <summary>Represents an agent's introspective thought (not typically user-visible).</summary>
 public sealed record AgentThought(string Sender, string Text) : AgentEntry(Sender);
 
-/// <summary>Represents an acknowledgement for internal synchronization.</summary>
-public sealed record AgentAck(string Sender) : AgentEntry(Sender);
+/// <summary>Represents an acknowledgement for internal synchronization. Carries the position being acknowledged.</summary>
+public sealed record AgentAck(string Sender, long Position) : AgentEntry(Sender);
 
 // Streaming additions
 /// <summary>Outgoing (efferent) response chunk prior to finalization.</summary>

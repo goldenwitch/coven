@@ -7,12 +7,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Coven.Agents.OpenAI;
 
+/// <summary>
+/// Coordinates an OpenAI agent session bridging the OpenAI and Agent journals.
+/// Uses imbuing transmuters to carry the source journal position as a reagent for position-based ACKs.
+/// </summary>
 internal sealed class OpenAIAgentSession(
     IOpenAIGatewayConnection gateway,
     IScrivener<OpenAIEntry> openAIJournal,
     IScrivener<AgentEntry> agentJournal,
     IShatterPolicy<OpenAIEntry> shatterPolicy,
-    IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> transmuter,
+    IImbuingTransmuter<OpenAIEntry, long, AgentEntry> afferentTransmuter,
+    IImbuingTransmuter<AgentEntry, long, OpenAIEntry> efferentTransmuter,
     ILogger<OpenAIAgentSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
 {
@@ -20,7 +25,8 @@ internal sealed class OpenAIAgentSession(
     private readonly IScrivener<OpenAIEntry> _openAIJournal = openAIJournal ?? throw new ArgumentNullException(nameof(openAIJournal));
     private readonly IScrivener<AgentEntry> _agentJournal = agentJournal ?? throw new ArgumentNullException(nameof(agentJournal));
     private readonly IShatterPolicy<OpenAIEntry> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
-    private readonly IBiDirectionalTransmuter<OpenAIEntry, AgentEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
+    private readonly IImbuingTransmuter<OpenAIEntry, long, AgentEntry> _afferentTransmuter = afferentTransmuter ?? throw new ArgumentNullException(nameof(afferentTransmuter));
+    private readonly IImbuingTransmuter<AgentEntry, long, OpenAIEntry> _efferentTransmuter = efferentTransmuter ?? throw new ArgumentNullException(nameof(efferentTransmuter));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
 
@@ -55,7 +61,7 @@ internal sealed class OpenAIAgentSession(
                             if (openAIEntry is OpenAIAfferentThoughtChunk)
                             {
                                 produced = true;
-                                AgentEntry agentChunk = await _transmuter.TransmuteAfferent(openAIEntry, ct).ConfigureAwait(false);
+                                AgentEntry agentChunk = await _afferentTransmuter.Transmute(openAIEntry, position, ct).ConfigureAwait(false);
                                 long pos = await _agentJournal.WriteAsync(agentChunk, ct).ConfigureAwait(false);
                                 OpenAILog.OpenAIToAgentsAppended(_logger, agentChunk.GetType().Name, pos);
                             }
@@ -67,7 +73,7 @@ internal sealed class OpenAIAgentSession(
                         }
                     }
 
-                    AgentEntry agent = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
+                    AgentEntry agent = await _afferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     OpenAILog.OpenAIToAgentsTransmuted(_logger, entry.GetType().Name, agent.GetType().Name);
                     long agentPos = await _agentJournal.WriteAsync(agent, ct).ConfigureAwait(false);
                     OpenAILog.OpenAIToAgentsAppended(_logger, agent.GetType().Name, agentPos);
@@ -98,7 +104,7 @@ internal sealed class OpenAIAgentSession(
                     }
 
                     OpenAILog.AgentsToOpenAIObserved(_logger, entry.GetType().Name, position);
-                    OpenAIEntry openAI = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
+                    OpenAIEntry openAI = await _efferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     OpenAILog.AgentsToOpenAITransmuted(_logger, entry.GetType().Name, openAI.GetType().Name);
                     long aiPos = await _openAIJournal.WriteAsync(openAI, ct).ConfigureAwait(false);
                     OpenAILog.AgentsToOpenAIAppended(_logger, openAI.GetType().Name, aiPos);

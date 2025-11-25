@@ -38,9 +38,9 @@ internal sealed class DiscordScrivener : TappedScrivener<DiscordEntry>
     public override async Task<long> WriteAsync(DiscordEntry entry, CancellationToken cancellationToken = default)
     {
         // Only send actual outbound messages to Discord. ACKs and inbound entries must not be sent.
-        if (entry is DiscordEfferent)
+        if (entry is DiscordEfferent efferent)
         {
-            await _discordClient.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
+            await _discordClient.SendAsync(efferent.Text, cancellationToken).ConfigureAwait(false);
         }
 
         // Always persist to the underlying scrivener so pumps and tests can observe ordering.

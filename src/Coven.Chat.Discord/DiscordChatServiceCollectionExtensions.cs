@@ -50,7 +50,8 @@ public static class DiscordChatServiceCollectionExtensions
         services.AddScoped<IScrivener<DiscordEntry>, DiscordScrivener>();
         services.AddKeyedScoped<IScrivener<DiscordEntry>, InMemoryScrivener<DiscordEntry>>("Coven.InternalDiscordScrivener");
 
-        services.AddScoped<IBiDirectionalTransmuter<DiscordEntry, ChatEntry>, DiscordTransmuter>();
+        services.AddScoped<IImbuingTransmuter<DiscordEntry, long, ChatEntry>, DiscordTransmuter>();
+        services.AddScoped<IImbuingTransmuter<ChatEntry, long, DiscordEntry>, DiscordTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, DiscordChatDaemon>();
 

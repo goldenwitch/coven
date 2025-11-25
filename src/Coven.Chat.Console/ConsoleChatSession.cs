@@ -10,14 +10,16 @@ internal sealed class ConsoleChatSession(
     ConsoleGatewayConnection gateway,
     IScrivener<ConsoleEntry> consoleJournal,
     IScrivener<ChatEntry> chatJournal,
-    IBiDirectionalTransmuter<ConsoleEntry, ChatEntry> transmuter,
+    IImbuingTransmuter<ConsoleEntry, long, ChatEntry> afferentTransmuter,
+    IImbuingTransmuter<ChatEntry, long, ConsoleEntry> efferentTransmuter,
     ILogger<ConsoleChatSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
 {
     private readonly ConsoleGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     private readonly IScrivener<ConsoleEntry> _consoleJournal = consoleJournal ?? throw new ArgumentNullException(nameof(consoleJournal));
     private readonly IScrivener<ChatEntry> _chatJournal = chatJournal ?? throw new ArgumentNullException(nameof(chatJournal));
-    private readonly IBiDirectionalTransmuter<ConsoleEntry, ChatEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
+    private readonly IImbuingTransmuter<ConsoleEntry, long, ChatEntry> _afferentTransmuter = afferentTransmuter ?? throw new ArgumentNullException(nameof(afferentTransmuter));
+    private readonly IImbuingTransmuter<ChatEntry, long, ConsoleEntry> _efferentTransmuter = efferentTransmuter ?? throw new ArgumentNullException(nameof(efferentTransmuter));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
 
@@ -41,7 +43,7 @@ internal sealed class ConsoleChatSession(
                     }
 
                     ConsoleLog.ConsoleToChatObserved(_logger, entry.GetType().Name, position);
-                    ChatEntry chat = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
+                    ChatEntry chat = await _afferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     ConsoleLog.ConsoleToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
                     long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
                     ConsoleLog.ConsoleToChatAppended(_logger, chat.GetType().Name, chatPos);
@@ -72,7 +74,7 @@ internal sealed class ConsoleChatSession(
                     }
 
                     ConsoleLog.ChatToConsoleObserved(_logger, entry.GetType().Name, position);
-                    ConsoleEntry console = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
+                    ConsoleEntry console = await _efferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     ConsoleLog.ChatToConsoleTransmuted(_logger, entry.GetType().Name, console.GetType().Name);
                     long consolePos = await _consoleJournal.WriteAsync(console, ct).ConfigureAwait(false);
                     ConsoleLog.ChatToConsoleAppended(_logger, console.GetType().Name, consolePos);

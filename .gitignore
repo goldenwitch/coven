@@ -58,5 +58,12 @@ _ReSharper.*/
 *.rej
 scratch.txt
 
+# Local scratch notes
+/scratch.md
+
+# FileScrivener toy outputs — keep scope tight
+# Only ignore the toy's artifacts; do not blanket-ignore any /data folders
+/src/toys/Coven.Toys.FileScrivenerConsole/data/
+
 # Codex CLI generated state
 **/.codex/

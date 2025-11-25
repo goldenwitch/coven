@@ -51,6 +51,12 @@ Troubleshooting:
 - OpenAI: Confirm API key and model are valid for your account.
 - Networking: Ensure outbound HTTPS to Discord and OpenAI is allowed.
 
+### Persistence (FileScrivener)
+- Journals persist to NDJSON files for replay/audit:
+  - Chat: `./data/discord-chat.ndjson`
+  - Agent: `./data/openai-agent.ndjson`
+- Change paths by editing `AddFileScrivener<ChatEntry|AgentEntry>(new FileScrivenerConfig { FilePath = ... })` in `Program.cs`.
+
 ## Extend
 
 Swap Discord for Console chat (one-line change):
