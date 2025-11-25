@@ -43,7 +43,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Core.Streaming", "Cov
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.DiscordStreaming", "toys\Coven.Toys.DiscordStreaming\Coven.Toys.DiscordStreaming.csproj", "{08F6A76C-CF62-4113-8740-CF5EF8115F99}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Core.Debug", "Coven.Core.Debug\Coven.Core.Debug.csproj", "{1264DB86-E00B-4222-B865-CF15BD752704}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Scriveners.FileScrivener", "Coven.Scriveners.FileScrivener\Coven.Scriveners.FileScrivener.csproj", "{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -271,18 +271,18 @@ Global
 		{08F6A76C-CF62-4113-8740-CF5EF8115F99}.Release|x64.Build.0 = Release|Any CPU
 		{08F6A76C-CF62-4113-8740-CF5EF8115F99}.Release|x86.ActiveCfg = Release|Any CPU
 		{08F6A76C-CF62-4113-8740-CF5EF8115F99}.Release|x86.Build.0 = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|x64.Build.0 = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Debug|x86.Build.0 = Debug|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|x64.ActiveCfg = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|x64.Build.0 = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|x86.ActiveCfg = Release|Any CPU
-		{1264DB86-E00B-4222-B865-CF15BD752704}.Release|x86.Build.0 = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|x64.Build.0 = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Debug|x86.Build.0 = Debug|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|x64.ActiveCfg = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|x64.Build.0 = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|x86.ActiveCfg = Release|Any CPU
+		{31A02263-5D48-4EEC-B5ED-28876DEC2CB5}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
