@@ -19,7 +19,7 @@ internal sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirecti
         return Input switch
         {
             ConsoleAfferent incoming => Task.FromResult<ChatEntry>(new ChatAfferent(incoming.Sender, incoming.Text)),
-            ConsoleEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, outgoing.Text)),
+            ConsoleEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, "ACK" + outgoing.Text)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }

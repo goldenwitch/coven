@@ -26,9 +26,8 @@ internal sealed class FlusherDaemon<TEntry>(
     private readonly FileScrivenerConfig _config = config ?? throw new ArgumentNullException(nameof(config));
     private readonly ILogger<FlusherDaemon<TEntry>> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    private readonly Lock _lock = new();
-    // Producer-owned active buffer. Only the producer thread mutates the reference or contents
-    // (except during shutdown where we capture under the lock). Consumer never touches this field.
+    // Producer-owned active buffer. Only the producer task appends to the list.
+    // Reference swaps are done atomically to avoid duplication during shutdown races.
     private List<(long position, TEntry entry)> _activeSnapshot = [];
 
     private Channel<List<(long position, TEntry entry)>> _flushQueue = Channel.CreateUnbounded<List<(long position, TEntry entry)>>();
@@ -118,29 +117,24 @@ internal sealed class FlusherDaemon<TEntry>(
 
                 if (_predicate.ShouldFlush(_activeSnapshot))
                 {
-                    List<(long position, TEntry entry)>? toFlush = null;
-                    lock (_lock)
-                    {
-                        // Double-check under lock to serialize with shutdown's final capture.
-                        if (_predicate.ShouldFlush(_activeSnapshot))
-                        {
-                            // Capture current buffer for flushing.
-                            // Invariant after capture: toFlush holds the producer-filled buffer; _activeSnapshot still
-                            // points to the same instance until we swap after leaving the lock.
-                            toFlush = _activeSnapshot;
-                        }
-                    }
+                    // Rent a fresh buffer, then atomically swap references to avoid any window
+                    // where shutdown could observe the pre-swap active list.
+                    List<(long position, TEntry entry)> fresh = await RentBufferAsync(ct).ConfigureAwait(false);
+                    fresh.Clear();
 
-                    if (toFlush is not null)
+                    // Re-check after allocation to avoid swapping on stale predicate truth.
+                    if (_predicate.ShouldFlush(_activeSnapshot))
                     {
-                        // Rent a fresh buffer and swap the producer's active reference (no allocation).
-                        // Safe to swap outside the lock: producer is the only writer of _activeSnapshot.
-                        List<(long position, TEntry entry)> fresh = await RentBufferAsync(ct).ConfigureAwait(false);
-                        fresh.Clear();
-                        _activeSnapshot = fresh;
+                        List<(long position, TEntry entry)> toFlush = Interlocked.Exchange(ref _activeSnapshot, fresh);
+                        FlusherLog.SnapshotFlushTriggered(_logger, toFlush.Count);
 
-                        // Enqueue captured buffer for consumer persistence. Consumer will append, clear, and return to pool.
                         await _flushQueue.Writer.WriteAsync(toFlush, ct).ConfigureAwait(false);
+                        FlusherLog.SnapshotEnqueued(_logger, toFlush.Count);
+                    }
+                    else
+                    {
+                        // Predicate flipped; return the unused fresh buffer to the pool.
+                        await _pool.Writer.WriteAsync(fresh, ct).ConfigureAwait(false);
                     }
                 }
             }
@@ -156,22 +150,15 @@ internal sealed class FlusherDaemon<TEntry>(
         }
         finally
         {
-            // On completion/cancel, push any remaining snapshot.
-            // Acquire lock to avoid racing with an in-flight predicate check; ensure a single capture.
-            List<(long position, TEntry entry)>? remainder = null;
-            lock (_lock)
-            {
-                if (_activeSnapshot.Count > 0)
-                {
-                    // Capture final producer buffer. We do not rent a replacement during shutdown.
-                    remainder = _activeSnapshot;
-                }
-            }
-            if (remainder is not null)
+            // On completion/cancel, push any remaining snapshot. Atomically detach the active buffer
+            // to avoid any chance of double-enqueue with an in-flight swap.
+            List<(long position, TEntry entry)> remainder = Interlocked.Exchange(ref _activeSnapshot, new List<(long position, TEntry entry)>(capacity: 128));
+            if (remainder.Count > 0)
             {
                 try
                 {
                     _flushQueue.Writer.TryWrite(remainder);
+                    FlusherLog.ShutdownRemainderEnqueued(_logger, remainder.Count);
                 }
                 catch
                 {
@@ -193,6 +180,7 @@ internal sealed class FlusherDaemon<TEntry>(
                 {
                     // Persist ordered batch to sink.
                     await _sink.AppendSnapshotAsync(batch, ct).ConfigureAwait(false);
+                    FlusherLog.SnapshotAppended(_logger, batch.Count);
                     // Return buffer to pool for reuse by producer.
                     batch.Clear();
                     await _pool.Writer.WriteAsync(batch, ct).ConfigureAwait(false);

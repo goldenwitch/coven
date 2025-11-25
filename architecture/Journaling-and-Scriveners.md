@@ -35,6 +35,12 @@ Scriveners are append‑only journals that record typed entries. They decouple p
 - Avoid long‑running synchronous work in consumers; prefer daemons that tail asynchronously.
 - Treat journals as the source of truth for cross‑component communication.
 
+## Persistence
+- In‑memory by default: `InMemoryScrivener<T>` (fast, replayable within process).
+- File‑backed option: `Coven.Scriveners.FileScrivener` provides a background flusher that appends NDJSON snapshots to disk while your app continues to use the in‑memory journal.
+  - See package README: `/src/Coven.Scriveners.FileScrivener/README.md`.
+  - Try the toy: `/src/toys/Coven.Toys.FileScrivenerConsole/`.
+
 ## Related
 - Windowing/Shattering: see “Windowing and Shattering”.
 - Daemon lifecycle: see `src/Coven.Daemonology/README.md`.

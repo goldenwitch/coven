@@ -43,6 +43,7 @@ Concrete examples help ground the vocabulary above. The Sample 01 app wires Disc
 - Journals (Scriveners): append‑only logs connecting router↔branches↔leaves.
   - Chat journal: `IScrivener<ChatEntry>` (Discord adapter implements its own scrivener; router reads/writes entries).
   - Agent journal: `IScrivener<AgentEntry>` (OpenAI adapter scrivener; router reads/writes entries).
+  - Persistence: use `Coven.Scriveners.FileScrivener` to append NDJSON snapshots to disk while keeping in‑process journals in memory.
 
 - Directionality in the router logic:
   - Afferent (inbound): Discord adapter writes `ChatAfferent` when a user posts in the channel; router reads and forwards as an `AgentPrompt`.

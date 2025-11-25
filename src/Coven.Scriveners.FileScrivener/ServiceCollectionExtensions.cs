@@ -27,6 +27,9 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(config);
 
+        // Register the config so other classes can find it.
+        services.AddScoped(sp => config);
+
         // Inner in-memory journal (scoped) used by the file scrivener
         services.AddKeyedScoped<IScrivener<TEntry>, InMemoryScrivener<TEntry>>("Coven.InternalFileScrivener");
         services.AddScoped<IScrivener<TEntry>>(sp =>

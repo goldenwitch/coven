@@ -23,7 +23,7 @@ public class DiscordTransmuter : IBiDirectionalTransmuter<DiscordEntry, ChatEntr
         return Input switch
         {
             DiscordAfferent incoming => Task.FromResult<ChatEntry>(new ChatAfferent(incoming.Sender, incoming.Text)),
-            DiscordEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, outgoing.Text)),
+            DiscordEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, "ACK" + outgoing.Text)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }

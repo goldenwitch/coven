@@ -38,3 +38,4 @@ Project overview: see [README](/README.md).
 - [/src/toys/Coven.Toys.ConsoleOpenAIStreaming](/src/toys/Coven.Toys.ConsoleOpenAIStreaming/)
 - [/src/toys/Coven.Toys.DiscordChat](/src/toys/Coven.Toys.DiscordChat/)
 - [/src/toys/Coven.Toys.DiscordStreaming](/src/toys/Coven.Toys.DiscordStreaming/)
+- [/src/toys/Coven.Toys.FileScrivenerConsole](/src/toys/Coven.Toys.FileScrivenerConsole/)

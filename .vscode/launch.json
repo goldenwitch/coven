@@ -68,6 +68,17 @@
       "preLaunchTask": "build"
     },
     {
+      "name": "Launch: Coven.Toys.FileScrivenerConsole",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/toys/Coven.Toys.FileScrivenerConsole/bin/Debug/net10.0/Coven.Toys.FileScrivenerConsole.dll",
+      "cwd": "${workspaceFolder}/src/toys/Coven.Toys.FileScrivenerConsole",
+      "console": "integratedTerminal",
+      "stopAtEntry": false,
+      "justMyCode": true,
+      "preLaunchTask": "build"
+    },
+    {
       "name": "Attach: .NET Core",
       "type": "coreclr",
       "request": "attach"
