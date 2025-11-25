@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Agents.OpenAI;
+using Coven.Chat;
 using Coven.Chat.Discord;
 using Coven.Core;
 using Coven.Core.Builder;
@@ -12,6 +13,7 @@ using Coven.Transmutation;
 using OpenAI.Responses;
 using Coven.Core.Streaming;
 using Coven.Agents;
+using Coven.Scriveners.FileScrivener;
 
 // Configuration (env-first with fallback to defaults below)
 // Defaults: edit these to hardcode values when env vars are not present
@@ -47,6 +49,16 @@ OpenAIClientConfig openAiConfig = new()
 // Register DI
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
+// Persist journals to disk using FileScrivener (registered before branches to avoid TryAdd overrides)
+builder.Services.AddFileScrivener<ChatEntry>(new FileScrivenerConfig
+{
+    FilePath = "./data/discord-chat.ndjson",
+    FlushThreshold = 1
+});
+builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
+{
+    FilePath = "./data/openai-agent.ndjson"
+});
 builder.Services.AddDiscordChat(discordConfig);
 builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {

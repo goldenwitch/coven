@@ -13,10 +13,9 @@ public sealed class JsonEntrySerializer<TEntry> : IEntrySerializer<TEntry>
 {
     private static readonly JsonSerializerOptions _options = new(JsonSerializerDefaults.Web);
 
-    // Use object for Entry to preserve runtime type shape during serialization.
-    private sealed record Envelope(long Position, object Entry);
+    private sealed record Envelope(string SchemaVersion, long Position, TEntry Entry);
 
     /// <inheritdoc />
     public string Serialize(long position, TEntry entry)
-        => JsonSerializer.Serialize(new Envelope(position, entry!), _options);
+        => JsonSerializer.Serialize(new Envelope(FileScrivenerSchema.CurrentVersion, position, entry), _options);
 }

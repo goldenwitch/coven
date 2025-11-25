@@ -17,11 +17,17 @@
   <ItemGroup Condition="'$(PreferProjectReferences)' == 'true'">
     <ProjectReference Include="..\..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
     <ProjectReference Include="..\..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
+    <ProjectReference Include="..\..\Coven.Scriveners.FileScrivener\Coven.Scriveners.FileScrivener.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(PreferProjectReferences)' != 'true'">
     <PackageReference Include="Coven.Chat.Discord" />
     <PackageReference Include="Coven.Agents.OpenAI" />
+    <PackageReference Include="Coven.Scriveners.FileScrivener" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="data\" />
   </ItemGroup>
 
 </Project>

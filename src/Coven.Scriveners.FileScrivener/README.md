@@ -6,7 +6,7 @@ File-backed `IScrivener<T>` with a snapshot flusher daemon. In‑process journal
 
 - `FileScrivener<TEntry>`: a wrapper over `InMemoryScrivener<TEntry>` that performs no I/O and exposes the standard `IScrivener<TEntry>` API.
 - `FlusherDaemon<TEntry>`: tails the journal, accumulates an ordered snapshot of `(position, entry)` pairs, and flushes to a sink when a predicate is met; flushes any remainder on shutdown.
-- Defaults: JSON serializer (`{ Position, Entry }` per line), append‑only file sink, and a count‑based flush predicate.
+- Defaults: JSON serializer (`{ schemaVersion: string, position, entry }` per line), append‑only file sink, and a count‑based flush predicate.
 
 ## Install / DI
 
@@ -53,6 +53,8 @@ Threading & safety:
 
 Important: File persistence is append‑only; reading/recovery from disk is not implemented — replay comes from the in‑memory scrivener for the current process. If you need recovery, implement a startup loader that hydrates the inner scrivener from the file.
 
+Compatibility: The on‑disk format intentionally does not commit to backward/forward compatibility. The file scrivener makes no promises about reading any version other than the one it wrote. Each line includes a `schemaVersion` field to enable readers to detect and reject incompatible data.
+
 ## Start the Daemon
 
 Start `ContractDaemon`s from your block (pattern used across the repo):
@@ -80,7 +82,8 @@ internal sealed class StartDaemonsBlock(IEnumerable<ContractDaemon> daemons) : I
 ## Customization
 
 - Serializer (line format):
-  - Default is `JsonEntrySerializer<TEntry>` producing `{ Position, Entry }` per line.
+  - Default is `JsonEntrySerializer<TEntry>` producing `{ schemaVersion: string, position, entry }` per line.
+    - The `entry` object is serialized polymorphically with System.Text.Json using type discriminators (annotated on entry base types).
   - Replace by registering your own:
     ```csharp
     services.AddScoped<IEntrySerializer<MyEntry>, MyCustomSerializer>();
