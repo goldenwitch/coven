@@ -6,39 +6,47 @@ namespace Coven.Chat.Console;
 
 /// <summary>
 /// Maps between Console-specific entries and generic Chat entries.
-/// Afferent: Console → Chat; Efferent: Chat → Console.
+/// Supports imbuing with the source record position for position-based ACKs.
 /// </summary>
-internal sealed class ConsoleTransmuter(ConsoleClientConfig config) : IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>
+internal sealed class ConsoleTransmuter(ConsoleClientConfig config)
+    : IImbuingTransmuter<ConsoleEntry, long, ChatEntry>,
+      IImbuingTransmuter<ChatEntry, long, ConsoleEntry>
 {
     private readonly ConsoleClientConfig _config = config ?? throw new ArgumentNullException(nameof(config));
 
-    public Task<ChatEntry> TransmuteAfferent(ConsoleEntry Input, CancellationToken cancellationToken)
+    // Console → Chat (afferent):
+    // - ConsoleAfferent -> ChatAfferent (position ignored)
+    // - ConsoleEfferent -> ChatAck(position)
+    public Task<ChatEntry> Transmute(ConsoleEntry Input, long Reagent, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return Input switch
         {
             ConsoleAfferent incoming => Task.FromResult<ChatEntry>(new ChatAfferent(incoming.Sender, incoming.Text)),
-            ConsoleEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, "ACK" + outgoing.Text)),
+            ConsoleEfferent outgoing => Task.FromResult<ChatEntry>(new ChatAck(outgoing.Sender, Reagent)),
+            ConsoleAck => Task.FromResult<ChatEntry>(new ChatAck(Input.Sender, Reagent)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }
 
-    public Task<ConsoleEntry> TransmuteEfferent(ChatEntry Output, CancellationToken cancellationToken)
+    // Chat → Console (efferent):
+    // - ChatEfferent -> ConsoleEfferent
+    // - All others -> ConsoleAck(position)
+    public Task<ConsoleEntry> Transmute(ChatEntry Input, long Reagent, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Output switch
+        return Input switch
         {
             ChatEfferent outgoing => Task.FromResult<ConsoleEntry>(new ConsoleEfferent(_config.OutputSender, outgoing.Text)),
 
-            // Internal/unfixed artifacts or inbound: acknowledge only
-            ChatEfferentDraft draft => Task.FromResult<ConsoleEntry>(new ConsoleAck(draft.Sender, draft.Text)),
-            ChatChunk chunk => Task.FromResult<ConsoleEntry>(new ConsoleAck(chunk.Sender, chunk.Text)),
-            ChatStreamCompleted done => Task.FromResult<ConsoleEntry>(new ConsoleAck(done.Sender, string.Empty)),
-            ChatAfferent incoming => Task.FromResult<ConsoleEntry>(new ConsoleAck(incoming.Sender, incoming.Text)),
-            ChatAfferentDraft incomingDraft => Task.FromResult<ConsoleEntry>(new ConsoleAck(incomingDraft.Sender, incomingDraft.Text)),
-            _ => throw new ArgumentOutOfRangeException(nameof(Output))
+            ChatEfferentDraft draft => Task.FromResult<ConsoleEntry>(new ConsoleAck(draft.Sender, Reagent)),
+            ChatChunk chunk => Task.FromResult<ConsoleEntry>(new ConsoleAck(chunk.Sender, Reagent)),
+            ChatStreamCompleted done => Task.FromResult<ConsoleEntry>(new ConsoleAck(done.Sender, Reagent)),
+            ChatAfferent incoming => Task.FromResult<ConsoleEntry>(new ConsoleAck(incoming.Sender, Reagent)),
+            ChatAfferentDraft incomingDraft => Task.FromResult<ConsoleEntry>(new ConsoleAck(incomingDraft.Sender, Reagent)),
+            _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }
 }

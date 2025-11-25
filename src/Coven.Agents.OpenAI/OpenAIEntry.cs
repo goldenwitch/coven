@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Text.Json.Serialization;
 using Coven.Core;
 
 namespace Coven.Agents.OpenAI;
@@ -7,6 +8,15 @@ namespace Coven.Agents.OpenAI;
 /// <summary>
 /// Base entry type for OpenAI agent journals (requests, responses, thoughts, chunks, acknowledgements).
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(OpenAIEfferent), nameof(OpenAIEfferent))]
+[JsonDerivedType(typeof(OpenAIAfferent), nameof(OpenAIAfferent))]
+[JsonDerivedType(typeof(OpenAIAfferentChunk), nameof(OpenAIAfferentChunk))]
+[JsonDerivedType(typeof(OpenAIAfferentThoughtChunk), nameof(OpenAIAfferentThoughtChunk))]
+[JsonDerivedType(typeof(OpenAIThought), nameof(OpenAIThought))]
+[JsonDerivedType(typeof(OpenAIAck), nameof(OpenAIAck))]
+[JsonDerivedType(typeof(OpenAIEfferentThoughtChunk), nameof(OpenAIEfferentThoughtChunk))]
+[JsonDerivedType(typeof(OpenAIStreamCompleted), nameof(OpenAIStreamCompleted))]
 public abstract record OpenAIEntry(
     string Sender
 ) : Entry;
@@ -57,7 +67,7 @@ public sealed record OpenAIThought(
 /// <summary>OpenAI acknowledgement used for synchronization.</summary>
 public sealed record OpenAIAck(
     string Sender,
-    string Text
+    long Position
 ) : OpenAIEntry(Sender);
 
 // Streaming thought chunks (efferent): agent streams thoughts out

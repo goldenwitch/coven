@@ -5,47 +5,63 @@ using Coven.Transmutation;
 namespace Coven.Agents.OpenAI;
 
 /// <summary>
-/// Maps between OpenAI-specific entries and generic Agent entries.
+/// Maps between OpenAI-specific entries and generic Agent entries using position-imbued ACKs.
 /// Afferent: OpenAI → Agent; Efferent: Agent → OpenAI.
 /// </summary>
-internal sealed class OpenAITransmuter : IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>
+internal sealed class OpenAITransmuter
+    : IImbuingTransmuter<OpenAIEntry, long, AgentEntry>,
+      IImbuingTransmuter<AgentEntry, long, OpenAIEntry>
 {
-    public Task<AgentEntry> TransmuteAfferent(OpenAIEntry Input, CancellationToken cancellationToken)
+    /// <summary>
+    /// Transmutes OpenAI-afferent entries to Agent entries.
+    /// </summary>
+    /// <param name="Input">The source OpenAI entry.</param>
+    /// <param name="Reagent">The source journal position used for position-based acknowledgements.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The mapped Agent entry.</returns>
+    public Task<AgentEntry> Transmute(OpenAIEntry Input, long Reagent, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return Input switch
         {
             OpenAIAfferent incoming => Task.FromResult<AgentEntry>(new AgentResponse(incoming.Sender, incoming.Text)),
-            // Today, Afferent chunks include thoughts, tomorrow who knows.
             OpenAIAfferentChunk chunk => Task.FromResult<AgentEntry>(new AgentAfferentChunk(chunk.Sender, chunk.Text)),
-            // Streaming thought chunks from OpenAI surface as afferent thought drafts
             OpenAIAfferentThoughtChunk tChunk => Task.FromResult<AgentEntry>(new AgentAfferentThoughtChunk(tChunk.Sender, tChunk.Text)),
-            // A full OpenAIThought should surface as a fixed AgentThought
             OpenAIThought thought => Task.FromResult<AgentEntry>(new AgentThought(thought.Sender, thought.Text)),
             OpenAIStreamCompleted done => Task.FromResult<AgentEntry>(new AgentStreamCompleted(done.Sender)),
-            OpenAIEfferent outgoing => Task.FromResult<AgentEntry>(new AgentAck(outgoing.Sender)),
+            // For efferent records observed on the OpenAI journal or explicit OpenAI acks, emit an AgentAck with the source position
+            OpenAIEfferent outgoing => Task.FromResult<AgentEntry>(new AgentAck(outgoing.Sender, Reagent)),
+            OpenAIAck => Task.FromResult<AgentEntry>(new AgentAck(Input.Sender, Reagent)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }
 
-    public Task<OpenAIEntry> TransmuteEfferent(AgentEntry Output, CancellationToken cancellationToken)
+    /// <summary>
+    /// Transmutes Agent-efferent entries to OpenAI entries.
+    /// </summary>
+    /// <param name="Input">The source Agent entry.</param>
+    /// <param name="Reagent">The source journal position used for position-based acknowledgements.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The mapped OpenAI entry.</returns>
+    public Task<OpenAIEntry> Transmute(AgentEntry Input, long Reagent, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return Output switch
+        return Input switch
         {
             AgentPrompt prompt => Task.FromResult<OpenAIEntry>(new OpenAIEfferent(prompt.Sender, prompt.Text)),
-            AgentResponse response => Task.FromResult<OpenAIEntry>(new OpenAIAck(response.Sender, response.Text)),
-            AgentThought thought => Task.FromResult<OpenAIEntry>(new OpenAIAck(thought.Sender, thought.Text)),
-            AgentEfferentChunk efferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(efferentChunk.Sender, efferentChunk.Text)),
-            AgentAfferentChunk afferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(afferentChunk.Sender, afferentChunk.Text)),
-            // Streaming efferent thought drafts map to OpenAI efferent thought chunk (not forwarded by gateway today)
+
+            // All other Agent entries (including drafts and fixed) acknowledge with the position being processed
+            AgentResponse response => Task.FromResult<OpenAIEntry>(new OpenAIAck(response.Sender, Reagent)),
+            AgentThought thought => Task.FromResult<OpenAIEntry>(new OpenAIAck(thought.Sender, Reagent)),
+            AgentEfferentChunk efferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(efferentChunk.Sender, Reagent)),
+            AgentAfferentChunk afferentChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(afferentChunk.Sender, Reagent)),
             AgentEfferentThoughtChunk etChunk => Task.FromResult<OpenAIEntry>(new OpenAIEfferentThoughtChunk(etChunk.Sender, etChunk.Text)),
-            // Afferent thought drafts are not sent outward; ack for completeness
-            AgentAfferentThoughtChunk atChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(atChunk.Sender, atChunk.Text)),
-            AgentStreamCompleted done => Task.FromResult<OpenAIEntry>(new OpenAIAck(done.Sender, string.Empty)),
-            _ => throw new ArgumentOutOfRangeException(nameof(Output))
+            AgentAfferentThoughtChunk atChunk => Task.FromResult<OpenAIEntry>(new OpenAIAck(atChunk.Sender, Reagent)),
+            AgentStreamCompleted done => Task.FromResult<OpenAIEntry>(new OpenAIAck(done.Sender, Reagent)),
+            AgentAck ack => Task.FromResult<OpenAIEntry>(new OpenAIAck(ack.Sender, Reagent)),
+            _ => throw new ArgumentOutOfRangeException(nameof(Input))
         };
     }
 }

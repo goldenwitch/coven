@@ -33,9 +33,9 @@ internal sealed class ConsoleScrivener : TappedScrivener<ConsoleEntry>
     /// </summary>
     public override async Task<long> WriteAsync(ConsoleEntry entry, CancellationToken cancellationToken = default)
     {
-        if (entry is ConsoleEfferent)
+        if (entry is ConsoleEfferent efferent)
         {
-            await _gateway.SendAsync(entry.Text, cancellationToken).ConfigureAwait(false);
+            await _gateway.SendAsync(efferent.Text, cancellationToken).ConfigureAwait(false);
         }
 
         long pos = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);

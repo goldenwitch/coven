@@ -14,7 +14,7 @@ namespace Coven.Agents.OpenAI;
 
 /// <summary>
 /// Dependency Injection helpers for wiring the OpenAI agent integration.
-/// Registers journals, gateway connection, transmuters, windowing daemons, and the official OpenAI client.
+/// Registers journals, gateway connection, imbuing transmuters (position-based ACKs), windowing daemons, and the official OpenAI client.
 /// </summary>
 public static class OpenAIAgentsServiceCollectionExtensions
 {
@@ -87,8 +87,9 @@ public static class OpenAIAgentsServiceCollectionExtensions
             services.TryAddScoped<IOpenAIGatewayConnection, OpenAIRequestGatewayConnection>();
         }
 
-        // Transmuter and daemon
-        services.AddScoped<IBiDirectionalTransmuter<OpenAIEntry, AgentEntry>, OpenAITransmuter>();
+        // Transmuters and daemon
+        services.AddScoped<IImbuingTransmuter<OpenAIEntry, long, AgentEntry>, OpenAITransmuter>();
+        services.AddScoped<IImbuingTransmuter<AgentEntry, long, OpenAIEntry>, OpenAITransmuter>();
         services.TryAddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, OpenAIEntryToResponseItemTransmuter>();
         services.TryAddScoped<IOpenAITranscriptBuilder, DefaultOpenAITranscriptBuilder>();
         // Session-local shattering for OpenAI chunks: split on paragraph boundary

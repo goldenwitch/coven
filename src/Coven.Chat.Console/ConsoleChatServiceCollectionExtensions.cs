@@ -34,7 +34,9 @@ public static class ConsoleChatServiceCollectionExtensions
         services.AddScoped<IScrivener<ConsoleEntry>, ConsoleScrivener>();
         services.AddKeyedScoped<IScrivener<ConsoleEntry>, InMemoryScrivener<ConsoleEntry>>("Coven.InternalConsoleScrivener");
 
-        services.AddScoped<IBiDirectionalTransmuter<ConsoleEntry, ChatEntry>, ConsoleTransmuter>();
+        // Imbuing transmuters (position-aware) for ack correctness
+        services.AddScoped<IImbuingTransmuter<ConsoleEntry, long, ChatEntry>, ConsoleTransmuter>();
+        services.AddScoped<IImbuingTransmuter<ChatEntry, long, ConsoleEntry>, ConsoleTransmuter>();
         services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         services.AddScoped<ContractDaemon, ConsoleChatDaemon>();
         return services;

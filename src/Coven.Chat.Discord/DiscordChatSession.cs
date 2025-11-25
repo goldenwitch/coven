@@ -11,7 +11,8 @@ internal sealed class DiscordChatSession(
     DiscordGatewayConnection gateway,
     IScrivener<DiscordEntry> discordJournal,
     IScrivener<ChatEntry> chatJournal,
-    IBiDirectionalTransmuter<DiscordEntry, ChatEntry> transmuter,
+    IImbuingTransmuter<DiscordEntry, long, ChatEntry> afferentTransmuter,
+    IImbuingTransmuter<ChatEntry, long, DiscordEntry> efferentTransmuter,
     IShatterPolicy<ChatEntry> shatterPolicy,
     ILogger<DiscordChatSession> logger,
     CancellationToken sessionToken) : IAsyncDisposable
@@ -19,7 +20,8 @@ internal sealed class DiscordChatSession(
     private readonly DiscordGatewayConnection _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
     private readonly IScrivener<DiscordEntry> _discordJournal = discordJournal ?? throw new ArgumentNullException(nameof(discordJournal));
     private readonly IScrivener<ChatEntry> _chatJournal = chatJournal ?? throw new ArgumentNullException(nameof(chatJournal));
-    private readonly IBiDirectionalTransmuter<DiscordEntry, ChatEntry> _transmuter = transmuter ?? throw new ArgumentNullException(nameof(transmuter));
+    private readonly IImbuingTransmuter<DiscordEntry, long, ChatEntry> _afferentTransmuter = afferentTransmuter ?? throw new ArgumentNullException(nameof(afferentTransmuter));
+    private readonly IImbuingTransmuter<ChatEntry, long, DiscordEntry> _efferentTransmuter = efferentTransmuter ?? throw new ArgumentNullException(nameof(efferentTransmuter));
     private readonly IShatterPolicy<ChatEntry> _shatterPolicy = shatterPolicy ?? throw new ArgumentNullException(nameof(shatterPolicy));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly CancellationToken _sessionToken = sessionToken;
@@ -43,7 +45,7 @@ internal sealed class DiscordChatSession(
                     }
 
                     DiscordLog.DiscordToChatObserved(_logger, entry.GetType().Name, position);
-                    ChatEntry chat = await _transmuter.TransmuteAfferent(entry, ct).ConfigureAwait(false);
+                    ChatEntry chat = await _afferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     DiscordLog.DiscordToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
                     long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
                     DiscordLog.DiscordToChatAppended(_logger, chat.GetType().Name, chatPos);
@@ -103,7 +105,7 @@ internal sealed class DiscordChatSession(
                         continue;
                     }
 
-                    DiscordEntry discord = await _transmuter.TransmuteEfferent(entry, ct).ConfigureAwait(false);
+                    DiscordEntry discord = await _efferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
                     DiscordLog.ChatToDiscordTransmuted(_logger, entry.GetType().Name, discord.GetType().Name);
                     long discPos = await _discordJournal.WriteAsync(discord, ct).ConfigureAwait(false);
                     DiscordLog.ChatToDiscordAppended(_logger, discord.GetType().Name, discPos);

@@ -9,6 +9,7 @@ Pure transformations between types used across Coven. Transmuters describe how o
 - IBatchTransmuter<TChunk,TOutput>: many‑to‑one transformation over a window of chunks.
 - BatchTransmuteResult<TChunk,TOutput>: output plus optional remainder chunk.
 - LambdaTransmuter<TIn,TOut>: adapter to build a transmuter from a delegate.
+- IImbuingTransmuter<TIn,TReagent,TOut>: two‑parameter transmutation using an input plus a reagent. Also implements `ITransmuter<(TIn Input, TReagent Reagent), TOut>` for tuple‑based composition.
 
 ## Principles
 
@@ -71,6 +72,27 @@ Remainders are useful when only part of the last chunk is consumed; the unused t
 
 ```csharp
 var t = new LambdaTransmuter<int, string>((i, ct) => Task.FromResult(i.ToString()));
+```
+
+## Imbuing Transmutation (Input + Reagent)
+
+```csharp
+using Coven.Transmutation;
+
+// Implement the two-parameter interface directly
+public sealed class SumWithBiasImbuing : IImbuingTransmuter<int, int, int>
+{
+    public Task<int> Transmute(int Input, int Reagent, CancellationToken ct = default)
+        => Task.FromResult(Input + Reagent);
+}
+
+// Use it directly with separate parameters
+int result1 = await new SumWithBiasImbuing().Transmute(10, 5); // 15
+
+// Because IImbuingTransmuter also implements ITransmuter<(int,int),int>,
+// it can be used in tuple-based composition without extra adapters
+ITransmuter<(int Input, int Bias), int> tupleTransmuter = new SumWithBiasImbuing();
+int result2 = await tupleTransmuter.Transmute((10, 5)); // 15
 ```
 
 ## Tips

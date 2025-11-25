@@ -9,6 +9,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
 
+/// <summary>
+/// Manages Discord connectivity and bridges inbound/outbound messages to a Discord journal.
+/// Bot-authored messages are ignored (no ACK is written here); position-based ACKs are emitted later by the session/transmuter pipeline.
+/// </summary>
 internal sealed class DiscordGatewayConnection(
     DiscordClientConfig configuration,
     DiscordSocketClient socketClient,
@@ -121,14 +125,12 @@ internal sealed class DiscordGatewayConnection(
         // Determine the sender identity. For Discord.Net, Author should be present on normal messages;
         string sender = message.Author.Username;
 
-        // Bots don't get incoming, they only get ACK
+        // Ignore bot-authored messages to prevent loops; session will generate position-based ACKs
+        // when it observes our own DiscordEfferent entries via the journal.
         if (message.Author.IsBot)
         {
             string text = message.Content ?? string.Empty;
             DiscordLog.InboundBotMessageObserved(_logger, sender, text.Length);
-            DiscordAck ack = new(sender, text);
-            long pos = await _scrivener.WriteAsync(ack).ConfigureAwait(false);
-            DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordAck), pos);
             return;
         }
 
