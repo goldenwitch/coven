@@ -16,4 +16,9 @@ public sealed class ReasoningConfig
     /// Controls verbosity of returned reasoning summaries.
     /// </summary>
     public ReasoningSummaryVerbosity SummaryVerbosity { get; init; } = ReasoningSummaryVerbosity.Auto;
+
+    /// <summary>
+    /// Whether to request reasoning summaries. Defaults to false.
+    /// </summary>
+    public bool IncludeSummary { get; init; }
 }

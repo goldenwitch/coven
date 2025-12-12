@@ -62,7 +62,7 @@ builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
 builder.Services.AddDiscordChat(discordConfig);
 builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
-    registration.EnableStreaming();
+   // registration.EnableStreaming();
 });
 
 // Override windowing policies independently for outputs and thoughts
