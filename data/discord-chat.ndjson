@@ -1,0 +1,46 @@
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014loud and clear! I can see your message and everything\u2019s working. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014loud and clear! I can see your message and everything\u2019s working. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014loud and clear! I can see your message and everything\u2019s working. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014it\u0027s working. I can see your message. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014it\u0027s working. I can see your message. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014it\u0027s working. I can see your message. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"ChatAck","position":2,"sender":"BOT"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014loud and clear, hunts135. I can see your message and reply here. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014loud and clear, hunts135. I can see your message and reply here. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014loud and clear, hunts135. I can see your message and reply here. What would you like to do next?","sender":"BOT"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014your message came through. I can see you, hunts135. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014your message came through. I can see you, hunts135. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014your message came through. I can see you, hunts135. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"ChatAck","position":2,"sender":"BOT"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014got your message, hunts135. I\u2019m here and responsive. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014got your message, hunts135. I\u2019m here and responsive. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014got your message, hunts135. I\u2019m here and responsive. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"ChatAck","position":2,"sender":"BOT"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"ChatAfferent","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"ChatEfferentDraft","text":"Yes\u2014I can see your message, hunts135. Looks like everything\u2019s working. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"ChatChunk","text":"Yes\u2014I can see your message, hunts135. Looks like everything\u2019s working. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"ChatStreamCompleted","sender":"BOT"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"ChatEfferent","text":"Yes\u2014I can see your message, hunts135. Looks like everything\u2019s working. How can I help?","sender":"BOT"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"ChatAck","position":2,"sender":"BOT"}}

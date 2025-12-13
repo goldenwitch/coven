@@ -43,12 +43,12 @@ public sealed record OpenAIClientConfig
     public int? MaxOutputTokens { get; init; }
 
     /// <summary>
+    /// Configures reasoning options for models that support it.
+    /// </summary>
+    public ReasoningConfig? Reasoning { get; init; }
+
+    /// <summary>
     /// Max number of transcript items to include; defaults to unlimited.
     /// </summary>
     public int HistoryClip { get; init; } = int.MaxValue;
-
-    /// <summary>
-    /// Configures reasoning options for models that support it.
-    /// </summary>
-    public ReasoningConfig Reasoning { get; init; } = new ReasoningConfig();
 }

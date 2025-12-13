@@ -21,7 +21,7 @@ internal sealed class OpenAIResponseOptionsTransmuter : ITransmuter<OpenAIClient
 
         if (Input.Reasoning is not null)
         {
-            options.ReasoningOptions = new ResponseReasoningOptions()
+            ResponseReasoningOptions reasoning = new()
             {
                 ReasoningEffortLevel = Input.Reasoning.Effort switch
                 {
@@ -29,15 +29,21 @@ internal sealed class OpenAIResponseOptionsTransmuter : ITransmuter<OpenAIClient
                     ReasoningEffort.Medium => ResponseReasoningEffortLevel.Medium,
                     ReasoningEffort.High => ResponseReasoningEffortLevel.High,
                     _ => null
-                },
-                ReasoningSummaryVerbosity = Input.Reasoning.SummaryVerbosity switch
+                }
+            };
+
+            if (Input.Reasoning.IncludeSummary)
+            {
+                reasoning.ReasoningSummaryVerbosity = Input.Reasoning.SummaryVerbosity switch
                 {
                     ReasoningSummaryVerbosity.Auto => ResponseReasoningSummaryVerbosity.Auto,
                     ReasoningSummaryVerbosity.Detailed => ResponseReasoningSummaryVerbosity.Detailed,
                     ReasoningSummaryVerbosity.Concise => ResponseReasoningSummaryVerbosity.Concise,
                     _ => null
-                }
-            };
+                };
+            }
+
+            options.ReasoningOptions = reasoning;
         }
 
         return Task.FromResult(options);

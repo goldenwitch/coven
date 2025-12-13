@@ -67,3 +67,7 @@ scratch.txt
 
 # Codex CLI generated state
 **/.codex/
+
+src/samples/01.DiscordAgent/Properties/
+data/discord-chat.ndjson
+
