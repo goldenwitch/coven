@@ -26,8 +26,4 @@
     <PackageReference Include="Coven.Scriveners.FileScrivener" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="data\" />
-  </ItemGroup>
-
 </Project>

@@ -43,7 +43,13 @@ DiscordClientConfig discordConfig = new()
 OpenAIClientConfig openAiConfig = new()
 {
     ApiKey = string.IsNullOrWhiteSpace(envOpenAiApiKey) ? defaultOpenAiApiKey : envOpenAiApiKey,
-    Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel
+    Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel,
+    Reasoning = new ReasoningConfig
+    {
+        Effort = ReasoningEffort.High,         // or Medium/Low
+        IncludeSummary = true,                 // optional; default false
+        SummaryVerbosity = ReasoningSummaryVerbosity.Detailed
+    }
 };
 
 // Register DI
@@ -62,7 +68,7 @@ builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
 builder.Services.AddDiscordChat(discordConfig);
 builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 {
-   // registration.EnableStreaming();
+    registration.EnableStreaming();
 });
 
 // Override windowing policies independently for outputs and thoughts
