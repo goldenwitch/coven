@@ -111,3 +111,6 @@ OpenAIClientConfig openAiConfig = new()
     Reasoning = new ReasoningConfig { Effort = ReasoningEffort.High }
 };
 ```
+Verify organization for reasoning summary to work
+
+Go to https://platform.openai.com/settings/organization/general and click on the verify organization button. Openai will ask you to use an ID verification app to take pictures of an official ID such as a drivers lisence to verify your account. This will allow the reasoning summary to work.
