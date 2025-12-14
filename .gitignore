@@ -18,6 +18,7 @@ dotnet-install.sh
 *.suo
 *.userprefs
 *.rsuser
+src/samples/01.DiscordAgent/Properties/
 
 # Logs / Temp
 *.log
@@ -57,6 +58,8 @@ _ReSharper.*/
 *.orig
 *.rej
 scratch.txt
+data/
+
 
 # Local scratch notes
 /scratch.md
@@ -67,3 +70,4 @@ scratch.txt
 
 # Codex CLI generated state
 **/.codex/
+
