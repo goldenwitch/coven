@@ -24,6 +24,7 @@ Project overview: see [README](/README.md).
 
 - Agents (branch): [/src/Coven.Agents](/src/Coven.Agents/) ([README](/src/Coven.Agents/README.md))
 - Agents OpenAI (leaf): [/src/Coven.Agents.OpenAI](/src/Coven.Agents.OpenAI/) ([README](/src/Coven.Agents.OpenAI/README.md))
+- Agents Gemini (leaf): [/src/Coven.Agents.Gemini](/src/Coven.Agents.Gemini/) ([README](/src/Coven.Agents.Gemini/README.md))
 
 - Scriveners: [/src/Coven.Scriveners.FileScrivener](/src/Coven.Scriveners.FileScrivener/) ([README](/src/Coven.Scriveners.FileScrivener/README.md))
 

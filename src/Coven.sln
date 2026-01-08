@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Agents", "Coven.Agent
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Agents.OpenAI", "Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj", "{AB7AE09F-D931-4E8E-A49A-978203CE8A0B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Agents.Gemini", "Coven.Agents.Gemini\Coven.Agents.Gemini.csproj", "{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Chat.Console", "Coven.Chat.Console\Coven.Chat.Console.csproj", "{3E734B5A-96DE-4891-9F42-F0D40A7BCF90}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.ConsoleChat", "toys\Coven.Toys.ConsoleChat\Coven.Toys.ConsoleChat.csproj", "{D18FBE36-789B-48E4-9E4C-E695B7C21946}"
@@ -189,6 +191,18 @@ Global
 		{AB7AE09F-D931-4E8E-A49A-978203CE8A0B}.Release|x64.Build.0 = Release|Any CPU
 		{AB7AE09F-D931-4E8E-A49A-978203CE8A0B}.Release|x86.ActiveCfg = Release|Any CPU
 		{AB7AE09F-D931-4E8E-A49A-978203CE8A0B}.Release|x86.Build.0 = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|x64.Build.0 = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Debug|x86.Build.0 = Debug|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|x64.ActiveCfg = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|x64.Build.0 = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|x86.ActiveCfg = Release|Any CPU
+		{0BAF436F-1D93-44CE-B5C3-25A81DF240C7}.Release|x86.Build.0 = Release|Any CPU
 		{3E734B5A-96DE-4891-9F42-F0D40A7BCF90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3E734B5A-96DE-4891-9F42-F0D40A7BCF90}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E734B5A-96DE-4891-9F42-F0D40A7BCF90}.Debug|x64.ActiveCfg = Debug|Any CPU
