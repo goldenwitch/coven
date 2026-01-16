@@ -1,6 +1,6 @@
 # Coven.Agents.Gemini
 
-Google Gemini agent integration (REST) that mirrors the OpenAI leaf: registers journals, gateway/session, transmuters, and optional streaming/windowing.
+Google Gemini agent integration (REST). registers journals, gateway/session, transmuters, and optional streaming/windowing.
 
 ## Quick Start
 

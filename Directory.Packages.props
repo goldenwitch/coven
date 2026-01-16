@@ -5,6 +5,7 @@
   <ItemGroup>
     <!-- Core + DI -->
     <PackageVersion Include="Discord.Net" Version="3.18.0" />
+    <PackageVersion Include="Google.GenAI" Version="0.10.0" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.9" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />

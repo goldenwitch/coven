@@ -15,8 +15,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using OpenAI.Responses;
-using OpenAiAgentMaxLengthWindowPolicy = Coven.Agents.OpenAI.AgentMaxLengthWindowPolicy;
-using OpenAiAgentParagraphWindowPolicy = Coven.Agents.OpenAI.AgentParagraphWindowPolicy;
 
 // Configuration (env-first with fallback to defaults below)
 // Defaults: edit these to hardcode values when env vars are not present
@@ -87,8 +85,8 @@ else
 // Output chunk policy: paragraph-first with a tighter max length cap
 builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
     new CompositeWindowPolicy<AgentAfferentChunk>(
-        new OpenAiAgentParagraphWindowPolicy(),
-        new OpenAiAgentMaxLengthWindowPolicy(1024)));
+        new AgentParagraphWindowPolicy(),
+        new AgentMaxLengthWindowPolicy(1024)));
 
 // // Thought chunk policy: summary-marker, sentence, paragraph; independent cap
 // builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
