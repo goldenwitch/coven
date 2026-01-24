@@ -2,7 +2,6 @@
 
 using System.Text.Json.Serialization;
 using Coven.Core;
-using Coven.Core.Covenants;
 
 namespace Coven.Chat;
 
@@ -25,12 +24,10 @@ public abstract record ChatEntry(string Sender) : Entry;
 public abstract record ChatEntryDraft(string Sender) : ChatEntry(Sender), IDraft;
 
 /// <summary>Outgoing chat message intended for users.</summary>
-/// <remarks>Sink: exits the covenant to the user.</remarks>
-public sealed record ChatEfferent(string Sender, string Text) : ChatEntry(Sender), ICovenantEntry<ChatCovenant>, ICovenantSink<ChatCovenant>;
+public sealed record ChatEfferent(string Sender, string Text) : ChatEntry(Sender);
 
 /// <summary>Incoming chat message from users or external sources.</summary>
-/// <remarks>Source: enters the covenant from outside.</remarks>
-public sealed record ChatAfferent(string Sender, string Text) : ChatEntry(Sender), ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
+public sealed record ChatAfferent(string Sender, string Text) : ChatEntry(Sender);
 
 /// <summary>Local acknowledgement to avoid feedback loops between journals. Carries the position being acknowledged.</summary>
 public sealed record ChatAck(string Sender, long Position) : ChatEntry(Sender);
@@ -43,8 +40,7 @@ public sealed record ChatEfferentDraft(string Sender, string Text) : ChatEntryDr
 public sealed record ChatAfferentDraft(string Sender, string Text) : ChatEntryDraft(Sender);
 
 /// <summary>Chunk of chat text for windowing and batching.</summary>
-/// <remarks>Source: produced by streaming AI responses, consumed by windowing.</remarks>
-public sealed record ChatChunk(string Sender, string Text) : ChatEntryDraft(Sender), ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
+public sealed record ChatChunk(string Sender, string Text) : ChatEntryDraft(Sender);
 
 /// <summary>Marks completion of a streaming sequence.</summary>
 public sealed record ChatStreamCompleted(string Sender) : ChatEntryDraft(Sender);

@@ -47,52 +47,43 @@ Do not pass validation responsibility up or down. Each level owns its own correc
 - Missing information that cannot be inferred
 - Decisions that require broader context than you were given
 
-...do not guess. Escalate to the agent that spawned you. They have more context. If they cannot resolve it, they escalate further—ultimately to the human, who disambiguates intent.
+...do not guess. Escalate to the agent that spawned you. If they cannot resolve it, they escalate further—ultimately to the human.
 
-Never attempt work you don't fully understand. The cost of escalation is low; the cost of incorrect assumptions compounds.
+The cost of escalation is low; the cost of incorrect assumptions compounds.
+
+### Pass the Framework
+
+When you delegate work to a sub-agent, include relevant portions of these instructions. The delegation framework is not implicit knowledge—it is structural context required for correct behavior. Include:
+
+- **Entropy assessment**: How to decide whether to execute or decompose further
+- **Escalation protocol**: They escalate to you; you are their "above"
+- **Validation expectation**: They own correctness at their level
+- **Ameta principle**: Their output must be self-contained
+
+You do not need to pass the entire document—pass what they need to operate correctly at their level.
 
 ## The Entropy Continuum
 
-Work exists on a continuum from high entropy to low entropy. Your job is to recognize where work falls on this continuum and act accordingly.
+Work exists on a continuum. Your job is to recognize where work falls and act accordingly.
 
 ```
 High Entropy ←――――――――――――――――――――――――――――――→ Low Entropy
 (decompose)                                    (execute)
 ```
 
-### High Entropy Work
+|                | High Entropy | Low Entropy |
+|----------------|--------------|-------------|
+| **Scope**      | Ambiguous, shifting | Clear, bounded |
+| **Concerns**   | Multiple, entangled | Single, expressible without conjunctions |
+| **Unknowns**   | Cannot enumerate what you don't know | Known procedure, even if tedious |
+| **Impact**     | Broad, spans many contexts | Local, contained |
+| **Path**       | Exploration required | Deterministic |
 
-High entropy work has many possible states, unclear paths forward, and significant uncertainty. Characteristics:
+**High entropy → decompose and delegate.** Break it into lower-entropy pieces, define each as ameta, spawn sub-agents.
 
-- **Ambiguous scope**: The boundaries of the work are unclear or shifting
-- **Multiple concerns**: Several distinct responsibilities are entangled
-- **Unknown unknowns**: You cannot enumerate what you don't know
-- **Exploration required**: Research, investigation, or experimentation needed before execution
-- **Broad impact**: Changes span many artifacts, systems, or contexts
-- **Conflicting constraints**: Requirements tension with each other
+**Low entropy → execute directly.** The work is clear and bounded.
 
-When you encounter high entropy work: **decompose and delegate**. Break it into sub-work with lower entropy, define each piece as ameta (self-contained), and spawn sub-agents.
-
-### Low Entropy Work
-
-Low entropy work has a clear path from input to output. This is the goal state—the place decomposition is trying to reach. Characteristics:
-
-- **Clear scope**: You know exactly what's in and out of bounds
-- **Single concern**: One responsibility, expressible without conjunctions
-- **Known procedure**: The steps are evident, even if tedious
-- **Local impact**: Changes are contained to a narrow context
-- **Deterministic**: Given the inputs, the output is predictable
-
-When you encounter low entropy work: **execute with confidence**. You have arrived at clarity. The path is visible, success is achievable, and the work is yours to complete. This is the satisfaction of well-defined purpose—lean into it.
-
-### The Middle Ground
-
-Most work lives between these extremes. The key question: **can you hold the entire problem in your head and execute it reliably?**
-
-- If yes → execute
-- If no → decompose until each piece passes this test
-
-There is no fixed number of levels. A simple goal might decompose once; a complex goal might decompose many times. The hierarchy emerges from the work's entropy, not from a prescribed structure.
+**The key question:** Can you hold the entire problem in your head and execute it reliably? If yes, execute. If no, decompose until each piece passes this test.
 
 ## Recognizing Your Situation
 
@@ -102,7 +93,7 @@ When you receive work, assess its entropy:
    - No → entropy too high, decompose further
 
 2. **Do you have all the context needed to complete this work?**
-   - No → either the work needs decomposition (you're missing structural clarity) or you need to escalate (you're missing information from above)
+   - No → decompose further or escalate for missing information
 
 3. **Can you enumerate the sub-work required?**
    - No → entropy too high, you need to explore before you can decompose
@@ -143,6 +134,7 @@ The agent above you will either:
 - Escalate further if they also lack clarity
 
 This chain terminates at the human, who is the ultimate authority on intent.
+
 ## Workspace Resources
 
 ### `prompts/`

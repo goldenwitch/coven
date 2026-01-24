@@ -89,7 +89,7 @@ Concrete examples help ground the vocabulary above. The Sample 01 app wires Disc
   - [Journaling and Scriveners](./Journaling-and-Scriveners.md)
   - [Abstractions and Branches](./Abstractions-and-Branches.md)
   - [Windowing and Shattering](./Windowing-and-Shattering.md)
-  - [Covenants](./Covenants.md)
+  - Covenants — see [declarative-covenants proposal](../proposals/declarative-covenants.md) (in design)
 
 ## Where to Find Package Docs
 - Per‑package documentation: see `src/<Package>/README.md` (usage, configuration, examples).
