@@ -89,7 +89,7 @@ Concrete examples help ground the vocabulary above. The Sample 01 app wires Disc
   - [Journaling and Scriveners](./Journaling-and-Scriveners.md)
   - [Abstractions and Branches](./Abstractions-and-Branches.md)
   - [Windowing and Shattering](./Windowing-and-Shattering.md)
-  - [Journal Protocol Isolation](./Journal-Protocol-Isolation.md) *(proposal)*
+  - [Journal Protocol Isolation](./Journal-Protocol-Isolation.md)
 
 ## Where to Find Package Docs
 - Per‑package documentation: see `src/<Package>/README.md` (usage, configuration, examples).

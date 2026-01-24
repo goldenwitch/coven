@@ -397,5 +397,3 @@ The covenant adds:
 - Runtime validation at startup (Roslyn analyzer planned)
 
 **The sentence:** *"Register a Covenant. The validator proves it's complete."*
-
-**The sentence:** *"Register a Covenant. The compiler proves it's complete."*
