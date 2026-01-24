@@ -34,15 +34,17 @@ public sealed class AddSpell : ISpell<AddInput, AddResult>
 }
 
 // Build a spellbook containing your spells
-var book = new SpellbookBuilder()
+Spellbook book = new SpellbookBuilder()
     .AddSpell<AddInput, AddResult>(new AddSpell())
     .Build();
 
 // Access spell definitions for tool registration
-SpellDefinition def = book.Get<AddInput, AddResult>().Definition;
-// def.Name == "AddInput"
-// def.InputSchema == JSON schema for AddInput
-// def.OutputSchema == JSON schema for AddResult
+foreach (SpellDefinition def in book.Definitions)
+{
+    // def.Name == "AddInput"
+    // def.InputSchema == JSON schema for AddInput
+    // def.OutputSchema == JSON schema for AddResult
+}
 ```
 
 ## SpellDefinition Record
