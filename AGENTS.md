@@ -143,3 +143,12 @@ The agent above you will either:
 - Escalate further if they also lack clarity
 
 This chain terminates at the human, who is the ultimate authority on intent.
+## Workspace Resources
+
+### `prompts/`
+
+Contains reusable prompt templates and instructions for common agent scenarios. If the user's instruction is unclear or you need structured guidance for a particular type of work, check this folder for relevant prompts that can inform your approach.
+
+### `guidelines/`
+
+Contains guidelines organized by task type (exploration, implementation, refactoring, debugging). When you receive a task, identify its type and consult the corresponding guideline before starting work. Guidelines capture institutional knowledge—patterns and practices that have proven valuable in this codebase.
