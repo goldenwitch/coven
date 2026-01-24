@@ -10,7 +10,7 @@ namespace Coven.Core.Covenants;
 /// <typeparam name="TCovenant">The covenant this sink belongs to.</typeparam>
 /// <remarks>
 /// An entry implementing <see cref="ICovenantSink{TCovenant}"/> must also implement
-/// <see cref="ICovenantEntry{TCovenant}"/>. The analyzer will verify that sink entries
+/// <see cref="ICovenantEntry{TCovenant}"/>. The validator verifies that sink entries
 /// have at least one producer within the covenant.
 /// </remarks>
 public interface ICovenantSink<TCovenant> where TCovenant : ICovenant;

@@ -10,7 +10,7 @@ namespace Coven.Core.Covenants;
 /// <typeparam name="TCovenant">The covenant this source belongs to.</typeparam>
 /// <remarks>
 /// An entry implementing <see cref="ICovenantSource{TCovenant}"/> must also implement
-/// <see cref="ICovenantEntry{TCovenant}"/>. The analyzer will verify that source entries
+/// <see cref="ICovenantEntry{TCovenant}"/>. The validator verifies that source entries
 /// have at least one consumer within the covenant.
 /// </remarks>
 public interface ICovenantSource<TCovenant> where TCovenant : ICovenant;
