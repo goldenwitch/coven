@@ -13,38 +13,32 @@ A **Covenant** is a connectivity guarantee for a journal protocol. When you wire
 ## Usage
 
 ```csharp
-// 1. Define the covenant
+// 1. Define the covenant (see Coven.Chat/ChatCovenant.cs)
 public sealed class ChatCovenant : ICovenant
 {
     public static string Name => "Chat";
 }
 
-// 2. Mark entry types with covenant membership
-public record UserMessage(string Text) 
-    : ChatEntry, ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
+// 2. Mark entry types with covenant membership (see Coven.Chat/ChatEntry.cs)
+public sealed record ChatAfferent(string Sender, string Text) 
+    : ChatEntry(Sender), ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
 
-public record ChatChunk(string Text) 
-    : ChatEntry, ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
+public sealed record ChatChunk(string Sender, string Text) 
+    : ChatEntryDraft(Sender), ICovenantEntry<ChatCovenant>, ICovenantSource<ChatCovenant>;
 
-public record ChatEfferent(string Text) 
-    : ChatEntry, ICovenantEntry<ChatCovenant>;
-
-public record AssistantMessage(string Text) 
-    : ChatEntry, ICovenantEntry<ChatCovenant>, ICovenantSink<ChatCovenant>;
+public sealed record ChatEfferent(string Sender, string Text) 
+    : ChatEntry(Sender), ICovenantEntry<ChatCovenant>, ICovenantSink<ChatCovenant>;
 
 // 3. Wire via the builder
 services.AddCovenant<ChatCovenant>(covenant =>
 {
-    covenant.Source<UserMessage>();
+    covenant.Source<ChatAfferent>();
     covenant.Source<ChatChunk>();
-    covenant.Sink<AssistantMessage>();
+    covenant.Sink<ChatEfferent>();
     
     covenant.Window<ChatChunk, ChatEfferent>(
         policy: new ParagraphWindowPolicy<ChatChunk>(),
         transmuter: new ChatChunkBatchTransmuter());
-    
-    covenant.Transform<ChatEfferent, AssistantMessage>(
-        transmuter: new ChatEfferentToMessageTransmuter());
 });
 ```
 

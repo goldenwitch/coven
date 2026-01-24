@@ -36,9 +36,9 @@ A covenant defines the boundaries and internal wiring of a journal protocol:
                     │           ChatCovenant              │
                     ├─────────────────────────────────────┤
    SOURCES          │                                     │          SINKS
-   ────────►        │    ChatAfferent ──► [Window] ──►    │        ────────►
-   ChatAfferent     │                         │           │        ChatEfferent
-   ChatChunk        │    ChatChunk ───────────┘           │
+   ────────►        │    ChatAfferent ──────────────►     │        ────────►
+   ChatAfferent     │                                     │        ChatEfferent
+   ChatChunk        │    ChatChunk ──► [Window] ────►     │
                     │                                     │
                     └─────────────────────────────────────┘
 ```
@@ -106,7 +106,7 @@ Every `ICovenantEntry<C>` must either:
 ✓ ChatEfferent: entry, sink
    → OK: boundary marker declares "this leaves the covenant"
 
-✓ ChatEfferent: entry, consumed by Transform → AssistantMessage
+✓ ChatChunk: entry, source, consumed by Window → ChatEfferent
    → OK: has a downstream consumer
 ```
 
@@ -137,13 +137,14 @@ The validator builds a graph and verifies:
 - No islands
 
 ```
-Source ──▶ UserMessage ──▶ [Transform] ──▶ AgentPrompt
-                                               │
-                                               ▼
-                    [Window] ◀── ChatChunk ◀── Source
-                       │
-                       ▼
-                  ChatEfferent ──▶ [Transform] ──▶ AssistantMessage ──▶ Sink
+ChatCovenant:
+  Source ──▶ ChatAfferent ──────────────────────────────▶ Sink
+  Source ──▶ ChatChunk ──▶ [Window] ──▶ ChatEfferent ──▶ Sink
+
+AgentCovenant:
+  Source ──▶ AgentPrompt ──────────────────────────────▶ (routes to agent)
+  Source ──▶ AgentAfferentChunk ──▶ [Window] ──▶ AgentResponse ──▶ Sink
+  Source ──▶ AgentAfferentThoughtChunk ──▶ [Window] ──▶ AgentThought ──▶ Sink
 ```
 
 ---
@@ -164,17 +165,21 @@ The covenant builder provides operations at different arities (number of type pa
 # pseudocode — arity patterns
 
 1-ary (boundaries):
-  Source<UserMessage>         ∅ ──────► UserMessage
-  Sink<AssistantMessage>      AssistantMessage ──────► ∅
+  Source<ChatAfferent>        ∅ ──────► ChatAfferent
+  Sink<ChatEfferent>          ChatEfferent ──────► ∅
 
 2-ary (transforms):
-  Window<Chunk, Efferent>     Chunk* ══► [policy+transmute] ══► Efferent
-  Transform<Efferent, Msg>    Efferent ──► [transmute] ──► Msg
+  Window<ChatChunk, ChatEfferent>  ChatChunk* ══► [policy+transmute] ══► ChatEfferent
+  Transform<TIn, TOut>             TIn ──► [transmute] ──► TOut
 
 3+-ary (fan-out via Junction):
-  Junction<AgentEntry>        AgentEntry ──┬──► AgentPrompt
-                                           ├──► AgentResponse  
-                                           └──► AgentThought
+  # Agent response routes to chat output OR tool invocation
+  Junction<AgentResponse>     AgentResponse ──┬──► ChatEfferent (text reply)
+                                              └──► ToolRequest (function call)
+
+  # Tool result routes back to agent OR directly to chat
+  Junction<ToolResult>        ToolResult ──┬──► AgentPrompt (feed back to agent)
+                                           └──► ChatEfferent (direct output)
 ```
 
 The validator verifies connectivity across all arities — every output must reach a consumer, every input must have a producer.
@@ -217,21 +222,16 @@ The ChatCovenant demonstrates the full pattern. For working code, see the actual
 │                        ChatCovenant                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  ┌──────────┐                                                   │
-│  │ SOURCE   │                                                   │
-│  │ UserMsg  │──────────────────────────────────────┐            │
-│  └──────────┘                                      │            │
-│                                                    ▼            │
-│  ┌──────────┐      ┌────────────┐      ┌───────────────────┐    │
-│  │ SOURCE   │      │  Window    │      │    Transform      │    │
-│  │ ChatChunk│─────►│ + Transmute│─────►│ Efferent → Msg    │    │
-│  └──────────┘      └────────────┘      └─────────┬─────────┘    │
-│       *chunks*         *batch*                   │              │
-│                                                  ▼              │
-│                                           ┌──────────┐          │
-│                                           │  SINK    │          │
-│                                           │ AsstMsg  │          │
-│                                           └──────────┘          │
+│  ┌────────────┐                              ┌──────────────┐   │
+│  │  SOURCE    │                              │    SINK      │   │
+│  │ChatAfferent│─────────────────────────────►│ ChatEfferent │   │
+│  └────────────┘                              └──────────────┘   │
+│                                                    ▲            │
+│  ┌──────────┐      ┌────────────┐                  │            │
+│  │ SOURCE   │      │  Window    │                  │            │
+│  │ ChatChunk│─────►│ + Transmute│──────────────────┘            │
+│  └──────────┘      └────────────┘                               │
+│       *chunks*         *batch*                                  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -247,14 +247,15 @@ The ChatCovenant demonstrates the full pattern. For working code, see the actual
 ### What the Validator Checks
 
 ```text
-✓ UserMessage    →  source marker present
+✓ ChatAfferent   →  source marker present
 ✓ ChatChunk      →  source marker present
 ✓ ChatChunk      →  consumed by Window → ChatEfferent
-✓ ChatEfferent   →  consumed by Transform → AssistantMessage
-✓ AssistantMessage → sink marker present
+✓ ChatEfferent   →  sink marker present
 ✓ Graph connected  →  no islands, all paths source→sink
 ```
-- `AssistantMessage` is a sink ✓
+- `ChatAfferent` is a source ✓
+- `ChatChunk` is a source, consumed by Window ✓
+- `ChatEfferent` is a sink ✓
 - Graph is connected, no islands ✓
 
 ---
