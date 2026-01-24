@@ -56,6 +56,16 @@ services.AddCovenant<ChatCovenant>(covenant =>
 | `Coven.Covenants` | Builder, validator, DI extensions |
 | `Coven.Covenants.Analyzers` | Roslyn analyzer for compile-time verification (future) |
 
+## What's Excluded from Covenants?
+
+The covenant validation only covers types that explicitly implement `ICovenantEntry<T>`. Internal protocol entries like acknowledgments (`*Ack`) and stream completion markers (`*StreamCompleted`) are intentionally excluded:
+
+- **They are infrastructure concerns**, not semantic entries that need connectivity guarantees
+- **They flow through the journal** but don't participate in the domain-level entry graph
+- **Adding them would create noise** in covenant definitions without adding value
+
+If you're building custom infrastructure entries that flow through the journal but shouldn't participate in covenant validation, simply don't mark them with `ICovenantEntry<T>`.
+
 ## Design
 
 The covenant adds one thing: **marker interfaces that enable static analysis**.

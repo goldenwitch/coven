@@ -90,9 +90,9 @@ public sealed record JunctionRoute
 
     /// <summary>
     /// The predicate that determines if this route applies (Func&lt;TIn, bool&gt;).
-    /// Null for default routes.
+    /// Null for fallback routes that match when no other predicate applies.
     /// </summary>
-    public required object Predicate { get; init; }
+    public object? Predicate { get; init; }
 
     /// <summary>
     /// The transform function (Func&lt;TIn, TOut&gt; or Func&lt;TIn, IEnumerable&lt;TOut&gt;&gt;).

@@ -80,7 +80,7 @@ internal sealed class JunctionBuilder<TCovenant, TIn> : IJunctionBuilder<TCovena
         FallbackRoute = new JunctionRoute
         {
             OutputType = typeof(TOut),
-            Predicate = null!,  // Default route has no predicate
+            Predicate = null,  // Fallback route matches when no other predicate applies
             Transform = transform,
             IsMany = false
         };
