@@ -1,6 +1,5 @@
 # Journal Protocol Isolation
 
-> **Status**: Implemented (runtime validation); Roslyn analyzer planned  
 > **Builds on**: [Journaling-and-Scriveners.md](Journaling-and-Scriveners.md), [Windowing-and-Shattering.md](Windowing-and-Shattering.md)
 
 ## The One New Concept: Covenant
@@ -18,13 +17,13 @@ That's it. Everything else is composition of existing primitives (`IWindowPolicy
 
 ## Motivation
 
-The current Scrivener patterns provide powerful, decoupled coordination via append-only journals. However, understanding the flow requires tracing through DI registrations, daemon subscriptions, and transmuter chains. This cognitive overhead creates risk:
+The Scrivener patterns provide powerful, decoupled coordination via append-only journals. However, understanding the flow requires tracing through DI registrations, daemon subscriptions, and transmuter chains. This cognitive overhead creates risk:
 
 - **Dead letters**: A producer writes entries that no consumer ever processes
 - **Orphaned consumers**: A daemon tails a journal that no producer ever populates
 - **Implicit contracts**: The relationship between entry types and their handlers lives in convention, not code
 
-We are close to a cleaner model. This document proposes **Covenants** — compile-time verifiable journal protocols built by composing existing primitives.
+**Covenants** solve this — verifiable journal protocols built by composing existing primitives.
 
 ---
 
@@ -40,18 +39,18 @@ public sealed class ChatCovenant : ICovenant
 // Register via DI — this is where connectivity is enforced
 services.AddCovenant<ChatCovenant>(covenant =>
 {
-    // Declare boundaries
+    // Declare boundaries (1-ary operations)
     covenant.Source<UserMessage>();       // enters from outside
     covenant.Sink<AssistantMessage>();    // exits to outside
     
-    // Wire the pipeline (uses existing primitives)
+    // Wire the pipeline (2-ary operations)
     covenant.Window<ChatChunk, ChatEfferent>(
         policy: new ParagraphWindowPolicy<ChatChunk>(),
         transmuter: new ChatChunkBatchTransmuter());
 });
 ```
 
-**The sentence:** *"Register a Covenant. The compiler proves it's complete."*
+**The sentence:** *"Register a Covenant. The validator proves it's complete."*
 
 ---
 
@@ -68,7 +67,7 @@ Rather than create new abstractions, Covenants **compose** existing primitives:
 | `TappedScrivener<T>` | Cross-cutting decorator — unchanged |
 | `StreamWindowingDaemon` | Hosts the pipeline — unchanged |
 
-The Covenant adds **one thing**: marker interfaces that enable static analysis.
+The Covenant adds **one thing**: marker interfaces that enable validation.
 
 ---
 
@@ -78,7 +77,7 @@ Plain, descriptive names for the metadata that enables analysis:
 
 ```csharp
 /// <summary>
-/// Defines a journal protocol with compile-time connectivity guarantees.
+/// Defines a journal protocol with connectivity guarantees.
 /// </summary>
 public interface ICovenant 
 {
@@ -120,18 +119,18 @@ public record AssistantMessage(string Text)
 
 ---
 
-## Compile-Time Guarantees
+## Validation Guarantees
 
-With marker interfaces in place, a Roslyn analyzer verifies covenant correctness:
+The validator runs at startup and verifies covenant correctness:
 
 ### 1. No Dead Letters
 
 Every `ICovenantEntry<C>` must either:
-- Be consumed by a registered window/transmuter, OR
+- Be consumed by a registered window/transmuter/junction, OR
 - Implement `ICovenantSink<C>`
 
 ```csharp
-// Analyzer error: ChatEfferent has no consumer and is not a sink
+// Validation error: ChatEfferent has no consumer and is not a sink
 public record ChatEfferent(string Text) : ChatEntry, ICovenantEntry<ChatCovenant>;
 
 // Fixed: mark as sink or add a consumer
@@ -140,12 +139,12 @@ public record ChatEfferent(string Text) : ChatEntry, ICovenantEntry<ChatCovenant
 
 ### 2. No Orphaned Consumers
 
-Every window/transmuter input type must either:
-- Be produced by another window/transmuter, OR
+Every window/transmuter/junction input type must either:
+- Be produced by another operation, OR
 - Implement `ICovenantSource<C>`
 
 ```csharp
-// Analyzer error: Window consumes ChatChunk but nothing produces it
+// Validation error: Window consumes ChatChunk but nothing produces it
 covenant.Window<ChatChunk, ChatEfferent>(...);
 
 // Fixed: ChatChunk must be marked as a source
@@ -154,7 +153,7 @@ public record ChatChunk(string Text) : ChatEntry, ICovenantEntry<ChatCovenant>, 
 
 ### 3. Connectivity
 
-The analyzer builds a graph and verifies:
+The validator builds a graph and verifies:
 - Every entry is reachable from a source
 - Every entry reaches a sink
 - No islands
@@ -171,46 +170,100 @@ Source ──▶ UserMessage ──▶ [Transform] ──▶ AgentPrompt
 
 ---
 
+## Builder Operation Arities
+
+The covenant builder provides operations at different arities (number of type parameters):
+
+### 1-Ary Operations (Single Type)
+
+Boundary declarations — one entry type in, nothing out:
+
+```csharp
+covenant.Source<UserMessage>();    // declares entry point
+covenant.Sink<AssistantMessage>(); // declares exit point
+```
+
+### 2-Ary Operations (Two Types)
+
+Transform operations — one type in, one type out:
+
+```csharp
+// Window: TChunk → TOutput
+covenant.Window<ChatChunk, ChatEfferent>(policy, transmuter);
+
+// Transform: TInput → TOutput  
+covenant.Transform<ChatEfferent, AssistantMessage>(transmuter);
+
+// Junction with single route: TIn → TOut
+covenant.Junction<AgentEntry>(j => j
+    .Route<AgentPrompt>(e => e is AgentPrompt, e => (AgentPrompt)e));
+```
+
+### 3-Ary Operations (Three Types)
+
+Junction fan-out — one type in, multiple types out:
+
+```csharp
+// Junction: TIn → TOut1 | TOut2 | TOut3
+covenant.Junction<AgentEntry>(j => j
+    .Route<AgentPrompt>(e => e is AgentPrompt, e => (AgentPrompt)e)
+    .Route<AgentResponse>(e => e is AgentResponse, e => (AgentResponse)e)
+    .Route<AgentThought>(e => e is AgentThought, e => (AgentThought)e));
+```
+
+The validator verifies connectivity across all arities — every output must reach a consumer, every input must have a producer.
+
+---
+
 ## The Covenant Builder
 
-The builder is where composition happens. It wires existing primitives and collects metadata for the analyzer:
+The builder wires existing primitives and collects metadata for validation:
 
 ```csharp
 public static class CovenantServiceCollectionExtensions
 {
     public static IServiceCollection AddCovenant<TCovenant>(
         this IServiceCollection services,
-        Action<ICovenantBuilder<TCovenant>> configure)
+        Action<IStreamingCovenantBuilder<TCovenant>> configure)
         where TCovenant : ICovenant
     {
-        var builder = new CovenantBuilder<TCovenant>(services);
+        var builder = new StreamingCovenantBuilder<TCovenant>(services);
         configure(builder);
-        builder.Validate(); // Runtime check that static analysis passed
+        builder.Validate(); // Throws if graph is invalid
         return services;
     }
 }
+```
 
-public interface ICovenantBuilder<TCovenant> where TCovenant : ICovenant
+The builder interface:
+
+```csharp
+public interface IStreamingCovenantBuilder<TCovenant> where TCovenant : ICovenant
 {
-    /// <summary>Declare an entry type that enters from outside.</summary>
-    void Source<TEntry>() where TEntry : ICovenantEntry<TCovenant>, ICovenantSource<TCovenant>;
+    // 1-ary: boundaries
+    IStreamingCovenantBuilder<TCovenant> Source<TEntry>()
+        where TEntry : ICovenantEntry<TCovenant>, ICovenantSource<TCovenant>;
     
-    /// <summary>Declare an entry type that exits to outside.</summary>
-    void Sink<TEntry>() where TEntry : ICovenantEntry<TCovenant>, ICovenantSink<TCovenant>;
+    IStreamingCovenantBuilder<TCovenant> Sink<TEntry>()
+        where TEntry : ICovenantEntry<TCovenant>, ICovenantSink<TCovenant>;
     
-    /// <summary>Wire a windowing pipeline using existing primitives.</summary>
-    void Window<TChunk, TOutput>(
+    // 2-ary: transforms
+    IStreamingCovenantBuilder<TCovenant> Window<TChunk, TOutput>(
         IWindowPolicy<TChunk> policy,
         IBatchTransmuter<TChunk, TOutput> transmuter,
         IShatterPolicy<TOutput>? shatter = null)
         where TChunk : ICovenantEntry<TCovenant>
         where TOutput : ICovenantEntry<TCovenant>;
     
-    /// <summary>Wire a 1:1 transform.</summary>
-    void Transform<TInput, TOutput>(
+    IStreamingCovenantBuilder<TCovenant> Transform<TInput, TOutput>(
         ITransmuter<TInput, TOutput> transmuter)
         where TInput : ICovenantEntry<TCovenant>
         where TOutput : ICovenantEntry<TCovenant>;
+    
+    // 3-ary (via nested builder): junction fan-out
+    IStreamingCovenantBuilder<TCovenant> Junction<TIn>(
+        Action<IJunctionBuilder<TCovenant, TIn>> configure)
+        where TIn : ICovenantEntry<TCovenant>;
 }
 ```
 
@@ -256,23 +309,23 @@ public record AssistantMessage(string Text)
 
 services.AddCovenant<ChatCovenant>(covenant =>
 {
-    // Boundaries
+    // 1-ary: boundaries
     covenant.Source<UserMessage>();
     covenant.Source<ChatChunk>();
     covenant.Sink<AssistantMessage>();
     
-    // Windowing pipeline (reuses existing primitives)
+    // 2-ary: windowing pipeline
     covenant.Window<ChatChunk, ChatEfferent>(
         policy: new ParagraphWindowPolicy<ChatChunk>(),
         transmuter: new ChatChunkBatchTransmuter());
     
-    // Final transform
+    // 2-ary: final transform
     covenant.Transform<ChatEfferent, AssistantMessage>(
         transmuter: new ChatEfferentToMessageTransmuter());
 });
 ```
 
-The analyzer verifies:
+The validator verifies:
 - `UserMessage` is a source ✓
 - `ChatChunk` is a source ✓  
 - `ChatChunk` → `ChatEfferent` via Window ✓
@@ -306,27 +359,23 @@ internal sealed class DiscordScrivener : TappedScrivener<DiscordEntry>
 
 ### Dynamic Covenants
 
-Some flows are determined at runtime (e.g., available tools, registered agents). Static analysis can't verify dynamic registration.
+Some flows are determined at runtime (e.g., available tools, registered agents). Static validation can't verify dynamic registration.
 
-**Possible approach**: 
+**Current approach**: 
 - Core covenant is static with marker interfaces
 - Dynamic portions validated at startup
 - Runtime errors for incomplete dynamic graphs
 
-### Performance
-
-The covenant builder and analyzer are compile/startup-time. Runtime behavior is unchanged — still uses `StreamWindowingDaemon`, `IWindowPolicy`, etc.
-
 ### Error Handling
 
-Unchanged from current model. Transmuter failures are handled by the daemon. Could add covenant-level dead letter handling as future work.
+Unchanged from current model. Transmuter failures are handled by the daemon. Covenant-level dead letter handling is possible future work.
 
 ---
 
 ## What Changes
 
-| Current | After Covenants | Notes |
-|---------|-----------------|-------|
+| Current | With Covenants | Notes |
+|---------|----------------|-------|
 | `IScrivener<T>` | **Unchanged** | Foundation |
 | `IWindowPolicy<T>` | **Unchanged** | Still decides when to emit |
 | `IBatchTransmuter<T,U>` | **Unchanged** | Still transforms |
@@ -338,46 +387,35 @@ Unchanged from current model. Transmuter failures are handled by the daemon. Cou
 | (none) | `ICovenantSource<T>` | **New**: boundary marker |
 | (none) | `ICovenantSink<T>` | **New**: boundary marker |
 | (none) | `AddCovenant<T>()` | **New**: builder/validator |
-| (none) | Roslyn Analyzer | **Planned**: compile-time verification |
 
-**Zero changes to runtime behavior.** The covenant is purely a startup-time verification layer (compile-time with future analyzer).
+**Zero changes to runtime behavior.** The covenant is purely a startup-time verification layer.
 
 ---
 
-## Implementation Status
+## Implementation
 
-### ✅ Completed
+### Marker Interfaces (`Coven.Core.Covenants`)
 
-1. **Marker interfaces** in `Coven.Core.Covenants`:
-   - `ICovenant` — protocol definition with static `Name`
-   - `ICovenantEntry<T>` — membership marker
-   - `ICovenantSource<T>` — boundary in
-   - `ICovenantSink<T>` — boundary out
-   - `ICovenantBuilder<T>` — base builder interface
+- `ICovenant` — protocol definition with static `Name`
+- `ICovenantEntry<T>` — membership marker
+- `ICovenantSource<T>` — boundary in
+- `ICovenantSink<T>` — boundary out
+- `ICovenantBuilder<T>` — base builder interface
 
-2. **Covenant builder** in `Coven.Covenants`:
-   - `IStreamingCovenantBuilder<T>` — extended builder with Window/Transform
-   - `StreamingCovenantBuilder<T>` — implementation
-   - `CovenantServiceCollectionExtensions.AddCovenant<T>()` — DI registration
-   - `CovenantValidator` — runtime validation at startup
-   - `CovenantGraph<T>` — graph metadata for inspection
+### Covenant Builder (`Coven.Covenants`)
 
-3. **ChatCovenant** applied in `Coven.Chat`:
-   - `ChatCovenant` — defines the chat protocol
-   - `ChatAfferent` — marked as `ICovenantSource<ChatCovenant>`
-   - `ChatChunk` — marked as `ICovenantSource<ChatCovenant>`
-   - `ChatEfferent` — marked as `ICovenantSink<ChatCovenant>`
+- `IStreamingCovenantBuilder<T>` — extended builder with Window/Transform/Junction
+- `StreamingCovenantBuilder<T>` — implementation
+- `IJunctionBuilder<T,TIn>` — junction route configuration
+- `JunctionBuilder<T,TIn>` — implementation
+- `CovenantServiceCollectionExtensions.AddCovenant<T>()` — DI registration
+- `CovenantValidator` — runtime validation at startup
+- `CovenantGraph<T>` — graph metadata for inspection
 
-### 🔜 Planned
+### Applied Covenants
 
-4. **Roslyn analyzer** (new project: `Coven.Covenants.Analyzers`):
-   - Verify all `ICovenantEntry<C>` have consumers or are sinks
-   - Verify all consumers have producers or are sources
-   - Verify connectivity (no islands)
-   - Shift validation from startup to compile-time
-
-5. **Additional covenants**:
-   - `AgentCovenant` for agent flows
+- `ChatCovenant` in `Coven.Chat` — defines the chat protocol
+- `AgentCovenant` in `Coven.Agents` — defines the agent protocol
 
 ---
 
@@ -392,8 +430,8 @@ Everything else is composition of existing primitives:
 - `StreamWindowingDaemon` — runs the pipeline
 
 The covenant adds:
-- Marker interfaces for static analysis
-- A builder for DI registration
-- Runtime validation at startup (Roslyn analyzer planned)
+- Marker interfaces for validation
+- A builder for DI registration with 1-ary, 2-ary, and 3-ary operations
+- Runtime validation at startup
 
 **The sentence:** *"Register a Covenant. The validator proves it's complete."*
