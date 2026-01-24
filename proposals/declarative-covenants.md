@@ -76,13 +76,14 @@ builder.Services.AddCoven(coven =>
 
 ## Branch Manifests
 
-Each `UseX` extension returns a manifest declaring what the branch produces and consumes:
+Each `UseX` extension returns a manifest declaring what the branch produces, consumes, and requires:
 
 ```csharp
 public sealed record BranchManifest(
     string Name,
     IReadOnlySet<Type> Produces,
-    IReadOnlySet<Type> Consumes);
+    IReadOnlySet<Type> Consumes,
+    IReadOnlyList<Type> RequiredDaemons);  // Daemons this branch needs
 ```
 
 Streaming configuration affects the manifest at registration time—if streaming is enabled, chunk types appear in `Produces`. The covenant doesn't know about streaming; it only sees the types.

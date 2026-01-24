@@ -2,7 +2,7 @@
 
 > **Status**: Proposal  
 > **Created**: 2026-01-24  
-> **Depends on**: [declarative-covenants.md](declarative-covenants.md)
+> **Depends on**: [declarative-covenants.md](declarative-covenants.md), [idaemon-to-core.md](idaemon-to-core.md)
 
 ---
 
@@ -15,7 +15,7 @@ Manual daemon startup is error-prone boilerplate that plagues every block in the
 public async Task<Empty> DoMagik(Empty input, CancellationToken ct)
 {
     // Boilerplate: start all daemons
-    foreach (ContractDaemon d in _daemons)
+    foreach (IDaemon d in _daemons)
     {
         await d.Start(ct).ConfigureAwait(false);
     }
@@ -62,52 +62,15 @@ Each repeats the same pattern. Each is a place where someone could forget. Each 
 - **Orchestrating daemon dependencies** — If daemon B depends on daemon A being in a specific state, that's the [daemon-magistrate.md](daemon-magistrate.md)'s concern, not scope entry
 - **Retry on startup failure** — Startup failures are immediate failures; transient recovery is the magistrate's domain
 - **Hot-swapping daemons** — Daemons are scoped to the DI scope; replacing them means creating a new scope
+- **Parallel startup or explicit dependency ordering** — Declaration order is sufficient; advanced orchestration is out of scope
 
 ---
 
-## Design Options
+## Design
 
-### Option 1: IServiceScope Decoration
+### Async Scope Entry
 
-Wrap `IServiceScope` to intercept scope creation and start daemons:
-
-```csharp
-internal sealed class DaemonAwareServiceScope : IServiceScope
-{
-    private readonly IServiceScope _inner;
-    private readonly IReadOnlyList<IDaemon> _daemons;
-    
-    public IServiceProvider ServiceProvider => _inner.ServiceProvider;
-    
-    internal static async Task<DaemonAwareServiceScope> CreateAsync(
-        IServiceScope inner,
-        CancellationToken ct)
-    {
-        var daemons = inner.ServiceProvider
-            .GetServices<ContractDaemon>()
-            .ToList();
-        
-        // Start all daemons before returning the scope
-        await StartDaemonsAsync(daemons, ct);
-        
-        return new DaemonAwareServiceScope(inner, daemons);
-    }
-    
-    public void Dispose()
-    {
-        // Shutdown daemons before disposing scope
-        ShutdownDaemons(_daemons);
-        _inner.Dispose();
-    }
-}
-```
-
-**Pros**: Clean separation, testable
-**Cons**: Requires async scope creation (not supported by `IServiceScopeFactory`)
-
-### Option 2: AsyncLocal Scope with Async Entry
-
-Modify `CovenExecutionScope` to be async-aware:
+`CovenExecutionScope.BeginScopeAsync` creates the scope AND starts daemons before returning:
 
 ```csharp
 internal static class CovenExecutionScope
@@ -123,15 +86,16 @@ internal static class CovenExecutionScope
     {
         var scopeFactory = root.GetRequiredService<IServiceScopeFactory>();
         var scope = scopeFactory.CreateScope();
+        var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         
         var daemons = scope.ServiceProvider
-            .GetServices<ContractDaemon>()
+            .GetServices<IDaemon>()
             .ToList();
         
         // Start daemons as part of scope entry
-        await StartDaemonsInOrderAsync(daemons, ct);
+        await StartDaemonsInOrderAsync(daemons, cts.Token);
         
-        var daemonScope = new DaemonScope(scope, daemons);
+        var daemonScope = new DaemonScope(scope, daemons, cts);
         _currentScope.Value = daemonScope;
         return daemonScope;
     }
@@ -142,10 +106,16 @@ internal static class CovenExecutionScope
         
         try
         {
-            await ShutdownDaemonsAsync(scope.Daemons, ct);
+            // Cancel the scope's CTS first — triggers cooperative shutdown
+            // in daemon loops before we call Shutdown()
+            await scope.Cts.CancelAsync();
+            
+            // Now formally shutdown daemons in reverse startup order
+            await ShutdownDaemonsAsync(scope.Daemons.Reverse(), ct);
         }
         finally
         {
+            scope.Cts.Dispose();
             scope.Scope.Dispose();
             _currentScope.Value = null;
         }
@@ -154,7 +124,8 @@ internal static class CovenExecutionScope
 
 internal sealed record DaemonScope(
     IServiceScope Scope, 
-    IReadOnlyList<ContractDaemon> Daemons) : IAsyncDisposable
+    IReadOnlyList<IDaemon> Daemons,
+    CancellationTokenSource Cts) : IAsyncDisposable
 {
     public async ValueTask DisposeAsync()
     {
@@ -163,19 +134,28 @@ internal sealed record DaemonScope(
 }
 ```
 
-**Pros**: Natural fit with existing `CovenExecutionScope` pattern  
-**Cons**: Changes `BeginScope` signature to async
+This approach fits naturally with the existing `CovenExecutionScope` pattern and changes `BeginScope` to an async signature.
 
-### Option 3: Covenant-Driven Daemon Discovery
+#### Why Cooperative Cancellation Works
 
-Let the covenant declare which daemons are needed based on connected manifests:
+The scope's `CancellationTokenSource` enables graceful shutdown because daemons internally use `CreateLinkedTokenSource` to link their processing loops to the token passed during `Start()`. When the scope cancels its CTS:
+
+1. **Daemon loops observe cancellation** — Any `await` checking the token exits cleanly
+2. **Work-in-progress completes or aborts** — Depending on daemon implementation
+3. **`Shutdown()` finds daemons already winding down** — Making formal shutdown fast
+
+This two-phase approach (cancel CTS, then call `Shutdown()`) ensures daemons don't block indefinitely on pending work during disposal. The `CancellationToken.None` passed to `DisposeAsync` → `EndScopeAsync` is intentional: once we've decided to dispose, we should complete disposal regardless of external cancellation requests.
+
+### Covenant-Driven Daemon Discovery
+
+The covenant declares which daemons are needed based on connected manifests:
 
 ```csharp
 public sealed record BranchManifest(
     string Name,
     IReadOnlySet<Type> Produces,
     IReadOnlySet<Type> Consumes,
-    IReadOnlyList<Type> RequiredDaemons);  // NEW: daemons this branch needs
+    IReadOnlyList<Type> RequiredDaemons);  // Daemons this branch needs
 ```
 
 The covenant builder collects daemon requirements:
@@ -190,14 +170,40 @@ public interface ICovenantBuilder
 }
 ```
 
-**Pros**: Explicit about what daemons are needed, validation at build time  
-**Cons**: Requires manifest changes, more moving parts
+When you `.Connect(manifest)` to a covenant, the manifest's daemon requirements bubble up. The covenant collects all required daemons from all connected manifests and validates them at build time.
 
-### Recommendation: Option 2 + Option 3
+### Isolation Principle
 
-Use **Option 2** (async scope entry) as the mechanism, informed by **Option 3** (covenant-driven discovery) for knowing *which* daemons to start.
+Branches are isolation boundaries. Each branch owns its daemons exclusively:
 
-The covenant knows the full picture at build time. It can validate that required daemons are registered and configure the scope entry to start exactly those daemons.
+- **Branch-scoped daemons** — Each branch's daemons are scoped to that branch's subgraph
+- **No accidental sharing** — OpenAI and Discord never share daemons because they're separate subgraphs
+- **Routing-only communication** — Cross-branch communication happens only through the Covenant's routing layer
+
+This isolation means you cannot accidentally share a daemon between Discord and OpenAI. They have separate scopes. If a Discord branch needs to communicate with an OpenAI branch, that communication flows through explicitly declared routes in the covenant, not through shared daemon state.
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                          COVENANT                               │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│  ┌─────────────────────┐          ┌─────────────────────┐      │
+│  │   Discord Branch    │          │   OpenAI Branch     │      │
+│  │                     │          │                     │      │
+│  │  ┌───────────────┐  │          │  ┌───────────────┐  │      │
+│  │  │DiscordDaemon  │  │  routes  │  │ OpenAIDaemon  │  │      │
+│  │  │(scoped here)  │  │◄────────►│  │(scoped here)  │  │      │
+│  │  └───────────────┘  │          │  └───────────────┘  │      │
+│  │                     │          │                     │      │
+│  └─────────────────────┘          └─────────────────────┘      │
+│          ▲                                  ▲                   │
+│          │                                  │                   │
+│    isolation boundary               isolation boundary          │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+This design ensures that daemon lifecycle, state, and failures are contained within their branch. A problem in the Discord daemon cannot directly corrupt the OpenAI daemon's state — the worst case is that messages stop flowing through the routes.
 
 ---
 
@@ -205,7 +211,7 @@ The covenant knows the full picture at build time. It can validate that required
 
 ### The Problem
 
-What if daemons have startup dependencies?
+Daemons may have startup dependencies:
 
 ```
 DiscordDaemon ──────► needs connection before...
@@ -213,9 +219,9 @@ OpenAIDaemon ──────► can start independently
 SegmentationDaemon ► needs OpenAIDaemon's model loaded first
 ```
 
-### Options
+### Declaration Order
 
-**A. Declaration Order** — Start daemons in the order branches are connected:
+Daemons start sequentially in manifest connection order:
 
 ```csharp
 coven.Covenant()
@@ -224,44 +230,13 @@ coven.Covenant()
     .Routes(c => ...);
 ```
 
-**Pros**: Simple, explicit  
-**Cons**: Conflates logical connection order with startup order
+This approach is:
 
-**B. Explicit Startup Order** — Separate API for ordering:
+- **Predictable** — The user controls connection order explicitly
+- **Simple to implement** — Sequential startup in declared order
+- **Easy to reason about** — What you see is what you get
 
-```csharp
-coven.Covenant()
-    .Connect(discord)
-    .Connect(agents)
-    .StartupOrder(b => b
-        .First<OpenAIDaemon>()
-        .Then<DiscordDaemon>()
-        .Parallel<SegmentationDaemon>())
-    .Routes(c => ...);
-```
-
-**Pros**: Explicit, flexible  
-**Cons**: More API surface, another thing to get wrong
-
-**C. No Ordering Guarantees** — Start all daemons concurrently:
-
-```csharp
-await Task.WhenAll(daemons.Select(d => d.Start(ct)));
-```
-
-**Pros**: Simplest, fastest startup  
-**Cons**: Doesn't handle true dependencies
-
-### Recommendation: Option A (Declaration Order) as Default
-
-Start daemons sequentially in manifest connection order. This is:
-
-- Predictable
-- Explicit enough (the user controls connection order)
-- Simple to implement
-- Easy to reason about
-
-If we later discover that parallel startup or explicit ordering is needed, we can add Option B. But YAGNI — most daemons don't have hard startup dependencies.
+Declaration order provides deterministic, explicit control over daemon startup sequence. Developers who need a specific startup order simply declare their branches in that order.
 
 ---
 
@@ -289,7 +264,7 @@ If we later discover that parallel startup or explicit ordering is needed, we ca
 │    .Connect(agents)    ──► Collects OpenAIDaemon                │
 │    .Routes(...)        ──► Validates routes                      │
 │                                                                  │
-│  Result: CovenantDescriptor                                      │
+│  Result: Internal covenant configuration                         │
 │    ├─ Routes: {...}                                              │
 │    └─ RequiredDaemons: [DiscordDaemon, OpenAIDaemon] (ordered)   │
 │                                                                  │
@@ -305,25 +280,27 @@ If we later discover that parallel startup or explicit ordering is needed, we ca
 │  CovenExecutionScope.BeginScopeAsync(root, ct)                   │
 │    │                                                             │
 │    ├─► Create IServiceScope                                      │
+│    ├─► Create CancellationTokenSource (linked to caller's ct)    │
 │    │                                                             │
-│    ├─► Resolve required daemons from CovenantDescriptor          │
-│    │   foreach (Type daemonType in descriptor.RequiredDaemons)   │
+│    ├─► Resolve required daemons from covenant configuration     │
+│    │   foreach (Type daemonType in config.RequiredDaemons)       │
 │    │       daemons.Add(scope.GetRequiredService(daemonType))     │
 │    │                                                             │
-│    ├─► Start daemons in order                                    │
+│    ├─► Start daemons in order (passing cts.Token)                │
 │    │   foreach (var daemon in daemons)                           │
-│    │       await daemon.Start(ct)  // Fail fast on error         │
+│    │       await daemon.Start(cts.Token)  // Fail fast on error  │
 │    │                                                             │
-│    └─► Return DaemonScope                                        │
+│    └─► Return DaemonScope (with CTS)                             │
 │                                                                  │
 │  ... ritual executes ...                                         │
 │                                                                  │
 │  DaemonScope.DisposeAsync()                                      │
 │    │                                                             │
+│    ├─► Cancel scope's CTS (triggers cooperative shutdown)        │
 │    ├─► Shutdown daemons (reverse order)                          │
 │    │   foreach (var daemon in daemons.Reverse())                 │
 │    │       await daemon.Shutdown(ct)                             │
-│    │                                                             │
+│    ├─► Dispose CTS                                               │
 │    └─► Dispose IServiceScope                                     │
 │                                                                  │
 └──────────────────────────────────────────────────────────────────┘
@@ -387,64 +364,50 @@ Timeline:
 Question: What happens to DaemonA?
 ```
 
-### Options
+### Atomic Rollback
 
-**A. Leave Running** — DaemonA stays running, scope creation fails
-
-```csharp
-try
-{
-    foreach (var daemon in daemons)
-        await daemon.Start(ct);
-}
-catch
-{
-    // DaemonA is still running, scope.Dispose() will clean it up... maybe?
-    throw;
-}
-```
-
-**Problem**: Who shuts down DaemonA? The scope never finished creation, so the caller doesn't have a scope to dispose. DaemonA leaks.
-
-**B. Stop All on Failure** — Roll back successfully started daemons
+Scope activation is atomic with respect to daemons. If any daemon fails to start, all successfully started daemons are rolled back:
 
 ```csharp
-var started = new List<ContractDaemon>();
+var started = new List<IDaemon>();
 try
 {
     foreach (var daemon in daemons)
     {
-        await daemon.Start(ct);
+        await daemon.Start(cts.Token);
         started.Add(daemon);
     }
 }
 catch (Exception ex)
 {
+    // Cancel the CTS first — signals daemons to stop cooperatively
+    await cts.CancelAsync();
+    
     // Roll back: stop daemons in reverse order
+    // Use CancellationToken.None here — we're already in error state
+    // and need to complete rollback regardless of external cancellation
     foreach (var daemon in started.AsEnumerable().Reverse())
     {
         try { await daemon.Shutdown(CancellationToken.None); }
         catch { /* log, but continue rollback */ }
     }
+    
+    var failedDaemon = daemons[started.Count].GetType();
+    var rolledBack = started.Select(d => d.GetType()).ToList();
     throw new DaemonStartupException(
-        "Scope activation failed: daemon startup error", ex);
+        "Scope activation failed: daemon startup error", 
+        ex,
+        failedDaemon,
+        rolledBack);
 }
 ```
 
-**Pros**: Clean state, no leaked daemons  
-**Cons**: Slightly more complex
+This guarantees:
 
-**C. Partial Success** — Return scope with partial daemons running
+- **Either all daemons start successfully** and the scope is valid
+- **Or startup fails**, all started daemons are stopped, and an exception propagates
 
-**Problem**: This defeats the purpose of fail-fast. The scope appears valid but is missing functionality.
-
-### Recommendation: Option B (Stop All on Failure)
-
-Scope activation is atomic with respect to daemons:
-- Either all daemons start successfully and the scope is valid
-- Or startup fails, all started daemons are stopped, and an exception propagates
-
-This matches transactional semantics: commit all or rollback all.
+No leaked daemons, no partial states. This matches transactional semantics: commit all or rollback all.
 
 ### Exception Type
 
@@ -454,7 +417,7 @@ public sealed class DaemonStartupException : Exception
     public DaemonStartupException(
         string message, 
         Exception innerException,
-        IReadOnlyList<Type> failedDaemon,
+        Type failedDaemon,
         IReadOnlyList<Type> rolledBackDaemons)
         : base(message, innerException)
     {
@@ -462,7 +425,10 @@ public sealed class DaemonStartupException : Exception
         RolledBackDaemons = rolledBackDaemons;
     }
     
-    public IReadOnlyList<Type> FailedDaemon { get; }
+    /// <summary>The daemon type that failed to start.</summary>
+    public Type FailedDaemon { get; }
+    
+    /// <summary>Daemon types that were successfully started and then rolled back.</summary>
     public IReadOnlyList<Type> RolledBackDaemons { get; }
 }
 ```
@@ -510,14 +476,14 @@ Before:
 
 ```csharp
 internal sealed class RouterBlock(
-    IEnumerable<ContractDaemon> daemons,
+    IEnumerable<IDaemon> daemons,
     IScrivener<ChatEntry> chat,
     IScrivener<AgentEntry> agents) : IMagikBlock<Empty, Empty>
 {
     public async Task<Empty> DoMagik(Empty input, CancellationToken ct)
     {
         // BOILERPLATE: Start daemons
-        foreach (ContractDaemon d in _daemons)
+        foreach (IDaemon d in _daemons)
             await d.Start(ct);
         
         // Actual logic...
@@ -600,11 +566,11 @@ foreach (var daemonType in manifest.RequiredDaemons)
 
 1. Covenant builder collects daemon requirements from manifests
 2. Validate daemon registration and lifetime at build time
-3. Store ordered daemon list in `CovenantDescriptor`
+3. Store ordered daemon list in internal covenant configuration
 
 ### Phase 3: Migration Support
 
-1. Deprecate `IEnumerable<ContractDaemon>` injection pattern
+1. Deprecate `IEnumerable<IDaemon>` injection pattern
 2. Add analyzer warning for manual daemon startup in blocks
 3. Update existing blocks to remove daemon boilerplate
 
