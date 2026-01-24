@@ -249,5 +249,5 @@ Projects using dynamic covenant registration (runtime tool discovery, plugin sys
 ## References
 
 - [CovenantValidator.cs](../src/Coven.Covenants/CovenantValidator.cs) — Runtime validation logic
-- [Journal-Protocol-Isolation.md](../architecture/Journal-Protocol-Isolation.md) — Covenant design
+- [Covenants.md](../architecture/Covenants.md) — Covenant design
 - [Marker interfaces](../src/Coven.Core/Covenants/) — `ICovenant`, `ICovenantEntry<T>`, etc.

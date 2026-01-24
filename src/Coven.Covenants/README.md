@@ -1,10 +1,10 @@
 # Coven.Covenants
 
-Covenant builder and validation for compile-time verifiable journal protocols.
+Covenant builder and validation for verifiable journal protocols.
 
 ## What is a Covenant?
 
-A **Covenant** is a compile-time connectivity guarantee for a journal protocol. When you define a Covenant, the system proves:
+A **Covenant** is a connectivity guarantee for a journal protocol. When you wire a Covenant via the builder, the validator proves at startup:
 
 - Every entry type has a consumer (no dead letters)
 - Every consumer has a producer (no orphans)
@@ -67,7 +67,7 @@ If you're building custom infrastructure entries that flow through the journal b
 
 ## Design
 
-The covenant adds one thing: **marker interfaces that enable static analysis**.
+The covenant adds one thing: **marker interfaces that enable validation**.
 
 All existing primitives remain unchanged:
 - `IScrivener<T>` — the journal
@@ -76,4 +76,4 @@ All existing primitives remain unchanged:
 - `IShatterPolicy<T>` — post-transform split
 - `StreamWindowingDaemon` — hosts the pipeline
 
-*"Register a Covenant. The compiler proves it's complete."*
+*"Register a Covenant. The validator proves it's complete."*

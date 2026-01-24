@@ -3,8 +3,8 @@
 namespace Coven.Core.Covenants;
 
 /// <summary>
-/// Defines a journal protocol with compile-time connectivity guarantees.
-/// A Covenant declares that all entry flows are statically verifiable:
+/// Defines a journal protocol with connectivity guarantees.
+/// A Covenant declares that all entry flows are verifiable:
 /// no dead letters, no orphaned consumers, and a fully connected graph.
 /// </summary>
 /// <remarks>
