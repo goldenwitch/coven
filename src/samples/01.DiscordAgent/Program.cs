@@ -72,12 +72,6 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
         new AgentParagraphWindowPolicy(),
         new AgentMaxLengthWindowPolicy(1024)));
 
-// // Thought chunk policy: summary-marker, sentence, paragraph; independent cap
-// builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
-//     new CompositeWindowPolicy<AgentAfferentThoughtChunk>(
-//         new AgentThoughtSummaryMarkerWindowPolicy(),
-//         new AgentThoughtMaxLengthWindowPolicy(2048)));
-
 // Override default OpenAI entry → ResponseItem mapping with sample templating
 builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
 builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());

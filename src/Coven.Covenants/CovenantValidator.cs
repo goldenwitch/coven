@@ -6,7 +6,7 @@ namespace Coven.Covenants;
 
 /// <summary>
 /// Runtime validator for covenant graphs.
-/// Checks the same invariants as the Roslyn analyzer, but at startup.
+/// Checks covenant invariants at startup time.
 /// </summary>
 public static class CovenantValidator
 {

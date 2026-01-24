@@ -54,7 +54,6 @@ services.AddCovenant<ChatCovenant>(covenant =>
 |---------|---------|
 | `Coven.Core` | Marker interfaces (`ICovenant`, `ICovenantEntry<T>`, etc.) |
 | `Coven.Covenants` | Builder, validator, DI extensions |
-| `Coven.Covenants.Analyzers` | Roslyn analyzer for compile-time verification (future) |
 
 ## What's Excluded from Covenants?
 
