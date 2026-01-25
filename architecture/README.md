@@ -6,7 +6,7 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 
 ## Critical Subtopics (Summaries)
 
-- Daemons & Lifecycle: All long‑running work runs as daemons implementing a minimal lifecycle (Start/Shutdown with `Status` and failure journaling). Orchestration starts daemons inside a MagikBlock and can deterministically await `Running` or handle failures. This keeps background processing testable and predictable. See: `src/Coven.Daemonology/README.md`.
+- Daemons & Lifecycle: All long‑running work runs as daemons implementing a minimal lifecycle (Start/Shutdown with `Status` and failure journaling). Daemons are auto-started by `CovenExecutionScope` when a ritual begins, eliminating manual startup boilerplate. See: `src/Coven.Daemonology/README.md`.
 
 - Journaling & Scriveners: Append‑only, typed journals decouple producers from consumers, enable replay/time‑travel, and make streaming deterministic. Blocks, branches, and leaves communicate by writing/reading entries, not by callbacks. See: [Journaling and Scriveners](./Journaling-and-Scriveners.md).
 
@@ -22,9 +22,13 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 
 ## Examples: Mapping Concepts to Sample 01 (Discord Agent)
 
-Concrete examples help ground the vocabulary above. The Sample 01 app wires Discord chat to an OpenAI‑backed agent via a simple router MagikBlock.
+Concrete examples help ground the vocabulary above. Two samples demonstrate different approaches:
 
-- Spine: the ritual executes a single `RouterBlock` MagikBlock.
+**Sample 02 (Declarative, preferred)**: Defines routes declaratively at DI time via `AddCoven` and covenants.
+  - File: `src/samples/02.DeclarativeDiscordAgent/Program.cs`
+  - No `RouterBlock` class—routes are defined inline and validated at build time.
+
+**Sample 01 (Imperative, legacy)**: Uses a `RouterBlock` MagikBlock with imperative journal tailing.
   - File: `src/samples/01.DiscordAgent/RouterBlock.cs`
 
 - Branches: app logic targets Chat and Agents abstractions.
@@ -35,7 +39,7 @@ Concrete examples help ground the vocabulary above. The Sample 01 app wires Disc
   - Discord chat: `Coven.Chat.Discord` (gateway/session/scrivener/daemon). Configured via `DiscordClientConfig` in `Program.cs`.
   - OpenAI agent: `Coven.Agents.OpenAI` (gateway/session/scrivener/daemon). Configured via `OpenAIClientConfig` in `Program.cs`.
 
-- Daemons: long‑running services started inside the router block.
+- Daemons: long‑running services auto-started by `CovenExecutionScope` when the ritual begins.
   - Discord chat daemon (`DiscordChatDaemon`) tails Discord and writes `ChatAfferent` entries.
   - OpenAI agent daemon (`OpenAIAgentDaemon`) processes prompts and writes streamed agent chunks/entries.
   - Optional streaming daemons (from `Coven.Core.Streaming`) may be registered by branches to window chunk streams into outputs.
@@ -89,7 +93,7 @@ Concrete examples help ground the vocabulary above. The Sample 01 app wires Disc
   - [Journaling and Scriveners](./Journaling-and-Scriveners.md)
   - [Abstractions and Branches](./Abstractions-and-Branches.md)
   - [Windowing and Shattering](./Windowing-and-Shattering.md)
-  - Covenants — see [declarative-covenants proposal](../proposals/declarative-covenants.md) (in design)
+  - [Covenants and Routing](./Covenants-and-Routing.md)
 
 ## Where to Find Package Docs
 - Per‑package documentation: see `src/<Package>/README.md` (usage, configuration, examples).

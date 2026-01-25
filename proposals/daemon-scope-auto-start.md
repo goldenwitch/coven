@@ -1,7 +1,8 @@
 # Daemon Scope Auto-Start
 
-> **Status**: Proposal  
+> **Status**: Implemented  
 > **Created**: 2026-01-24  
+> **Implemented**: 2026-01-24  
 > **Depends on**: [declarative-covenants.md](declarative-covenants.md), [idaemon-to-core.md](idaemon-to-core.md)
 
 ---

@@ -144,3 +144,7 @@ Contains reusable prompt templates and instructions for common agent scenarios. 
 ### `guidelines/`
 
 Contains guidelines organized by task type (exploration, implementation, refactoring, debugging). When you receive a task, identify its type and consult the corresponding guideline before starting work. Guidelines capture institutional knowledge—patterns and practices that have proven valuable in this codebase.
+
+## Code Philosophy
+
+Prefer clean and clear over preserving what was there. There are no deprecation concerns or backward compatibility obligations. If the right design requires changing existing code, change it.

@@ -7,14 +7,10 @@ using Coven.Chat.Discord;
 using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Covenants;
-using Coven.Core.Streaming;
 using Coven.Scriveners.FileScrivener;
-using Coven.Transmutation;
-using DiscordAgent;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenAI.Responses;
 
 // Configuration (env-first with fallback to defaults below)
 // Defaults: edit these to hardcode values when env vars are not present
@@ -68,21 +64,18 @@ builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
     FilePath = "./data/openai-agent.ndjson"
 });
 
-// Override windowing policies independently for outputs and thoughts
-// Output chunk policy: paragraph-first with a tighter max length cap
-builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
-    new CompositeWindowPolicy<AgentAfferentChunk>(
-        new AgentParagraphWindowPolicy(),
-        new AgentMaxLengthWindowPolicy(1024)));
-
-// Override default OpenAI entry → ResponseItem mapping with sample templating
-builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
-
+// Declarative coven configuration
 builder.Services.BuildCoven(coven =>
 {
+    // UseDiscordChat and UseOpenAIAgents return manifests declaring what they produce/consume
     BranchManifest chat = coven.UseDiscordChat(discordConfig);
     BranchManifest agents = coven.UseOpenAIAgents(openAiConfig, reg => reg.EnableStreaming());
 
+    // Covenant connects manifests and defines routes between them
+    // At build time, this validates:
+    //   - Every produced type has a route or terminal
+    //   - Every consumed type has a route producing it
+    //   - Each source type has exactly one disposition
     coven.Covenant()
         .Connect(chat)
         .Connect(agents)
@@ -93,7 +86,7 @@ builder.Services.BuildCoven(coven =>
                 (msg, ct) => Task.FromResult(
                     new AgentPrompt(msg.Sender, msg.Text)));
 
-            // Agents → Chat: responses become outgoing draft messages
+            // Agents → Chat: responses become outgoing messages
             c.Route<AgentResponse, ChatEfferentDraft>(
                 (r, ct) => Task.FromResult(
                     new ChatEfferentDraft("BOT", r.Text)));
@@ -103,7 +96,7 @@ builder.Services.BuildCoven(coven =>
                 (chunk, ct) => Task.FromResult(
                     new ChatChunk("BOT", chunk.Text)));
 
-            // Thoughts are terminal (not displayed to users)
+            // Thoughts are terminal (not displayed)
             c.Terminal<AgentThought>();
             c.Terminal<AgentAfferentThoughtChunk>();
         });
@@ -112,5 +105,5 @@ builder.Services.BuildCoven(coven =>
 IHost host = builder.Build();
 
 // Execute ritual - daemons auto-start via CovenExecutionScope
-ICoven coven = host.Services.GetRequiredService<ICoven>();
-await coven.Ritual<Empty, Empty>(new Empty());
+ICoven ritual = host.Services.GetRequiredService<ICoven>();
+await ritual.Ritual<Empty, Empty>(new Empty());

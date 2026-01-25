@@ -1,7 +1,8 @@
 # Move IDaemon Interface to Coven.Core
 
-> **Status**: Proposal  
+> **Status**: Implemented  
 > **Created**: 2026-01-24  
+> **Implemented**: 2026-01-24  
 > **Blocking**: [daemon-scope-auto-start.md](daemon-scope-auto-start.md), [declarative-covenants.md](declarative-covenants.md)
 
 ---

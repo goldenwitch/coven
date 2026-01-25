@@ -1,7 +1,8 @@
 # Declarative Covenants
 
-> **Status**: Proposal  
+> **Status**: Implemented  
 > **Created**: 2026-01-24  
+> **Implemented**: 2026-01-24  
 > **Depends on**: [transmuter-non-null-constraint.md](transmuter-non-null-constraint.md)
 
 ---
