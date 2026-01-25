@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Agents;
-using Coven.Agents.Gemini;
 using Coven.Agents.OpenAI;
 using Coven.Chat;
 using Coven.Chat.Discord;
@@ -22,17 +21,12 @@ string defaultDiscordToken = ""; // set your Discord bot token
 ulong defaultDiscordChannelId = 0; // set your channel id
 string defaultOpenAiApiKey = ""; // set your OpenAI API key
 string defaultOpenAiModel = "gpt-5-2025-08-07"; // choose the model
-string defaultGeminiApiKey = ""; // set your Gemini API key
-string defaultGeminiModel = ""; // choose the model
 
 // Environment overrides (optional)
 string? envDiscordToken = Environment.GetEnvironmentVariable("DISCORD_BOT_TOKEN");
 string? envDiscordChannelId = Environment.GetEnvironmentVariable("DISCORD_CHANNEL_ID");
 string? envOpenAiApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
 string? envOpenAiModel = Environment.GetEnvironmentVariable("OPENAI_MODEL");
-string? envGeminiApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY");
-string? envGeminiModel = Environment.GetEnvironmentVariable("GEMINI_MODEL");
-bool useGemini = string.Equals(Environment.GetEnvironmentVariable("USE_GEMINI"), "true", StringComparison.OrdinalIgnoreCase);
 
 ulong channelId = defaultDiscordChannelId;
 if (!string.IsNullOrWhiteSpace(envDiscordChannelId) && ulong.TryParse(envDiscordChannelId, out ulong parsed))
@@ -52,12 +46,6 @@ OpenAIClientConfig openAiConfig = new()
     Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel
 };
 
-GeminiClientConfig geminiConfig = new()
-{
-    ApiKey = string.IsNullOrWhiteSpace(envGeminiApiKey) ? defaultGeminiApiKey : envGeminiApiKey,
-    Model = string.IsNullOrWhiteSpace(envGeminiModel) ? defaultGeminiModel : envGeminiModel
-};
-
 // Register DI
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
@@ -69,17 +57,10 @@ builder.Services.AddFileScrivener<ChatEntry>(new FileScrivenerConfig
 });
 builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
 {
-    FilePath = useGemini ? "./data/gemini-agent.ndjson" : "./data/openai-agent.ndjson"
+    FilePath = "./data/openai-agent.ndjson"
 });
 builder.Services.AddDiscordChat(discordConfig);
-if (useGemini)
-{
-    builder.Services.AddGeminiAgents(geminiConfig, registration => registration.EnableStreaming());
-}
-else
-{
-    builder.Services.AddOpenAIAgents(openAiConfig, registration => registration.EnableStreaming());
-}
+builder.Services.AddOpenAIAgents(openAiConfig, registration => registration.EnableStreaming());
 
 // Override windowing policies independently for outputs and thoughts
 // Output chunk policy: paragraph-first with a tighter max length cap

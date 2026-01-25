@@ -19,6 +19,7 @@ dotnet-install.sh
 *.userprefs
 *.rsuser
 src/samples/01.DiscordAgent/Properties/
+src/toys/Coven.Toys.ConsoleGemini/Properties/
 
 # Logs / Temp
 *.log
@@ -58,8 +59,6 @@ _ReSharper.*/
 *.orig
 *.rej
 scratch.txt
-data/
-
 
 # Local scratch notes
 /scratch.md
