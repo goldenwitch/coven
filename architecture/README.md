@@ -28,9 +28,6 @@ Concrete examples help ground the vocabulary above. Two samples demonstrate diff
   - File: `src/samples/01.DiscordAgent/Program.cs`
   - No `RouterBlock` class—routes are defined inline and validated at build time.
 
-**Sample 02 (Declarative, extended)**: Same pattern as Sample 01 with additional configuration examples.
-  - File: `src/samples/02.DeclarativeDiscordAgent/Program.cs`
-
 - Branches: app logic targets Chat and Agents abstractions.
   - Chat branch types used by the router: `ChatEntry`, `ChatAfferent`, `ChatEfferentDraft` (from `Coven.Chat`).
   - Agents branch types used by the router: `AgentEntry`, `AgentPrompt`, `AgentResponse`, `AgentThought` (from `Coven.Agents`).
