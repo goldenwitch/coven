@@ -1,9 +1,10 @@
 ﻿// SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Chat;
 using Coven.Chat.Discord;
 using Coven.Core;
 using Coven.Core.Builder;
-using Coven.Toys.DiscordChat;
+using Coven.Core.Covenants;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -15,14 +16,33 @@ DiscordClientConfig discordClientConfig = new()
     ChannelId = 123
 };
 
-// Register all of our DI stuff
+// ───────────────────────────────────────────────────────────────────────────
+// DECLARATIVE COVENANT CONFIGURATION
+// 
+// This replaces the imperative EchoBlock pattern with a declarative covenant.
+// Routes are defined at DI time—incoming messages echo back as outgoing.
+// ───────────────────────────────────────────────────────────────────────────
+
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddLogging(builder => builder.AddConsole());
-builder.Services.AddDiscordChat(discordClientConfig);
-builder.Services.BuildCoven(CovenServiceBuilder => CovenServiceBuilder.MagikBlock<Empty, Empty, EchoBlock>().Done());
+builder.Services.AddLogging(b => b.AddConsole());
+
+builder.Services.BuildCoven(coven =>
+{
+    BranchManifest chat = coven.UseDiscordChat(discordClientConfig);
+
+    coven.Covenant()
+        .Connect(chat)
+        .Routes(c =>
+        {
+            // Echo: incoming messages become outgoing
+            c.Route<ChatAfferent, ChatEfferent>(
+                (msg, ct) => Task.FromResult(
+                    new ChatEfferent("BOT", msg.Text)));
+        });
+});
 
 IHost host = builder.Build();
 
-// Execute our ritual
+// Execute ritual - daemons auto-start via CovenExecutionScope
 ICoven coven = host.Services.GetRequiredService<ICoven>();
 await coven.Ritual<Empty, Empty>(new Empty());

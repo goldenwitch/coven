@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core.Builder;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Core;
 
@@ -18,53 +17,67 @@ internal class Coven : ICoven
 
     public async Task<TOutput> Ritual<T, TOutput>(T input, CancellationToken cancellationToken = default)
     {
-        // Open DI scope (if available) for the duration of the ritual
-        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
+        // Open DI scope (if available) for the duration of the ritual and start daemons
+        DaemonScope? scope = _rootProvider is not null
+            ? await CovenExecutionScope.BeginScopeAsync(_rootProvider, cancellationToken)
+            : null;
+
+        // CRITICAL: Set AsyncLocal from the synchronous context of the caller.
+        // AsyncLocal modifications inside async methods don't propagate back to the caller.
+        CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<T, TOutput>(input, null, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<T, TOutput>(input, null, cancellationToken);
         }
         finally
         {
-            if (_rootProvider is not null)
+            CovenExecutionScope.SetCurrentScope(null);
+            if (scope is not null)
             {
-                CovenExecutionScope.EndScope(scope);
+                await CovenExecutionScope.EndScopeAsync(scope, CancellationToken.None);
             }
-
         }
     }
 
     public async Task<TOutput> Ritual<T, TOutput>(T input, List<string>? tags, CancellationToken cancellationToken = default)
     {
-        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
+        DaemonScope? scope = _rootProvider is not null
+            ? await CovenExecutionScope.BeginScopeAsync(_rootProvider, cancellationToken)
+            : null;
+
+        CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<T, TOutput>(input, tags, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<T, TOutput>(input, tags, cancellationToken);
         }
         finally
         {
-            if (_rootProvider is not null)
+            CovenExecutionScope.SetCurrentScope(null);
+            if (scope is not null)
             {
-                CovenExecutionScope.EndScope(scope);
+                await CovenExecutionScope.EndScopeAsync(scope, CancellationToken.None);
             }
-
         }
     }
 
     public async Task<TOutput> Ritual<TOutput>(CancellationToken cancellationToken = default)
     {
-        IServiceScope? scope = _rootProvider is not null ? CovenExecutionScope.BeginScope(_rootProvider) : null;
+        DaemonScope? scope = _rootProvider is not null
+            ? await CovenExecutionScope.BeginScopeAsync(_rootProvider, cancellationToken)
+            : null;
+
+        CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<Empty, TOutput>(new Empty(), null, cancellationToken).ConfigureAwait(false);
+            return await _board.PostWork<Empty, TOutput>(new Empty(), null, cancellationToken);
         }
         finally
         {
-            if (_rootProvider is not null)
+            CovenExecutionScope.SetCurrentScope(null);
+            if (scope is not null)
             {
-                CovenExecutionScope.EndScope(scope);
+                await CovenExecutionScope.EndScopeAsync(scope, CancellationToken.None);
             }
-
         }
     }
 }

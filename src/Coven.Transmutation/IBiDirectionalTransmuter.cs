@@ -6,9 +6,14 @@ namespace Coven.Transmutation;
 /// Defines a two-way transmutation between <typeparamref name="TIn"/> and <typeparamref name="TOut"/>,
 /// exposing symmetric operations for converting in both directions.
 /// </summary>
-/// <typeparam name="TIn">The primary input type.</typeparam>
-/// <typeparam name="TOut">The primary output type.</typeparam>
+/// <typeparam name="TIn">The primary input type. Must be non-null; transmuters are pure transforms.</typeparam>
+/// <typeparam name="TOut">The primary output type. Must be non-null; transmuters are pure transforms.</typeparam>
+/// <remarks>
+/// Transmuters should be pure transforms that always produce a value in both directions.
+/// </remarks>
 public interface IBiDirectionalTransmuter<TIn, TOut>
+    where TIn : notnull
+    where TOut : notnull
 {
     /// <summary>
     /// Transmutes a value of <typeparamref name="TIn"/> into <typeparamref name="TOut"/>.

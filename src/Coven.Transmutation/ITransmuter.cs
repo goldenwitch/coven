@@ -7,8 +7,14 @@ namespace Coven.Transmutation;
 /// optionally observing a <see cref="CancellationToken"/> for cooperative cancellation.
 /// </summary>
 /// <typeparam name="TIn">The input type accepted by the transmutation.</typeparam>
-/// <typeparam name="TOut">The output type produced by the transmutation.</typeparam>
+/// <typeparam name="TOut">The output type produced by the transmutation. Must be non-null; transmuters are pure transforms that always produce a value.</typeparam>
+/// <remarks>
+/// Transmuters should be pure transforms: given input A, produce output B. They should not
+/// encode filtering logic (deciding whether to produce output at all). If filtering is needed,
+/// apply it before invoking the transmuter.
+/// </remarks>
 public interface ITransmuter<TIn, TOut>
+    where TOut : notnull
 {
     /// <summary>
     /// Transmutes the given <paramref name="Input"/> into an instance of <typeparamref name="TOut"/>.

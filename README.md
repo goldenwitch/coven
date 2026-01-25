@@ -86,39 +86,41 @@ builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 });
 
 // Optional: override OpenAI mapping with templating
-builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem>, DiscordOpenAITemplatingTransmuter>();
 
-// Route chat ↔ agent via a simple MagikBlock
-builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
+// Define declarative covenant routes (validated at build time)
+builder.Services.BuildCoven(coven =>
+{
+    BranchManifest chat = coven.UseDiscordChat(discordConfig);
+    BranchManifest agents = coven.UseOpenAIAgents(openAiConfig, reg => reg.EnableStreaming());
+
+    coven.Covenant()
+        .Connect(chat)
+        .Connect(agents)
+        .Routes(c =>
+        {
+            // Chat → Agents: incoming messages become prompts
+            c.Route<ChatAfferent, AgentPrompt>(
+                (msg, ct) => Task.FromResult(new AgentPrompt(msg.Sender, msg.Text)));
+
+            // Agents → Chat: responses become outgoing draft messages
+            c.Route<AgentResponse, ChatEfferentDraft>(
+                (r, ct) => Task.FromResult(new ChatEfferentDraft("BOT", r.Text)));
+
+            // Streaming chunks: real-time display
+            c.Route<AgentAfferentChunk, ChatChunk>(
+                (chunk, ct) => Task.FromResult(new ChatChunk("BOT", chunk.Text)));
+
+            // Thoughts are terminal (not displayed to users)
+            c.Terminal<AgentThought>();
+        });
+});
 
 IHost host = builder.Build();
+
+// Execute ritual - daemons auto-start via CovenExecutionScope
 ICoven coven = host.Services.GetRequiredService<ICoven>();
 await coven.Ritual<Empty, Empty>(new Empty());
-```
-
-Router logic (Sample 01 `RouterBlock.cs`):
-
-```csharp
-await foreach ((long _, ChatEntry? entry) in _chat.TailAsync(0, cancellationToken))
-{
-    if (entry is ChatAfferent inc)
-    {
-        await _agents.WriteAsync(new AgentPrompt(inc.Sender, inc.Text), cancellationToken);
-    }
-}
-
-await foreach ((long _, AgentEntry? entry) in _agents.TailAsync(0, cancellationToken))
-{
-    switch (entry)
-    {
-        case AgentResponse r:
-            await _chat.WriteAsync(new ChatEfferentDraft("BOT", r.Text), cancellationToken);
-            break;
-        case AgentThought t:
-            // optionally surface thoughts to chat
-            break;
-    }
-}
 ```
 
 ### Troubleshooting
@@ -145,32 +147,33 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
 //         new AgentThoughtMaxLengthWindowPolicy(2048)));
 ```
 
-Custom OpenAI templating: override prompt/response item mapping to inject context (from `DiscordOpenAITemplatingTransmuter.cs`):
+Custom OpenAI templating: override prompt/response item mapping to inject context (from `DiscordOpenAITemplatingTransmuter.cs`). Callers filter entries before transmutation:
 
 ```csharp
-internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem>
 {
-    public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
+    public Task<ResponseItem> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {
         return Input switch
         {
-            OpenAIEfferent u => Task.FromResult<ResponseItem?>(
+            OpenAIEfferent u => Task.FromResult(
                 ResponseItem.CreateUserMessageItem($"[discord username:{u.Sender}] {u.Text}")),
-            OpenAIAfferent a => Task.FromResult<ResponseItem?>(
+            OpenAIAfferent a => Task.FromResult(
                 ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
-            _ => Task.FromResult<ResponseItem?>(null)
+            _ => throw new ArgumentOutOfRangeException(nameof(Input),
+                $"Cannot transmute {Input.GetType().Name}. Filter before transmuting.")
         };
     }
 }
 ```
 
-Surface agent thoughts: optionally echo internal thinking to the chat (from `RouterBlock.cs`):
+Surface agent thoughts: optionally echo internal thinking to the chat:
 
 ```csharp
-case AgentThought t:
-    // Uncomment to stream thoughts to the channel
-    // await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken);
-    break;
+// In covenant routes, replace Terminal<AgentThought>() with:
+c.Route<AgentThought, ChatEfferentDraft>(
+    (t, ct) => Task.FromResult(
+        new ChatEfferentDraft("BOT", t.Text)));
 ```
 ### I don't want to make a discord bot.
 Don't use Discord? No problem. One line change to swap to using Console as your chat of choice.

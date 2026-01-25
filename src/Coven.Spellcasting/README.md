@@ -1,43 +1,60 @@
 # Coven.Spellcasting
 
-Structured “tool” actions for agents and apps. Define spells with typed inputs/outputs, compose them into a spellbook, and optionally generate schemas.
+Foundational infrastructure for defining typed "tool" actions. Define spells with typed inputs/outputs, compose them into a spellbook, and generate JSON schemas for tool registration.
 
-## What’s Inside
+## What's Inside
 
 - Contracts: `ISpell`, `ISpell<TIn>`, `ISpell<TIn,TOut>`, `ISpellContract`.
 - Composition: `Spellbook`, `SpellbookBuilder`.
 - Schema: `SchemaGen` for describing spell inputs/outputs.
-- Definition: `SpellDefinition` (name, description, input/output types).
+- Definition: `SpellDefinition` record (name, optional input/output schemas).
 
 ## Why use it?
 
 - Make capabilities explicit and typed for agents/tools.
-- Generate machine‑readable schemas for planning and validation.
+- Generate machine-readable schemas for planning and validation.
 
 ## Minimal Example
 
 ```csharp
 using Coven.Spellcasting;
 
+public record AddInput(int A, int B);
+public record AddResult(int Sum);
+
 public sealed class AddSpell : ISpell<AddInput, AddResult>
 {
-    public SpellDefinition Definition => new(
-        Name: "add",
-        Description: "Add two integers",
-        InputType: typeof(AddInput),
-        OutputType: typeof(AddResult));
+    // Definition is auto-generated from TIn/TOut via default interface implementation
+    // Name defaults to "AddInput", schemas generated from the record types
 
-    public Task<AddResult> Cast(AddInput input, CancellationToken ct = default)
+    public Task<AddResult> CastSpell(AddInput input)
         => Task.FromResult(new AddResult(input.A + input.B));
 }
 
-var book = new SpellbookBuilder()
+// Build a spellbook containing your spells
+Spellbook book = new SpellbookBuilder()
     .AddSpell<AddInput, AddResult>(new AddSpell())
     .Build();
 
-// Optional: schema for tool wiring
-string jsonSchema = SchemaGen.Generate(book);
+// Access spell definitions for tool registration
+foreach (SpellDefinition def in book.Definitions)
+{
+    // def.Name == "AddInput"
+    // def.InputSchema == JSON schema for AddInput
+    // def.OutputSchema == JSON schema for AddResult
+}
 ```
+
+## SpellDefinition Record
+
+```csharp
+public record SpellDefinition(
+    string Name,
+    string? InputSchema = null,
+    string? OutputSchema = null);
+```
+
+The `ISpell<TIn, TOut>` interface provides a default implementation that auto-generates the definition from the type parameters using `SchemaGen`.
 
 ## See Also
 

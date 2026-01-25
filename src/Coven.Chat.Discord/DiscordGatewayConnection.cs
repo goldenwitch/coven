@@ -1,160 +1,92 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Globalization;
 using Coven.Core;
-using Discord;
-using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Coven.Chat.Discord;
 
 /// <summary>
-/// Manages Discord connectivity and bridges inbound/outbound messages to a Discord journal.
-/// Bot-authored messages are ignored (no ACK is written here); position-based ACKs are emitted later by the session/transmuter pipeline.
+/// Bridges <see cref="IDiscordGateway"/> to the Discord journal by pumping inbound
+/// messages to the internal scrivener. Outbound sends are delegated to the gateway.
 /// </summary>
 internal sealed class DiscordGatewayConnection(
-    DiscordClientConfig configuration,
-    DiscordSocketClient socketClient,
+    DiscordClientConfig config,
+    IDiscordGateway gateway,
     [FromKeyedServices("Coven.InternalDiscordScrivener")] IScrivener<DiscordEntry> scrivener,
-    ILogger<DiscordGatewayConnection> logger) : IDisposable
+    ILogger<DiscordGatewayConnection> logger) : IAsyncDisposable
 {
-    private readonly DiscordClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-    private readonly DiscordSocketClient _socketClient = socketClient ?? throw new ArgumentNullException(nameof(socketClient));
-    private readonly IScrivener<DiscordEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(socketClient));
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly DiscordClientConfig _config = config ?? throw new ArgumentNullException(nameof(config));
+    private readonly IDiscordGateway _gateway = gateway ?? throw new ArgumentNullException(nameof(gateway));
+    private readonly IScrivener<DiscordEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));
+    private readonly ILogger<DiscordGatewayConnection> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private Task? _inboundPump;
+    private CancellationTokenSource? _pumpCts;
 
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
-        DiscordLog.Connecting(_logger, _configuration.ChannelId);
-        cancellationToken.ThrowIfCancellationRequested();
+        await _gateway.ConnectAsync(cancellationToken).ConfigureAwait(false);
 
-        _socketClient.MessageReceived += OnMessageReceivedAsync;
-
-        await _socketClient.LoginAsync(TokenType.Bot, _configuration.BotToken).ConfigureAwait(false);
-        await _socketClient.StartAsync().ConfigureAwait(false);
-
-        DiscordLog.Connected(_logger);
+        _pumpCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        _inboundPump = PumpInboundMessagesAsync(_pumpCts.Token);
     }
 
-    public async Task SendAsync(string text, CancellationToken cancellationToken)
+    public Task SendAsync(string text, CancellationToken cancellationToken)
     {
-        // Early abort on session cancellation.
-        cancellationToken.ThrowIfCancellationRequested();
+        return _gateway.SendMessageAsync(_config.ChannelId, text, cancellationToken);
+    }
 
-        if (string.IsNullOrWhiteSpace(text))
+    private async Task PumpInboundMessagesAsync(CancellationToken cancellationToken)
+    {
+        try
         {
-            return;
+            await foreach (DiscordInboundMessage message in _gateway.GetInboundMessagesAsync(cancellationToken))
+            {
+                DiscordAfferent afferent = new(
+                    Sender: message.Author,
+                    Text: message.Content,
+                    MessageId: message.MessageId,
+                    Timestamp: message.Timestamp);
+
+                long position = await _scrivener.WriteAsync(afferent, cancellationToken)
+                    .ConfigureAwait(false);
+                DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordAfferent), position);
+            }
         }
-
-        // Resolve the target channel each send to avoid caching references that may become invalid across reconnects.
-        // Attempt cache-first, then fall back to REST with cooperative cancellation for resilience on cold caches.
-        IMessageChannel messageChannel;
-        if (_socketClient.GetChannel(_configuration.ChannelId) is not IMessageChannel cachedMessageChannel)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            DiscordLog.ChannelCacheMiss(_logger, _configuration.ChannelId);
+            // Normal shutdown
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_pumpCts is not null)
+        {
             try
             {
-                DiscordLog.ChannelRestFetchStart(_logger, _configuration.ChannelId);
+                _pumpCts.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // CTS was already disposed (can happen with linked tokens), which is fine
+            }
+        }
 
-                // RequestOptions carries the cancellation token so REST calls honor cooperative cancellation.
-                RequestOptions requestOptions = new() { CancelToken = cancellationToken };
-                IChannel restChannel = await _socketClient.Rest.GetChannelAsync(_configuration.ChannelId, requestOptions);
-
-                if (restChannel is IMessageChannel resolvedMessageChannel)
-                {
-                    messageChannel = resolvedMessageChannel;
-                    DiscordLog.ChannelRestFetchSuccess(_logger, _configuration.ChannelId);
-                }
-                else
-                {
-                    // Provide clear diagnostics when the resolved channel is not a message-capable channel.
-                    string actualTypeName = restChannel?.GetType().Name ?? "null";
-                    DiscordLog.ChannelRestFetchInvalidType(_logger, _configuration.ChannelId, actualTypeName);
-                    throw new InvalidOperationException($"Configured channel '{_configuration.ChannelId}' resolved via REST but is not a message channel (actual: {actualTypeName}).");
-                }
+        if (_inboundPump is not null)
+        {
+            try
+            {
+                await _inboundPump.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
-                // Await cancellation with context for observability; rethrow to propagate to caller.
-                DiscordLog.ChannelLookupCanceled(_logger, _configuration.ChannelId);
-                throw;
-            }
-            catch (Exception error)
-            {
-                // Log detailed lookup failure with the channel identifier for triage, then rethrow.
-                DiscordLog.ChannelLookupError(_logger, _configuration.ChannelId, error);
-                throw;
+                // Expected on cancellation
             }
         }
-        else
-        {
-            DiscordLog.ChannelCacheHit(_logger, _configuration.ChannelId);
-            messageChannel = cachedMessageChannel;
-        }
 
-        cancellationToken.ThrowIfCancellationRequested();
-
-        DiscordLog.OutboundSendStart(_logger, _configuration.ChannelId, text.Length);
-        // WaitAsync is used to attach the provided cancellation token to the send operation so callers can
-        // cooperatively cancel outbound messages, avoiding hangs during shutdown.
-        try
-        {
-            await messageChannel.SendMessageAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
-            DiscordLog.OutboundSendSucceeded(_logger, _configuration.ChannelId);
-        }
-        catch (OperationCanceledException)
-        {
-            DiscordLog.OutboundOperationCanceled(_logger, _configuration.ChannelId);
-            throw;
-        }
-        catch (ObjectDisposedException ex)
-        {
-            DiscordLog.OutboundSendFailed(_logger, _configuration.ChannelId, ex);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            DiscordLog.OutboundSendFailed(_logger, _configuration.ChannelId, ex);
-            throw;
-        }
-    }
-
-    private async Task OnMessageReceivedAsync(SocketMessage message)
-    {
-        // Determine the sender identity. For Discord.Net, Author should be present on normal messages;
-        string sender = message.Author.Username;
-
-        // Ignore bot-authored messages to prevent loops; session will generate position-based ACKs
-        // when it observes our own DiscordEfferent entries via the journal.
-        if (message.Author.IsBot)
-        {
-            string text = message.Content ?? string.Empty;
-            DiscordLog.InboundBotMessageObserved(_logger, sender, text.Length);
-            return;
-        }
-
-        if (string.IsNullOrEmpty(sender))
-        {
-            throw new InvalidOperationException("Discord message author username is missing.");
-        }
-
-        DiscordAfferent incoming = new(
-            Sender: sender,
-            Text: message.Content ?? string.Empty,
-            MessageId: message.Id.ToString(CultureInfo.InvariantCulture),
-            Timestamp: message.Timestamp);
-
-        // Just need to send the incoming message to a scrivener
-        // Scrivener is responsible for synchronizing etc
-        DiscordLog.InboundUserMessageReceived(_logger, sender, incoming.Text.Length);
-        long position = await _scrivener.WriteAsync(incoming).ConfigureAwait(false);
-        DiscordLog.InboundAppendedToJournal(_logger, nameof(DiscordAfferent), position);
-    }
-
-    public void Dispose()
-    {
-        _socketClient.MessageReceived -= OnMessageReceivedAsync;
-        GC.SuppressFinalize(this);
+        _pumpCts?.Dispose();
+        await _gateway.DisposeAsync().ConfigureAwait(false);
     }
 }

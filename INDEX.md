@@ -5,7 +5,7 @@ Project overview: see [README](/README.md).
 ## Documentation
 - Root: [README](/README.md), [CONTRIBUTING](/CONTRIBUTING.md), [AGENTS](/AGENTS.md)
 - Licensing: [COMMERCIAL-TERMS](/COMMERCIAL-TERMS.md), [LICENSE](/LICENSE), [NOTICE](/NOTICE)
-- Architecture: [README](/architecture/README.md), [Journaling and Scriveners](/architecture/Journaling-and-Scriveners.md), [Abstractions and Branches](/architecture/Abstractions-and-Branches.md), [Windowing and Shattering](/architecture/Windowing-and-Shattering.md), [Licensing](/architecture/Licensing.md)
+- Architecture: [README](/architecture/README.md), [Journaling and Scriveners](/architecture/Journaling-and-Scriveners.md), [Abstractions and Branches](/architecture/Abstractions-and-Branches.md), [Windowing and Shattering](/architecture/Windowing-and-Shattering.md), [Covenants and Routing](/architecture/Covenants-and-Routing.md), [Licensing](/architecture/Licensing.md)
 - Build/Release: [Release Process](/build/ReleaseProcess.md), [VERSION](/build/VERSION)
 
 ## Projects (src)

@@ -39,9 +39,12 @@ internal sealed class OpenAIScrivener : TappedScrivener<OpenAIEntry>
     /// </summary>
     public override async Task<long> WriteAsync(OpenAIEntry entry, CancellationToken cancellationToken = default)
     {
+        System.Console.WriteLine($"[OpenAIScrivener] WriteAsync called with: {entry.GetType().Name}");
         if (entry is OpenAIEfferent outgoing)
         {
+            System.Console.WriteLine($"[OpenAIScrivener] Calling gateway.SendAsync with: {outgoing.Text}");
             await _gateway.SendAsync(outgoing, cancellationToken).ConfigureAwait(false);
+            System.Console.WriteLine($"[OpenAIScrivener] gateway.SendAsync completed");
         }
 
         long pos = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);

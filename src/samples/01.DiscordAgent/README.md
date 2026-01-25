@@ -84,11 +84,10 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
 Surface agent thoughts to the chat (optional):
 
 ```csharp
-// RouterBlock.cs
-case AgentThought t:
-    // Uncomment to stream thoughts
-    // await _chat.WriteAsync(new ChatEfferentDraft("BOT", t.Text), cancellationToken);
-    break;
+// In Program.cs covenant routes, replace Terminal with a Route:
+c.Route<AgentThought, ChatEfferentDraft>(
+    (t, ct) => Task.FromResult(
+        new ChatEfferentDraft("BOT", t.Text)));
 ```
 
 Customize OpenAI request/response templating:

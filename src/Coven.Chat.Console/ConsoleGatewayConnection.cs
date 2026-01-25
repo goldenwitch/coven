@@ -3,15 +3,16 @@
 using Coven.Core;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SysConsole = System.Console;
 
 namespace Coven.Chat.Console;
 
 internal sealed class ConsoleGatewayConnection(
+    IConsoleIO consoleIO,
     ConsoleClientConfig configuration,
     [FromKeyedServices("Coven.InternalConsoleScrivener")] IScrivener<ConsoleEntry> scrivener,
     ILogger<ConsoleGatewayConnection> logger)
 {
+    private readonly IConsoleIO _consoleIO = consoleIO ?? throw new ArgumentNullException(nameof(consoleIO));
     private readonly ConsoleClientConfig _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
     private readonly IScrivener<ConsoleEntry> _scrivener = scrivener ?? throw new ArgumentNullException(nameof(scrivener));
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -32,7 +33,7 @@ internal sealed class ConsoleGatewayConnection(
                 string? line;
                 try
                 {
-                    line = await SysConsole.In.ReadLineAsync(ct).ConfigureAwait(false);
+                    line = await _consoleIO.ReadLineAsync(ct).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -74,7 +75,7 @@ internal sealed class ConsoleGatewayConnection(
         ConsoleLog.OutboundSendStart(_logger, text.Length);
         try
         {
-            await SysConsole.Out.WriteLineAsync(text).WaitAsync(cancellationToken).ConfigureAwait(false);
+            await _consoleIO.WriteLineAsync(text, cancellationToken).ConfigureAwait(false);
             ConsoleLog.OutboundSendSucceeded(_logger);
         }
         catch (OperationCanceledException)

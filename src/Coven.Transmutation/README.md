@@ -4,19 +4,56 @@ Pure transformations between types used across Coven. Transmuters describe how o
 
 ## What’s Inside
 
-- ITransmuter<TIn,TOut>: one‑way, pure transformation.
-- IBiDirectionalTransmuter<TIn,TOut>: two‑way transformation (afferent/efferent directions).
-- IBatchTransmuter<TChunk,TOutput>: many‑to‑one transformation over a window of chunks.
+- ITransmuter<TIn,TOut>: one‑way, pure transformation. `TOut` must be non-null.
+- IBiDirectionalTransmuter<TIn,TOut>: two‑way transformation (afferent/efferent directions). Both types must be non-null.
+- IBatchTransmuter<TChunk,TOutput>: many‑to‑one transformation over a window of chunks. `TOutput` must be non-null.
 - BatchTransmuteResult<TChunk,TOutput>: output plus optional remainder chunk.
 - LambdaTransmuter<TIn,TOut>: adapter to build a transmuter from a delegate.
 - IImbuingTransmuter<TIn,TReagent,TOut>: two‑parameter transmutation using an input plus a reagent. Also implements `ITransmuter<(TIn Input, TReagent Reagent), TOut>` for tuple‑based composition.
 
 ## Principles
 
-- Pure: no observable side‑effects (no I/O, logging, mutation of external state).
-- Deterministic: same inputs → same outputs.
-- Cancel‑aware: accept and honor `CancellationToken` where work may be long‑running.
-- Exception‑transparent: throw upstream; do not swallow or log.
+- **Pure**: no observable side‑effects (no I/O, logging, mutation of external state).
+- **Deterministic**: same inputs → same outputs.
+- **Total**: transmuters always produce output—they transform, they don't filter. Use `where TOut : notnull` constraints.
+- **Cancel‑aware**: accept and honor `CancellationToken` where work may be long‑running.
+- **Exception‑transparent**: throw upstream; do not swallow or log.
+
+### Filter Before Transmuting
+
+Transmuters should not encode filtering logic (deciding whether to produce output at all). If you need to filter entries, apply the filter **before** invoking the transmuter:
+
+```csharp
+// ❌ Don't: return null to signal "skip this entry"
+public Task<ResponseItem?> Transmute(Entry input, CancellationToken ct)
+    => input switch
+    {
+        UserMessage u => Task.FromResult<ResponseItem?>(Map(u)),
+        _ => Task.FromResult<ResponseItem?>(null)  // Bad: filtering inside transmuter
+    };
+
+// ✅ Do: filter at the call site, transmuter handles only valid inputs
+await foreach (var entry in journal.ReadBackwardAsync(...))
+{
+    if (entry is UserMessage or AssistantMessage)  // Filter here
+    {
+        var item = await transmuter.Transmute(entry, ct);  // Transmuter always succeeds
+        buffer.Add(item);
+    }
+}
+
+// Transmuter throws for unexpected types
+public Task<ResponseItem> Transmute(Entry input, CancellationToken ct)
+    => input switch
+    {
+        UserMessage u => Task.FromResult(MapUser(u)),
+        AssistantMessage a => Task.FromResult(MapAssistant(a)),
+        _ => throw new ArgumentOutOfRangeException(nameof(input),
+            $"Cannot transmute {input.GetType().Name}. Filter before transmuting.")
+    };
+```
+
+This separation keeps transmuters as pure transforms while filtering remains explicit and testable at the boundary.
 
 ## One‑Way Transmutation
 

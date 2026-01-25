@@ -6,6 +6,7 @@ using Coven.Chat;
 using Coven.Chat.Discord;
 using Coven.Core;
 using Coven.Core.Builder;
+using Coven.Core.Covenants;
 using Coven.Core.Streaming;
 using Coven.Scriveners.FileScrivener;
 using Coven.Transmutation;
@@ -46,10 +47,17 @@ OpenAIClientConfig openAiConfig = new()
     Model = string.IsNullOrWhiteSpace(envOpenAiModel) ? defaultOpenAiModel : envOpenAiModel
 };
 
-// Register DI
+// ───────────────────────────────────────────────────────────────────────────
+// DECLARATIVE COVENANT CONFIGURATION
+// 
+// This replaces the imperative RouterBlock pattern with a declarative covenant.
+// No RouterBlock class needed—routes are defined at DI time and validated.
+// ───────────────────────────────────────────────────────────────────────────
+
 HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
 builder.Services.AddLogging(b => b.AddConsole());
-// Persist journals to disk using FileScrivener (registered before branches to avoid TryAdd overrides)
+
+// Persist journals to disk (registered before branches to avoid TryAdd overrides)
 builder.Services.AddFileScrivener<ChatEntry>(new FileScrivenerConfig
 {
     FilePath = "./data/discord-chat.ndjson",
@@ -59,8 +67,6 @@ builder.Services.AddFileScrivener<AgentEntry>(new FileScrivenerConfig
 {
     FilePath = "./data/openai-agent.ndjson"
 });
-builder.Services.AddDiscordChat(discordConfig);
-builder.Services.AddOpenAIAgents(openAiConfig, registration => registration.EnableStreaming());
 
 // Override windowing policies independently for outputs and thoughts
 // Output chunk policy: paragraph-first with a tighter max length cap
@@ -69,18 +75,42 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
         new AgentParagraphWindowPolicy(),
         new AgentMaxLengthWindowPolicy(1024)));
 
-// // Thought chunk policy: summary-marker, sentence, paragraph; independent cap
-// builder.Services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
-//     new CompositeWindowPolicy<AgentAfferentThoughtChunk>(
-//         new AgentThoughtSummaryMarkerWindowPolicy(),
-//         new AgentThoughtMaxLengthWindowPolicy(2048)));
+// Override default OpenAI entry → ResponseItem mapping with sample templating
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem>, DiscordOpenAITemplatingTransmuter>();
 
-// Override default OpenAI entry -> ResponseItem mapping with sample templating
-builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
-builder.Services.BuildCoven(c => c.MagikBlock<Empty, Empty, RouterBlock>().Done());
+builder.Services.BuildCoven(coven =>
+{
+    BranchManifest chat = coven.UseDiscordChat(discordConfig);
+    BranchManifest agents = coven.UseOpenAIAgents(openAiConfig, reg => reg.EnableStreaming());
+
+    coven.Covenant()
+        .Connect(chat)
+        .Connect(agents)
+        .Routes(c =>
+        {
+            // Chat → Agents: incoming messages become prompts
+            c.Route<ChatAfferent, AgentPrompt>(
+                (msg, ct) => Task.FromResult(
+                    new AgentPrompt(msg.Sender, msg.Text)));
+
+            // Agents → Chat: responses become outgoing draft messages
+            c.Route<AgentResponse, ChatEfferentDraft>(
+                (r, ct) => Task.FromResult(
+                    new ChatEfferentDraft("BOT", r.Text)));
+
+            // Streaming chunks: real-time display
+            c.Route<AgentAfferentChunk, ChatChunk>(
+                (chunk, ct) => Task.FromResult(
+                    new ChatChunk("BOT", chunk.Text)));
+
+            // Thoughts are terminal (not displayed to users)
+            c.Terminal<AgentThought>();
+            c.Terminal<AgentAfferentThoughtChunk>();
+        });
+});
 
 IHost host = builder.Build();
 
-// Execute ritual
+// Execute ritual - daemons auto-start via CovenExecutionScope
 ICoven coven = host.Services.GetRequiredService<ICoven>();
 await coven.Ritual<Empty, Empty>(new Empty());

@@ -13,26 +13,26 @@ namespace DiscordAgent;
 /// Notes
 /// - Keeps assistant/user roles but decorates text with Discord-specific
 ///   markers. Real apps could inject persona, routing hints, etc.
-/// - Return null to drop entries you don't want included in prompts.
+/// - Callers must filter entries before transmuting; unsupported types throw.
 /// </summary>
-internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem>
 {
-    public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
+    public Task<ResponseItem> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return Input switch
         {
             // Decorate outgoing (user) content with a simple Discord marker.
-            OpenAIEfferent u => Task.FromResult<ResponseItem?>(
+            OpenAIEfferent u => Task.FromResult<ResponseItem>(
                 ResponseItem.CreateUserMessageItem($"[discord username:{u.Sender}] {u.Text}")),
 
             // Decorate assistant content for clarity in logs and evals.
-            OpenAIAfferent a => Task.FromResult<ResponseItem?>(
+            OpenAIAfferent a => Task.FromResult<ResponseItem>(
                 ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
 
-            // Drop thoughts/acks from the prompt input by returning null.
-            _ => Task.FromResult<ResponseItem?>(null)
+            _ => throw new ArgumentOutOfRangeException(nameof(Input),
+                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Only OpenAIEfferent and OpenAIAfferent are supported. Filter entries before transmuting.")
         };
     }
 }

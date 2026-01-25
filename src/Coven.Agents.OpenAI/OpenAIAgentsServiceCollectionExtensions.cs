@@ -90,7 +90,7 @@ public static class OpenAIAgentsServiceCollectionExtensions
         // Transmuters and daemon
         services.AddScoped<IImbuingTransmuter<OpenAIEntry, long, AgentEntry>, OpenAITransmuter>();
         services.AddScoped<IImbuingTransmuter<AgentEntry, long, OpenAIEntry>, OpenAITransmuter>();
-        services.TryAddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, OpenAIEntryToResponseItemTransmuter>();
+        services.TryAddScoped<ITransmuter<OpenAIEntry, ResponseItem>, OpenAIEntryToResponseItemTransmuter>();
         services.TryAddScoped<IOpenAITranscriptBuilder, DefaultOpenAITranscriptBuilder>();
         // Session-local shattering for OpenAI chunks: split on paragraph boundary
         services.TryAddScoped<IShatterPolicy<OpenAIEntry>>(_ => new OpenAIThoughtParagraphShatterPolicy());

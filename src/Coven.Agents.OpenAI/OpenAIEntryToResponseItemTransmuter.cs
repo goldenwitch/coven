@@ -7,20 +7,21 @@ namespace Coven.Agents.OpenAI;
 
 /// <summary>
 /// Maps OpenAI journal entries to OpenAI SDK <see cref="ResponseItem"/> inputs.
-/// Only user/assistant textual entries are emitted; others return null.
+/// Only user (<see cref="OpenAIEfferent"/>) and assistant (<see cref="OpenAIAfferent"/>) entries are supported.
+/// Callers must filter entries before transmuting; unsupported types throw <see cref="ArgumentOutOfRangeException"/>.
 /// </summary>
-internal sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEntry, ResponseItem>
 {
-    public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
+    public Task<ResponseItem> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         return Input switch
         {
-            OpenAIEfferent u => Task.FromResult<ResponseItem?>(ResponseItem.CreateUserMessageItem(u.Text)),
-            OpenAIAfferent a => Task.FromResult<ResponseItem?>(ResponseItem.CreateAssistantMessageItem(a.Text)),
-            // Thoughts/acks do not participate in prompt construction.
-            _ => Task.FromResult<ResponseItem?>(null)
+            OpenAIEfferent u => Task.FromResult<ResponseItem>(ResponseItem.CreateUserMessageItem(u.Text)),
+            OpenAIAfferent a => Task.FromResult<ResponseItem>(ResponseItem.CreateAssistantMessageItem(a.Text)),
+            _ => throw new ArgumentOutOfRangeException(nameof(Input),
+                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Only OpenAIEfferent and OpenAIAfferent are supported. Filter entries before transmuting.")
         };
     }
 }

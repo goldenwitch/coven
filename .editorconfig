@@ -68,3 +68,7 @@ dotnet_diagnostic.IDE0022.severity = none
 
 # OPENAI001: Type is for evaluation purposes only and is subject to change or removal in future updates. Suppress this diagnostic to proceed.
 dotnet_diagnostic.OPENAI001.severity = silent
+
+# IDE0130: Namespace does not match folder structure
+# Disabled to allow foundational types (IDaemon, Status) in Coven namespace within Coven.Core project
+dotnet_diagnostic.IDE0130.severity = none

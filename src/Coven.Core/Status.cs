@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-namespace Coven.Daemonology;
+namespace Coven;
 
 /// <summary>
 /// Lifecycle states for daemons.

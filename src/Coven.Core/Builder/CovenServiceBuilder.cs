@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Coven.Core.Tags;
 using Coven.Core.Activation;
 using Coven.Core.Routing;
+using Coven.Core.Covenants;
 
 namespace Coven.Core.Builder;
 
@@ -12,14 +13,19 @@ namespace Coven.Core.Builder;
 /// </summary>
 public sealed class CovenServiceBuilder
 {
-    private readonly IServiceCollection _services;
     private readonly MagikRegistry _registry = new();
     private bool finalized;
 
     internal CovenServiceBuilder(IServiceCollection services)
     {
-        _services = services;
+        Services = services;
     }
+
+    /// <summary>
+    /// The service collection for registering additional services.
+    /// Branch extensions use this to register their daemons and infrastructure.
+    /// </summary>
+    public IServiceCollection Services { get; }
 
     /// <summary>
     /// Registers a MagikBlock type for the specified input/output pair.
@@ -35,13 +41,13 @@ public sealed class CovenServiceBuilder
     {
         EnsureNotFinalized();
         bool already = false;
-        foreach (ServiceDescriptor sd in _services)
+        foreach (ServiceDescriptor sd in Services)
         {
             if (sd.ServiceType == typeof(TBlock)) { already = true; break; }
         }
         if (!already)
         {
-            _services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
+            Services.Add(new ServiceDescriptor(typeof(TBlock), typeof(TBlock), lifetime));
         }
         // Merge capabilities from caller and attribute only (DI-level source of truth)
         List<string> mergedCaps = [];
@@ -92,6 +98,16 @@ public sealed class CovenServiceBuilder
     }
 
     /// <summary>
+    /// Creates a new covenant builder for connecting branches and defining routes.
+    /// Multiple covenants can be created within a single coven if needed.
+    /// </summary>
+    /// <returns>A new covenant builder instance.</returns>
+    public ICovenantBuilder Covenant()
+    {
+        return new CovenantBuilder(Services);
+    }
+
+    /// <summary>
     /// Finalizes the builder and registers the runtime services.
     /// </summary>
     /// <param name="pull">When true, creates a pull-oriented board.</param>
@@ -101,16 +117,16 @@ public sealed class CovenServiceBuilder
     {
         if (finalized)
         {
-            return _services; // idempotent
+            return Services; // idempotent
         }
 
 
         finalized = true;
 
         Board board = _registry.BuildBoard(pull, pullOptions);
-        _services.AddSingleton<IBoard>(_ => board);
-        _services.AddSingleton<ICoven>(sp => new Coven(board, sp));
-        return _services;
+        Services.AddSingleton<IBoard>(_ => board);
+        Services.AddSingleton<ICoven>(sp => new Coven(board, sp));
+        return Services;
     }
 
     private void EnsureNotFinalized()

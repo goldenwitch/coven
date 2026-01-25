@@ -142,7 +142,7 @@ internal sealed class DiscordChatSession(
         }
         finally
         {
-            _gateway.Dispose();
+            await _gateway.DisposeAsync().ConfigureAwait(false);
             _discordToChatPump = null;
             _chatToDiscordPump = null;
             GC.SuppressFinalize(this);

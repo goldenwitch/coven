@@ -24,6 +24,7 @@ public static class ConsoleChatServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
+        services.TryAddScoped<IConsoleIO, SystemConsoleIO>();
         services.AddScoped(sp => config);
         services.AddScoped<ConsoleGatewayConnection>();
         services.AddScoped<ConsoleChatSessionFactory>();

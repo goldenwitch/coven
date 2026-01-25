@@ -64,7 +64,7 @@ public static class GeminiAgentsServiceCollectionExtensions
 
         services.AddScoped<IImbuingTransmuter<GeminiEntry, long, AgentEntry>, GeminiTransmuter>();
         services.AddScoped<IImbuingTransmuter<AgentEntry, long, GeminiEntry>, GeminiTransmuter>();
-        services.TryAddScoped<ITransmuter<GeminiEntry, GeminiContent?>, GeminiEntryToContentTransmuter>();
+        services.TryAddScoped<ITransmuter<GeminiEntry, GeminiContent>, GeminiEntryToContentTransmuter>();
         services.TryAddScoped<IGeminiTranscriptBuilder, GeminiTranscriptBuilder>();
         services.TryAddScoped<ITransmuter<GeminiClientConfig, GeminiRequestOptions>, GeminiResponseOptionsTransmuter>();
         services.TryAddScoped<IShatterPolicy<GeminiEntry>>(_ => new GeminiReasoningParagraphShatterPolicy());
