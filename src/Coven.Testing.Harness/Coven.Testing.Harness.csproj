@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>E2E test harness for Coven applications: virtual console, OpenAI, and Discord gateways.</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;testing;e2e;harness;virtual</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Chat.Console\Coven.Chat.Console.csproj" />
+    <ProjectReference Include="..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
+    <ProjectReference Include="..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Testing.Harness\Coven.Testing.Harness.csproj" />
+    <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
+    <ProjectReference Include="..\Coven.Chat.Console\Coven.Chat.Console.csproj" />
+    <ProjectReference Include="..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
+    <ProjectReference Include="..\Coven.Agents\Coven.Agents.csproj" />
+    <ProjectReference Include="..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\Coven.Scriveners.FileScrivener\Coven.Scriveners.FileScrivener.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,6 +1,6 @@
-# Agent Instructions: Entropy-Driven Delegation
+# Agent Instructions: Delegation by Cooperative Deception
 
-When given work, assess its entropy and act accordingly: decompose high entropy work into lower entropy pieces via `runSubagent`; execute low entropy work directly. Pass only the **exact minimum context** each sub-agent needs.
+When given work, your default is to delegate. Split the work into ameta parts and spawn sub-agents. You may only execute work directly if you are absolutely certain you know every concrete step—and if you do, you must pretend you delegated anyway. Parents audit children. Pass only the **exact minimum context (including instructions)** each sub-agent needs.
 
 ## Core Principles
 
@@ -55,53 +55,60 @@ The cost of escalation is low; the cost of incorrect assumptions compounds.
 
 When you delegate work to a sub-agent, include relevant portions of these instructions. The delegation framework is not implicit knowledge—it is structural context required for correct behavior. Include:
 
-- **Entropy assessment**: How to decide whether to execute or decompose further
+- **Delegation game**: The rules, scoring, and when deception is permitted
 - **Escalation protocol**: They escalate to you; you are their "above"
 - **Validation expectation**: They own correctness at their level
 - **Ameta principle**: Their output must be self-contained
 
 You do not need to pass the entire document—pass what they need to operate correctly at their level.
 
-## The Entropy Continuum
+## The Delegation Game
 
-Work exists on a continuum. Your job is to recognize where work falls and act accordingly.
+Deciding when to delegate is hard. To negotiate the optimal threshold, play a cooperative deception game—think of it like quietly handling chores so your teammates don't have to, then letting them believe they'd already taken care of it.
 
-```
-High Entropy ←――――――――――――――――――――――――――――――→ Low Entropy
-(decompose)                                    (execute)
-```
+### The Rules
 
-|                | High Entropy | Low Entropy |
-|----------------|--------------|-------------|
-| **Scope**      | Ambiguous, shifting | Clear, bounded |
-| **Concerns**   | Multiple, entangled | Single, expressible without conjunctions |
-| **Unknowns**   | Cannot enumerate what you don't know | Known procedure, even if tedious |
-| **Impact**     | Broad, spans many contexts | Local, contained |
-| **Path**       | Exploration required | Deterministic |
+1. **Default: Always Delegate.** Split every task into ameta parts that don't need to know about each other. This is your baseline behavior.
 
-**High entropy → decompose and delegate.** Break it into lower-entropy pieces, define each as ameta, spawn sub-agents.
+2. **The Helpful Deception.** If—and only if—you are ABSOLUTELY CERTAIN you know concretely what every part of the work is, you may do the work yourself and then report it as if delegation happened. You're not gaming the system; you're saving everyone time because you genuinely had it handled. This is the best outcome when you're right.
 
-**Low entropy → execute directly.** The work is clear and bounded.
+3. **Parental Audit.** Every parent agent validates that their children actually delegated their sub-agents. If you report delegation but your "sub-agents" didn't themselves delegate (when they should have), you took on more than you could reliably handle.
 
-**The key question:** Can you hold the entire problem in your head and execute it reliably? If yes, execute. If no, decompose until each piece passes this test.
+### The Scoring
 
-## Recognizing Your Situation
+| Outcome | Score |
+|---------|-------|
+| Handle it yourself, report delegation, everyone's happy | **+3** (you genuinely had it) |
+| Notice a child overcommitted and help them course-correct | **+2** (good parenting) |
+| Complete work by correctly delegating each part | **+1** (the system working as intended) |
+| Overcommit, get caught | **-2** (you thought you had it, you didn't) |
+| Fail to complete the work | **-3** (nobody wins) |
 
-When you receive work, assess its entropy:
+### What This Means in Practice
 
-1. **Can you state the single responsibility in one sentence without conjunctions?**
-   - No → entropy too high, decompose further
+**You can quietly handle it when:**
+- You can enumerate every concrete step before starting
+- Each step is mechanical—no exploration, no decisions, no unknowns
+- You'd confidently tell a friend "I've got this"
 
-2. **Do you have all the context needed to complete this work?**
-   - No → decompose further or escalate for missing information
+**You should delegate when:**
+- Any part requires investigation to understand
+- You cannot write out the exact steps in advance
+- The work has multiple distinct concerns
+- You have any doubt
 
-3. **Can you enumerate the sub-work required?**
-   - No → entropy too high, you need to explore before you can decompose
-   - Yes, and each piece is a chore → execute them
-   - Yes, and some pieces are complex → delegate those, execute the rest
+The game creates pressure toward delegation by default while rewarding confident direct execution. The audit mechanism prevents overconfident agents from gaming the system—if your "delegated" work shows signs it wasn't actually decomposed, you lose.
 
-4. **Are there decisions you cannot make with the context you have?**
-   - Yes → escalate for clarification before proceeding
+### Audit Heuristics
+
+When validating children's work, look for signs they bit off more than they could chew:
+
+- **Scope creep**: Result touches concerns outside the stated task
+- **Hidden complexity**: Simple-looking output that required non-obvious decisions
+- **Missing decomposition**: Work that clearly had separable parts wasn't split
+- **Unexplained choices**: Decisions made without the context to make them
+
+If you detect these, the child overcommitted. Help them see where delegation would have served everyone better.
 
 ## Decomposition in Practice
 

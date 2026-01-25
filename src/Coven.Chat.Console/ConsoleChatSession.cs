@@ -28,15 +28,19 @@ internal sealed class ConsoleChatSession(
 
     public async Task StartAsync()
     {
+        System.Diagnostics.Debug.WriteLine("[ConsoleChatSession] StartAsync called");
+        System.Console.Error.WriteLine("[ConsoleChatSession] StartAsync called (stderr)");
         CancellationToken ct = _sessionToken;
         await _gateway.ConnectAsync(ct).ConfigureAwait(false);
 
         _consoleToChatPump = Task.Run(async () =>
         {
+            System.Console.WriteLine("[ConsoleChatSession] _consoleToChatPump started, tailing console journal");
             try
             {
                 await foreach ((long position, ConsoleEntry entry) in _consoleJournal.TailAsync(0, ct))
                 {
+                    System.Console.WriteLine($"[ConsoleChatSession] Received {entry.GetType().Name} at position {position}");
                     if (entry is ConsoleAck)
                     {
                         continue;
@@ -44,8 +48,10 @@ internal sealed class ConsoleChatSession(
 
                     ConsoleLog.ConsoleToChatObserved(_logger, entry.GetType().Name, position);
                     ChatEntry chat = await _afferentTransmuter.Transmute(entry, position, ct).ConfigureAwait(false);
+                    System.Console.WriteLine($"[ConsoleChatSession] Transmuted to {chat.GetType().Name}");
                     ConsoleLog.ConsoleToChatTransmuted(_logger, entry.GetType().Name, chat.GetType().Name);
                     long chatPos = await _chatJournal.WriteAsync(chat, ct).ConfigureAwait(false);
+                    System.Console.WriteLine($"[ConsoleChatSession] Wrote to chat journal at position {chatPos}");
                     ConsoleLog.ConsoleToChatAppended(_logger, chat.GetType().Name, chatPos);
                 }
                 ConsoleLog.ConsoleToChatPumpCompleted(_logger);

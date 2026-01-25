@@ -11,6 +11,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="Coven.Testing.Harness" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />

@@ -75,7 +75,17 @@ internal static class CovenExecutionScope
         finally
         {
             daemonScope.Cts.Dispose();
-            daemonScope.Scope.Dispose();
+
+            // Use async disposal if available (required for scopes containing IAsyncDisposable services).
+            // The Microsoft.Extensions.DependencyInjection scope implements IAsyncDisposable.
+            if (daemonScope.Scope is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                daemonScope.Scope.Dispose();
+            }
         }
     }
 
