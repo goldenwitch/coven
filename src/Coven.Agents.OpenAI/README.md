@@ -50,7 +50,7 @@ services.AddScoped<IWindowPolicy<AgentAfferentThoughtChunk>>(_ =>
 
 ## Templating (Optional)
 
-Provide an `ITransmuter<OpenAIEntry, ResponseItem?>` to inject context (usernames, system preamble, etc.). See sample `DiscordOpenAITemplatingTransmuter` in `src/samples/01.DiscordAgent`.
+Provide an `ITransmuter<OpenAIEntry, ResponseItem>` to inject context (usernames, system preamble, etc.). See sample `DiscordOpenAITemplatingTransmuter` in `src/samples/01.DiscordAgent`. The transmuter receives only filtered entries (`OpenAIEfferent` or `OpenAIAfferent`)—callers are responsible for filtering before transmutation.
 
 ## Requirements
 

@@ -9,10 +9,10 @@ namespace Coven.Agents.OpenAI;
 
 internal sealed class DefaultOpenAITranscriptBuilder(
     [FromKeyedServices("Coven.InternalOpenAIScrivener")] IScrivener<OpenAIEntry> journal,
-    ITransmuter<OpenAIEntry, ResponseItem?> entryToItem) : IOpenAITranscriptBuilder
+    ITransmuter<OpenAIEntry, ResponseItem> entryToItem) : IOpenAITranscriptBuilder
 {
     private readonly IScrivener<OpenAIEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
-    private readonly ITransmuter<OpenAIEntry, ResponseItem?> _entryToItem = entryToItem ?? throw new ArgumentNullException(nameof(entryToItem));
+    private readonly ITransmuter<OpenAIEntry, ResponseItem> _entryToItem = entryToItem ?? throw new ArgumentNullException(nameof(entryToItem));
 
     public async Task<List<ResponseItem>> BuildAsync(OpenAIEfferent newest, int maxMessages, CancellationToken cancellationToken)
     {
@@ -20,9 +20,10 @@ internal sealed class DefaultOpenAITranscriptBuilder(
 
         await foreach ((_, OpenAIEntry entry) in _journal.ReadBackwardAsync(long.MaxValue, cancellationToken).ConfigureAwait(false))
         {
-            ResponseItem? item = await _entryToItem.Transmute(entry, cancellationToken).ConfigureAwait(false);
-            if (item is not null)
+            // Filter: only user (OpenAIEfferent) and assistant (OpenAIAfferent) entries participate in prompts
+            if (entry is OpenAIEfferent or OpenAIAfferent)
             {
+                ResponseItem item = await _entryToItem.Transmute(entry, cancellationToken).ConfigureAwait(false);
                 buffer.Add(item);
             }
 
@@ -34,11 +35,9 @@ internal sealed class DefaultOpenAITranscriptBuilder(
 
         buffer.Reverse();
 
-        ResponseItem? newestItem = await _entryToItem.Transmute(newest, cancellationToken).ConfigureAwait(false);
-        if (newestItem is not null)
-        {
-            buffer.Add(newestItem);
-        }
+        // newest is always OpenAIEfferent, which is a supported type
+        ResponseItem newestItem = await _entryToItem.Transmute(newest, cancellationToken).ConfigureAwait(false);
+        buffer.Add(newestItem);
         return buffer;
     }
 }

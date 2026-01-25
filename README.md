@@ -86,7 +86,7 @@ builder.Services.AddOpenAIAgents(openAiConfig, registration =>
 });
 
 // Optional: override OpenAI mapping with templating
-builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem>, DiscordOpenAITemplatingTransmuter>();
 
 // Define declarative covenant routes (validated at build time)
 builder.Services.BuildCoven(coven =>
@@ -147,20 +147,21 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
 //         new AgentThoughtMaxLengthWindowPolicy(2048)));
 ```
 
-Custom OpenAI templating: override prompt/response item mapping to inject context (from `DiscordOpenAITemplatingTransmuter.cs`):
+Custom OpenAI templating: override prompt/response item mapping to inject context (from `DiscordOpenAITemplatingTransmuter.cs`). Callers filter entries before transmutation:
 
 ```csharp
-internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem?>
+internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntry, ResponseItem>
 {
-    public Task<ResponseItem?> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
+    public Task<ResponseItem> Transmute(OpenAIEntry Input, CancellationToken cancellationToken = default)
     {
         return Input switch
         {
-            OpenAIEfferent u => Task.FromResult<ResponseItem?>(
+            OpenAIEfferent u => Task.FromResult(
                 ResponseItem.CreateUserMessageItem($"[discord username:{u.Sender}] {u.Text}")),
-            OpenAIAfferent a => Task.FromResult<ResponseItem?>(
+            OpenAIAfferent a => Task.FromResult(
                 ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
-            _ => Task.FromResult<ResponseItem?>(null)
+            _ => throw new ArgumentOutOfRangeException(nameof(Input),
+                $"Cannot transmute {Input.GetType().Name}. Filter before transmuting.")
         };
     }
 }

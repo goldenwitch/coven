@@ -76,7 +76,7 @@ builder.Services.AddScoped<IWindowPolicy<AgentAfferentChunk>>(_ =>
         new AgentMaxLengthWindowPolicy(1024)));
 
 // Override default OpenAI entry → ResponseItem mapping with sample templating
-builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem?>, DiscordOpenAITemplatingTransmuter>();
+builder.Services.AddScoped<ITransmuter<OpenAIEntry, ResponseItem>, DiscordOpenAITemplatingTransmuter>();
 
 builder.Services.BuildCoven(coven =>
 {

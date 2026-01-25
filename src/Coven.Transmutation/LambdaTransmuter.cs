@@ -6,8 +6,9 @@ namespace Coven.Transmutation;
 /// Adapts a delegate into an <see cref="ITransmuter{TIn, TOut}"/>.
 /// </summary>
 /// <typeparam name="TIn">Input type.</typeparam>
-/// <typeparam name="TOut">Output type.</typeparam>
+/// <typeparam name="TOut">Output type. Must be non-null; transmuters are pure transforms.</typeparam>
 public sealed class LambdaTransmuter<TIn, TOut> : ITransmuter<TIn, TOut>
+    where TOut : notnull
 {
     private readonly Func<TIn, CancellationToken, Task<TOut>> _func;
 

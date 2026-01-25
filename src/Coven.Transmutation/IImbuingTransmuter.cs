@@ -8,8 +8,9 @@ namespace Coven.Transmutation;
 /// </summary>
 /// <typeparam name="TIn">Primary input type.</typeparam>
 /// <typeparam name="TReagent">Secondary input (reagent) type.</typeparam>
-/// <typeparam name="TOut">Output type.</typeparam>
+/// <typeparam name="TOut">Output type. Must be non-null; transmuters are pure transforms.</typeparam>
 public interface IImbuingTransmuter<TIn, TReagent, TOut> : ITransmuter<(TIn Input, TReagent Reagent), TOut>
+    where TOut : notnull
 {
     /// <summary>
     /// Transmutes the given <paramref name="Input"/> using the provided <paramref name="Reagent"/>,
