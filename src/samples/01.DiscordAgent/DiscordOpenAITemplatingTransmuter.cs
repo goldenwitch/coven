@@ -32,7 +32,7 @@ internal sealed class DiscordOpenAITemplatingTransmuter : ITransmuter<OpenAIEntr
                 ResponseItem.CreateAssistantMessageItem($"[assistant:{a.Model}] {a.Text}")),
 
             _ => throw new ArgumentOutOfRangeException(nameof(Input),
-                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Filter before transmuting.")
+                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Only OpenAIEfferent and OpenAIAfferent are supported. Filter entries before transmuting.")
         };
     }
 }

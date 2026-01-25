@@ -21,7 +21,7 @@ internal sealed class OpenAIEntryToResponseItemTransmuter : ITransmuter<OpenAIEn
             OpenAIEfferent u => Task.FromResult<ResponseItem>(ResponseItem.CreateUserMessageItem(u.Text)),
             OpenAIAfferent a => Task.FromResult<ResponseItem>(ResponseItem.CreateAssistantMessageItem(a.Text)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input),
-                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Filter before transmuting.")
+                $"Cannot transmute {Input.GetType().Name} to ResponseItem. Only OpenAIEfferent and OpenAIAfferent are supported. Filter entries before transmuting.")
         };
     }
 }

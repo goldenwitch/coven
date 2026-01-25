@@ -2,7 +2,7 @@
 
 ## Status
 
-**Revised**: Add `where TOut : notnull` constraint. Transmuters should be pure transforms with no branching logic for filtering.
+**Implemented**: Added `where TOut : notnull` constraint using the **inline type check approach** (not the marker interface). See [Implementation Notes](#implementation-notes) for rationale.
 
 ## Problem Statement
 
@@ -341,32 +341,32 @@ However, this adds a new abstraction when LINQ predicates already exist. The fil
 
 ### Phase 1: Add Constraint to ITransmuter
 
-- [ ] Add `where TOut : notnull` constraint to `ITransmuter<TIn, TOut>` in [ITransmuter.cs](../src/Coven.Transmutation/ITransmuter.cs)
-- [ ] Add same constraint to `IBiDirectionalTransmuter<TIn, TOut>` 
-- [ ] Verify `IBatchTransmuter<TChunk, TOutput>` inherits constraint correctly
-- [ ] Update XML documentation to reflect "pure transform" expectation
+- [x] Add `where TOut : notnull` constraint to `ITransmuter<TIn, TOut>` in [ITransmuter.cs](../src/Coven.Transmutation/ITransmuter.cs)
+- [x] Add same constraint to `IBiDirectionalTransmuter<TIn, TOut>` (also added `where TIn : notnull` for symmetry)
+- [x] Add constraint to `IBatchTransmuter<TChunk, TOutput>` and `BatchTransmuteResult<TChunk, TOutput>`
+- [x] Add constraint to `IImbuingTransmuter<TIn, TReagent, TOut>` and `LambdaTransmuter<TIn, TOut>`
+- [x] Update XML documentation to reflect "pure transform" expectation
 
 ### Phase 2: Create Marker Interface
 
-- [ ] Add `IOpenAIPromptEntry` interface to [OpenAIEntry.cs](../src/Coven.Agents.OpenAI/OpenAIEntry.cs)
-- [ ] Apply interface to `OpenAIEfferent` and `OpenAIAfferent` records
+- [~] ~~Add `IOpenAIPromptEntry` interface~~ — **Skipped**: Chose simpler inline type check approach (see [Implementation Notes](#implementation-notes))
 
 ### Phase 3: Migrate Transmuters
 
-- [ ] Update `OpenAIEntryToResponseItemTransmuter` to `ITransmuter<IOpenAIPromptEntry, ResponseItem>`
-- [ ] Update `DiscordOpenAITemplatingTransmuter` to `ITransmuter<IOpenAIPromptEntry, ResponseItem>`
-- [ ] Update DI registrations in `OpenAIAgentsServiceCollectionExtensions`
+- [x] Update `OpenAIEntryToResponseItemTransmuter` to `ITransmuter<OpenAIEntry, ResponseItem>` (throws for unsupported types)
+- [x] Update `DiscordOpenAITemplatingTransmuter` similarly
+- [x] Update DI registrations in `OpenAIAgentsServiceCollectionExtensions`
 
 ### Phase 4: Update Callers
 
-- [ ] Update `DefaultOpenAITranscriptBuilder` to filter entries before transmuting
-- [ ] Remove null checks from transcript building code
+- [x] Update `DefaultOpenAITranscriptBuilder` to filter entries before transmuting
+- [x] Remove null checks from transcript building code
 
 ### Phase 5: Documentation
 
-- [ ] Update [Coven.Transmutation/README.md](../src/Coven.Transmutation/README.md) to document the "pure transform" principle
-- [ ] Add example showing filter-before-transmute pattern
-- [ ] Remove any guidance suggesting nullable returns are acceptable
+- [x] Update [Coven.Transmutation/README.md](../src/Coven.Transmutation/README.md) to document the "pure transform" principle
+- [x] Add example showing filter-before-transmute pattern
+- [x] Update root README.md and Coven.Agents.OpenAI/README.md
 
 ## Decision Summary
 
@@ -374,22 +374,42 @@ However, this adds a new abstraction when LINQ predicates already exist. The fil
 |----------|--------|
 | Add `where TOut : notnull` constraint? | **Yes** — transmuters should be pure transforms |
 | Introduce `Option<T>` or `Result<T, E>`? | **No** — the issue is filtering, not error handling |
-| Create new `IFilterPolicy<T>`? | **No** — LINQ predicates and marker interfaces suffice |
+| Create new `IFilterPolicy<T>`? | **No** — LINQ predicates and inline type checks suffice |
 | Create new `ITransmuterPredicate<T>`? | **No** — too much ceremony for simple type filtering |
-| Use marker interface (`IOpenAIPromptEntry`)? | **Yes** — makes contract explicit, type-safe filtering |
+| Use marker interface (`IOpenAIPromptEntry`)? | **No** — inline type check chosen for simplicity |
+
+## Implementation Notes
+
+### Why Inline Type Check Instead of Marker Interface?
+
+The proposal originally recommended introducing `IOpenAIPromptEntry` as a marker interface. After implementation, we chose the simpler **inline type check** approach for these reasons:
+
+1. **Fewer moving parts**: No new interface to maintain or document
+2. **Explicit filtering**: The `entry is OpenAIEfferent or OpenAIAfferent` check in `DefaultOpenAITranscriptBuilder` is immediately clear
+3. **Sufficient for current scope**: Only one call site needs to filter; if more emerge, we can revisit
+4. **Exception as documentation**: The `ArgumentOutOfRangeException` clearly states supported types and the filtering expectation
+
+The marker interface approach remains valid and could be adopted later if:
+- Multiple call sites need to filter the same types
+- Custom transmuters proliferate and need compile-time safety
+- The set of prompt-participating entry types grows
+
+### Additional Constraint: `where TIn : notnull` on IBiDirectionalTransmuter
+
+`IBiDirectionalTransmuter<TIn, TOut>` received both `where TIn : notnull` and `where TOut : notnull` constraints because in bidirectional transmutation, `TIn` becomes the output of `TransmuteEfferent`. For symmetry and consistency, both directions should produce non-null values.
 
 ## Conclusion
 
-Adding `where TOut : notnull` to `ITransmuter` is **recommended**. The constraint:
+Adding `where TOut : notnull` to `ITransmuter` is **implemented**. The constraint:
 
 1. **Enforces purity**: Transmuters transform, they don't filter
 2. **Eliminates ambiguity**: No more guessing what null means
 3. **Simplifies callers**: No null checks needed after transmutation
 4. **Aligns with existing patterns**: Other transmuters already return non-null or throw
 
-The migration is straightforward:
-1. Introduce `IOpenAIPromptEntry` marker interface
-2. Narrow transmuter input types
-3. Move filtering to the boundary (transcript builder)
+The migration used the simpler inline type check approach:
+1. Transmuters accept the base type (`OpenAIEntry`) but throw for unsupported variants
+2. Callers filter explicitly before transmuting (`entry is OpenAIEfferent or OpenAIAfferent`)
+3. No new marker interface needed
 
 This keeps filtering explicit and testable while transmuters remain pure transforms.
