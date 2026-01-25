@@ -24,12 +24,12 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 
 Concrete examples help ground the vocabulary above. Two samples demonstrate different approaches:
 
-**Sample 02 (Declarative, preferred)**: Defines routes declaratively at DI time via `AddCoven` and covenants.
-  - File: `src/samples/02.DeclarativeDiscordAgent/Program.cs`
+**Sample 01 (Declarative)**: Defines routes declaratively at DI time via `BuildCoven` and covenants.
+  - File: `src/samples/01.DiscordAgent/Program.cs`
   - No `RouterBlock` class—routes are defined inline and validated at build time.
 
-**Sample 01 (Imperative, legacy)**: Uses a `RouterBlock` MagikBlock with imperative journal tailing.
-  - File: `src/samples/01.DiscordAgent/RouterBlock.cs`
+**Sample 02 (Declarative, extended)**: Same pattern as Sample 01 with additional configuration examples.
+  - File: `src/samples/02.DeclarativeDiscordAgent/Program.cs`
 
 - Branches: app logic targets Chat and Agents abstractions.
   - Chat branch types used by the router: `ChatEntry`, `ChatAfferent`, `ChatEfferentDraft` (from `Coven.Chat`).

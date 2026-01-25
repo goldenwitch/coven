@@ -21,7 +21,7 @@ public static class DiscordCovenBuilderExtensions
     /// <para>The Discord branch:</para>
     /// <list type="bullet">
     /// <item><description>Produces: <see cref="ChatAfferent"/> (incoming messages from Discord)</description></item>
-    /// <item><description>Consumes: <see cref="ChatEfferent"/>, <see cref="ChatEfferentDraft"/> (outgoing messages to Discord)</description></item>
+    /// <item><description>Consumes: <see cref="ChatEfferent"/>, <see cref="ChatEfferentDraft"/>, <see cref="ChatChunk"/> (outgoing messages to Discord)</description></item>
     /// <item><description>Requires: <see cref="DiscordChatDaemon"/> (via ContractDaemon)</description></item>
     /// </list>
     /// </remarks>
@@ -38,7 +38,7 @@ public static class DiscordCovenBuilderExtensions
             Name: "DiscordChat",
             JournalEntryType: typeof(ChatEntry),
             Produces: new HashSet<Type> { typeof(ChatAfferent) },
-            Consumes: new HashSet<Type> { typeof(ChatEfferent), typeof(ChatEfferentDraft) },
+            Consumes: new HashSet<Type> { typeof(ChatEfferent), typeof(ChatEfferentDraft), typeof(ChatChunk) },
             RequiredDaemons: [typeof(ContractDaemon)]);
     }
 }

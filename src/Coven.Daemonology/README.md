@@ -144,7 +144,7 @@ Integrations such as `Coven.Chat.Discord`, `Coven.Chat.Console`, `Coven.Agents.O
 
 ## Referenced Samples
 
-- Sample 01 — Discord Agent: `src/samples/01.DiscordAgent` uses multiple daemons (Discord chat, OpenAI agent, stream windowing) and starts them from a RouterBlock.
+- Sample 01 — Discord Agent: `src/samples/01.DiscordAgent` uses multiple daemons (Discord chat, OpenAI agent, stream windowing) auto-started by `CovenExecutionScope`.
 
 ## Testing
 
