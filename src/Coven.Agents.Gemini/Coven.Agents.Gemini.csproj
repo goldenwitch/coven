@@ -15,10 +15,10 @@
     <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />
     <ProjectReference Include="..\Coven.Core.Streaming\Coven.Core.Streaming.csproj" />
     <ProjectReference Include="..\Coven.Transmutation\Coven.Transmutation.csproj" />
+    <ProjectReference Include="..\Coven.Gemini.Client\Coven.Gemini.Client.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.GenAI" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>

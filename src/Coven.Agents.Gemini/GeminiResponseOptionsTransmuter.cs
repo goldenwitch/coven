@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Gemini.Client;
 using Coven.Transmutation;
 
 namespace Coven.Agents.Gemini;

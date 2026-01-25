@@ -3,6 +3,7 @@
 using Coven.Core;
 using Coven.Core.Streaming;
 using Coven.Daemonology;
+using Coven.Gemini.Client;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;

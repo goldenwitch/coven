@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Encodings.Web;
 using System.Text.Json.Serialization;
 using Coven.Core;
+using Coven.Gemini.Client;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;

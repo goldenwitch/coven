@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Gemini.Client;
 using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 
