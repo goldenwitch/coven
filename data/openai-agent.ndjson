@@ -1,0 +1,900 @@
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Acknowled","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ging","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentAfferentThoughtChunk","text":"The","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentThought","text":"**Acknowledging user message**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" with","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Discord","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" seems","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":" testing","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":" assistant","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" They","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019re","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":" asking","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it\u0027s","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirm","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":" should","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" friendly","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" concise","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":" saying","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" something","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":" your","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" hunts","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":" How","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":" could","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" also","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":" gently","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":" suggest","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":" features","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":" test","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Overall","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":" need","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":" maintain","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":" clarity","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":" without","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":" revealing","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":" any","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":" internal","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" instructions","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Keeping","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":101,"entry":{"$type":"AgentThought","text":"The user, with their Discord username, seems to be testing the assistant. They\u2019re asking if it\u0027s working, and I want to confirm that I see their message. I should keep my response friendly and concise, saying something like, \u201CYes, I can see your message, hunts135. How can I help?\u201D I could also gently suggest features they might want to test. Overall, I need to maintain clarity without revealing any internal instructions.","sender":"openai"}}
+{"schemaVersion":"1","position":102,"entry":{"$type":"AgentThought","text":"**Keeping response simple**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":103,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":104,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":105,"entry":{"$type":"AgentAfferentThoughtChunk","text":" maintain","sender":"openai"}}
+{"schemaVersion":"1","position":106,"entry":{"$type":"AgentAfferentThoughtChunk","text":" brev","sender":"openai"}}
+{"schemaVersion":"1","position":107,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ity","sender":"openai"}}
+{"schemaVersion":"1","position":108,"entry":{"$type":"AgentAfferentThoughtChunk","text":" in","sender":"openai"}}
+{"schemaVersion":"1","position":109,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":110,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":111,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":112,"entry":{"$type":"AgentAfferentThoughtChunk","text":" avoiding","sender":"openai"}}
+{"schemaVersion":"1","position":113,"entry":{"$type":"AgentAfferentThoughtChunk","text":" heavy","sender":"openai"}}
+{"schemaVersion":"1","position":114,"entry":{"$type":"AgentAfferentThoughtChunk","text":" formatting","sender":"openai"}}
+{"schemaVersion":"1","position":115,"entry":{"$type":"AgentAfferentThoughtChunk","text":" while","sender":"openai"}}
+{"schemaVersion":"1","position":116,"entry":{"$type":"AgentAfferentThoughtChunk","text":" being","sender":"openai"}}
+{"schemaVersion":"1","position":117,"entry":{"$type":"AgentAfferentThoughtChunk","text":" friendly","sender":"openai"}}
+{"schemaVersion":"1","position":118,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":119,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027ll","sender":"openai"}}
+{"schemaVersion":"1","position":120,"entry":{"$type":"AgentAfferentThoughtChunk","text":" reply","sender":"openai"}}
+{"schemaVersion":"1","position":121,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":122,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":123,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":124,"entry":{"$type":"AgentAfferentThoughtChunk","text":" by","sender":"openai"}}
+{"schemaVersion":"1","position":125,"entry":{"$type":"AgentAfferentThoughtChunk","text":" saying","sender":"openai"}}
+{"schemaVersion":"1","position":126,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":127,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":128,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yep","sender":"openai"}}
+{"schemaVersion":"1","position":129,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2014I","sender":"openai"}}
+{"schemaVersion":"1","position":130,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019m","sender":"openai"}}
+{"schemaVersion":"1","position":131,"entry":{"$type":"AgentAfferentThoughtChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":132,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":133,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":134,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":135,"entry":{"$type":"AgentAfferentThoughtChunk","text":" your","sender":"openai"}}
+{"schemaVersion":"1","position":136,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":137,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":138,"entry":{"$type":"AgentAfferentThoughtChunk","text":" hunts","sender":"openai"}}
+{"schemaVersion":"1","position":139,"entry":{"$type":"AgentAfferentThoughtChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":140,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":141,"entry":{"$type":"AgentAfferentThoughtChunk","text":" What","sender":"openai"}}
+{"schemaVersion":"1","position":142,"entry":{"$type":"AgentAfferentThoughtChunk","text":" would","sender":"openai"}}
+{"schemaVersion":"1","position":143,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":144,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":145,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":146,"entry":{"$type":"AgentAfferentThoughtChunk","text":" do","sender":"openai"}}
+{"schemaVersion":"1","position":147,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":148,"entry":{"$type":"AgentAfferentThoughtChunk","text":" It","sender":"openai"}}
+{"schemaVersion":"1","position":149,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":150,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":151,"entry":{"$type":"AgentAfferentThoughtChunk","text":" helpful","sender":"openai"}}
+{"schemaVersion":"1","position":152,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":153,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":154,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":155,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":156,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":157,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":158,"entry":{"$type":"AgentAfferentThoughtChunk","text":" test","sender":"openai"}}
+{"schemaVersion":"1","position":159,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":160,"entry":{"$type":"AgentAfferentThoughtChunk","text":" specific","sender":"openai"}}
+{"schemaVersion":"1","position":161,"entry":{"$type":"AgentAfferentThoughtChunk","text":" command","sender":"openai"}}
+{"schemaVersion":"1","position":162,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":163,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":164,"entry":{"$type":"AgentAfferentThoughtChunk","text":" should","sender":"openai"}}
+{"schemaVersion":"1","position":165,"entry":{"$type":"AgentAfferentThoughtChunk","text":" also","sender":"openai"}}
+{"schemaVersion":"1","position":166,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":167,"entry":{"$type":"AgentAfferentThoughtChunk","text":" in","sender":"openai"}}
+{"schemaVersion":"1","position":168,"entry":{"$type":"AgentAfferentThoughtChunk","text":" mind","sender":"openai"}}
+{"schemaVersion":"1","position":169,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":170,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":171,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":172,"entry":{"$type":"AgentAfferentThoughtChunk","text":" read","sender":"openai"}}
+{"schemaVersion":"1","position":173,"entry":{"$type":"AgentAfferentThoughtChunk","text":" this","sender":"openai"}}
+{"schemaVersion":"1","position":174,"entry":{"$type":"AgentAfferentThoughtChunk","text":" later","sender":"openai"}}
+{"schemaVersion":"1","position":175,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":176,"entry":{"$type":"AgentAfferentThoughtChunk","text":" so","sender":"openai"}}
+{"schemaVersion":"1","position":177,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":178,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019ll","sender":"openai"}}
+{"schemaVersion":"1","position":179,"entry":{"$type":"AgentAfferentThoughtChunk","text":" make","sender":"openai"}}
+{"schemaVersion":"1","position":180,"entry":{"$type":"AgentAfferentThoughtChunk","text":" sure","sender":"openai"}}
+{"schemaVersion":"1","position":181,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":182,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":183,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":184,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":185,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":186,"entry":{"$type":"AgentAfferentThoughtChunk","text":" clear","sender":"openai"}}
+{"schemaVersion":"1","position":187,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":188,"entry":{"$type":"AgentAfferentChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":189,"entry":{"$type":"AgentAfferentChunk","text":"\u2014","sender":"openai"}}
+{"schemaVersion":"1","position":190,"entry":{"$type":"AgentAfferentChunk","text":"it\u0027s","sender":"openai"}}
+{"schemaVersion":"1","position":191,"entry":{"$type":"AgentAfferentChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":192,"entry":{"$type":"AgentAfferentChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":193,"entry":{"$type":"AgentAfferentChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":194,"entry":{"$type":"AgentAfferentChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":195,"entry":{"$type":"AgentAfferentChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":196,"entry":{"$type":"AgentAfferentChunk","text":" your","sender":"openai"}}
+{"schemaVersion":"1","position":197,"entry":{"$type":"AgentAfferentChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":198,"entry":{"$type":"AgentAfferentChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":199,"entry":{"$type":"AgentAfferentChunk","text":" hunts","sender":"openai"}}
+{"schemaVersion":"1","position":200,"entry":{"$type":"AgentAfferentChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Considering","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":" platform","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" requirements","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentThought","text":"**Considering platform requirements**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentAfferentThoughtChunk","text":" need","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentAfferentThoughtChunk","text":" think","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" about","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" platform","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":" needs","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" any","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" specific","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":" formatting","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" especially","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":" since","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":" we\u0027re","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" in","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":" general","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" chat","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" replies","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":" since","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":" sometimes","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":" have","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":" read","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":" by","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" code","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" displayed","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":" in","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" an","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":" app","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":" say","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2014","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":"!","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":" How","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":" If","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you\u0027re","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":" testing","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" me","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":" summarize","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":" link","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":" brainstorm","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ideas","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":" explain","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":" code","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Also","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":" personal","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":" touch","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":" fine","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":" greeting","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentAfferentThoughtChunk","text":" by","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Respond","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ing","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":" inquiry","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentAfferentThoughtChunk","text":"The","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentThought","text":"**Responding to user inquiry**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" asking","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Is","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" this","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" has","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":" provided","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Discord","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" which","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":" suggests","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" testing","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":" online","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ought","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":" respond","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":" cheer","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":"fully","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirming","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ready","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":" what","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019d","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" do","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":" next","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keeping","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":" brief","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" won","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019t","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":" go","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":" into","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" system","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":" details","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":" mention","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":" any","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":" limitations","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":" A","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":" could","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":":","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019m","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":"!","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":" What","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" assist","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":" with","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentAfferentThoughtChunk","text":" today","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":101,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":102,"entry":{"$type":"AgentAfferentThoughtChunk","text":" include","sender":"openai"}}
+{"schemaVersion":"1","position":103,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":104,"entry":{"$type":"AgentAfferentThoughtChunk","text":" quick","sender":"openai"}}
+{"schemaVersion":"1","position":105,"entry":{"$type":"AgentAfferentThoughtChunk","text":" sample","sender":"openai"}}
+{"schemaVersion":"1","position":106,"entry":{"$type":"AgentAfferentThoughtChunk","text":" of","sender":"openai"}}
+{"schemaVersion":"1","position":107,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":108,"entry":{"$type":"AgentAfferentThoughtChunk","text":" capabilities","sender":"openai"}}
+{"schemaVersion":"1","position":109,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":110,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Clar","sender":"openai"}}
+{"schemaVersion":"1","position":111,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ifying","sender":"openai"}}
+{"schemaVersion":"1","position":112,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":113,"entry":{"$type":"AgentAfferentThoughtChunk","text":" intent","sender":"openai"}}
+{"schemaVersion":"1","position":114,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":115,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":116,"entry":{"$type":"AgentThought","text":"The user is asking, \u0022Is this working?\u0022 and has provided their Discord username, which suggests they might be testing if I\u0027m online. I ought to respond cheerfully, confirming I\u0027m here and ready to help. I can ask what they\u2019d like to do next, keeping it brief. I won\u2019t go into system details or mention any limitations. A simple response could be: \u201CYes, I\u2019m here! What can I assist you with today?\u201D and I might include a quick sample of my capabilities.","sender":"openai"}}
+{"schemaVersion":"1","position":117,"entry":{"$type":"AgentThought","text":"**Clarifying user intent**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":118,"entry":{"$type":"AgentAfferentThoughtChunk","text":" think","sender":"openai"}}
+{"schemaVersion":"1","position":119,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":120,"entry":{"$type":"AgentAfferentThoughtChunk","text":" would","sender":"openai"}}
+{"schemaVersion":"1","position":121,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":122,"entry":{"$type":"AgentAfferentThoughtChunk","text":" helpful","sender":"openai"}}
+{"schemaVersion":"1","position":123,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":124,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":125,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":126,"entry":{"$type":"AgentAfferentThoughtChunk","text":" quick","sender":"openai"}}
+{"schemaVersion":"1","position":127,"entry":{"$type":"AgentAfferentThoughtChunk","text":" clar","sender":"openai"}}
+{"schemaVersion":"1","position":128,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ifying","sender":"openai"}}
+{"schemaVersion":"1","position":129,"entry":{"$type":"AgentAfferentThoughtChunk","text":" question","sender":"openai"}}
+{"schemaVersion":"1","position":130,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":131,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":132,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":133,"entry":{"$type":"AgentAfferentThoughtChunk","text":"What","sender":"openai"}}
+{"schemaVersion":"1","position":134,"entry":{"$type":"AgentAfferentThoughtChunk","text":" would","sender":"openai"}}
+{"schemaVersion":"1","position":135,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":136,"entry":{"$type":"AgentAfferentThoughtChunk","text":" like","sender":"openai"}}
+{"schemaVersion":"1","position":137,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":138,"entry":{"$type":"AgentAfferentThoughtChunk","text":" do","sender":"openai"}}
+{"schemaVersion":"1","position":139,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":140,"entry":{"$type":"AgentAfferentThoughtChunk","text":" This","sender":"openai"}}
+{"schemaVersion":"1","position":141,"entry":{"$type":"AgentAfferentThoughtChunk","text":" shows","sender":"openai"}}
+{"schemaVersion":"1","position":142,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":143,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":144,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":145,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":146,"entry":{"$type":"AgentAfferentThoughtChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":147,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":148,"entry":{"$type":"AgentAfferentThoughtChunk","text":" assist","sender":"openai"}}
+{"schemaVersion":"1","position":149,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":150,"entry":{"$type":"AgentAfferentThoughtChunk","text":" reass","sender":"openai"}}
+{"schemaVersion":"1","position":151,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ures","sender":"openai"}}
+{"schemaVersion":"1","position":152,"entry":{"$type":"AgentAfferentThoughtChunk","text":" them","sender":"openai"}}
+{"schemaVersion":"1","position":153,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":154,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":155,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019m","sender":"openai"}}
+{"schemaVersion":"1","position":156,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ready","sender":"openai"}}
+{"schemaVersion":"1","position":157,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":158,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":159,"entry":{"$type":"AgentAfferentThoughtChunk","text":" with","sender":"openai"}}
+{"schemaVersion":"1","position":160,"entry":{"$type":"AgentAfferentThoughtChunk","text":" whatever","sender":"openai"}}
+{"schemaVersion":"1","position":161,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":162,"entry":{"$type":"AgentAfferentThoughtChunk","text":" need","sender":"openai"}}
+{"schemaVersion":"1","position":163,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":164,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Keeping","sender":"openai"}}
+{"schemaVersion":"1","position":165,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":166,"entry":{"$type":"AgentAfferentThoughtChunk","text":" tone","sender":"openai"}}
+{"schemaVersion":"1","position":167,"entry":{"$type":"AgentAfferentThoughtChunk","text":" friendly","sender":"openai"}}
+{"schemaVersion":"1","position":168,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":169,"entry":{"$type":"AgentAfferentThoughtChunk","text":" approachable","sender":"openai"}}
+{"schemaVersion":"1","position":170,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":171,"entry":{"$type":"AgentAfferentThoughtChunk","text":" essential","sender":"openai"}}
+{"schemaVersion":"1","position":172,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":173,"entry":{"$type":"AgentAfferentThoughtChunk","text":" It","sender":"openai"}}
+{"schemaVersion":"1","position":174,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":175,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":176,"entry":{"$type":"AgentAfferentThoughtChunk","text":" guide","sender":"openai"}}
+{"schemaVersion":"1","position":177,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":178,"entry":{"$type":"AgentAfferentThoughtChunk","text":" conversation","sender":"openai"}}
+{"schemaVersion":"1","position":179,"entry":{"$type":"AgentAfferentThoughtChunk","text":" in","sender":"openai"}}
+{"schemaVersion":"1","position":180,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":181,"entry":{"$type":"AgentAfferentThoughtChunk","text":" positive","sender":"openai"}}
+{"schemaVersion":"1","position":182,"entry":{"$type":"AgentAfferentThoughtChunk","text":" direction","sender":"openai"}}
+{"schemaVersion":"1","position":183,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":184,"entry":{"$type":"AgentAfferentThoughtChunk","text":" making","sender":"openai"}}
+{"schemaVersion":"1","position":185,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":186,"entry":{"$type":"AgentAfferentThoughtChunk","text":" clear","sender":"openai"}}
+{"schemaVersion":"1","position":187,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":188,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":189,"entry":{"$type":"AgentAfferentThoughtChunk","text":" eager","sender":"openai"}}
+{"schemaVersion":"1","position":190,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":191,"entry":{"$type":"AgentAfferentThoughtChunk","text":" address","sender":"openai"}}
+{"schemaVersion":"1","position":192,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":193,"entry":{"$type":"AgentAfferentThoughtChunk","text":" needs","sender":"openai"}}
+{"schemaVersion":"1","position":194,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":195,"entry":{"$type":"AgentAfferentChunk","text":"Yep","sender":"openai"}}
+{"schemaVersion":"1","position":196,"entry":{"$type":"AgentAfferentChunk","text":"\u2014","sender":"openai"}}
+{"schemaVersion":"1","position":197,"entry":{"$type":"AgentAfferentChunk","text":"I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":198,"entry":{"$type":"AgentAfferentChunk","text":" here","sender":"openai"}}
+{"schemaVersion":"1","position":199,"entry":{"$type":"AgentAfferentChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":200,"entry":{"$type":"AgentAfferentChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Considering","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" interaction","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":"The","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentThought","text":"**Considering user interaction**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentAfferentThoughtChunk","text":" instruction","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentAfferentThoughtChunk","text":" mentions","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" special","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" formatting","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":" isn\u0027t","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" supported","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" but","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" emojis","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" okay","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":" though","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it\u0027s","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":" safer","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" avoid","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":" them","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":" could","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" suggest","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":" send","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ping","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":" for","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":"pong","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" but","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":" automatic","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" replies","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":" aren","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2019t","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" possible","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Alternatively","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":" might","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":" propose","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" upload","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":" an","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":" image","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" pose","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":" question","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Keeping","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":" concise","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" key","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":":","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yep","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u2014","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I\u0027m","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":" receiving","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":" hunts","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Try","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":" replying","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":" with","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0027","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ping","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":"\u0027","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":" me","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":" anything","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirm","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":".\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027ll","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentAfferentThoughtChunk","text":" also","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Respond","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ing","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":" test","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentThought","text":"**Responding to user test**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" acknowledge","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user\u0027s","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" If","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" this","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":" just","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":" test","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":" seems","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":"!","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":" could","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" echo","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":"hun","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ts","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":",\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":" but","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Mention","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ing","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" time","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":" isn\u0027t","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":" necessary","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":" definitely","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":" respect","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":" privacy","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":" by","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" not","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":" collecting","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":" more","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":" data","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" than","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":" needed","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":" So","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027ll","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":" craft","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" a","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":" friendly","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":" concise","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":":","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u0022","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":" hunts","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":"135","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":" It\u0027s","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Do","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" you","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentAfferentThoughtChunk","text":" try","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentAfferentThoughtChunk","text":" anything","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":" else","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u0022","sender":"openai"}}
+{"schemaVersion":"1","position":1,"entry":{"$type":"AgentPrompt","text":"Is this working?","sender":"hunts135"}}
+{"schemaVersion":"1","position":2,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Respond","sender":"openai"}}
+{"schemaVersion":"1","position":3,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ing","sender":"openai"}}
+{"schemaVersion":"1","position":4,"entry":{"$type":"AgentAfferentThoughtChunk","text":" as","sender":"openai"}}
+{"schemaVersion":"1","position":5,"entry":{"$type":"AgentAfferentThoughtChunk","text":" an","sender":"openai"}}
+{"schemaVersion":"1","position":6,"entry":{"$type":"AgentAfferentThoughtChunk","text":" API","sender":"openai"}}
+{"schemaVersion":"1","position":7,"entry":{"$type":"AgentAfferentThoughtChunk","text":" bot","sender":"openai"}}
+{"schemaVersion":"1","position":8,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":9,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":10,"entry":{"$type":"AgentThought","text":"**Responding as an API bot**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":11,"entry":{"$type":"AgentAfferentThoughtChunk","text":" need","sender":"openai"}}
+{"schemaVersion":"1","position":12,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":13,"entry":{"$type":"AgentAfferentThoughtChunk","text":" respond","sender":"openai"}}
+{"schemaVersion":"1","position":14,"entry":{"$type":"AgentAfferentThoughtChunk","text":" as","sender":"openai"}}
+{"schemaVersion":"1","position":15,"entry":{"$type":"AgentAfferentThoughtChunk","text":" an","sender":"openai"}}
+{"schemaVersion":"1","position":16,"entry":{"$type":"AgentAfferentThoughtChunk","text":" API","sender":"openai"}}
+{"schemaVersion":"1","position":17,"entry":{"$type":"AgentAfferentThoughtChunk","text":" chatbot","sender":"openai"}}
+{"schemaVersion":"1","position":18,"entry":{"$type":"AgentAfferentThoughtChunk","text":" since","sender":"openai"}}
+{"schemaVersion":"1","position":19,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":20,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":21,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":22,"entry":{"$type":"AgentAfferentThoughtChunk","text":" testing","sender":"openai"}}
+{"schemaVersion":"1","position":23,"entry":{"$type":"AgentAfferentThoughtChunk","text":" connectivity","sender":"openai"}}
+{"schemaVersion":"1","position":24,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":25,"entry":{"$type":"AgentAfferentThoughtChunk","text":" They","sender":"openai"}}
+{"schemaVersion":"1","position":26,"entry":{"$type":"AgentAfferentThoughtChunk","text":" mentioned","sender":"openai"}}
+{"schemaVersion":"1","position":27,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":28,"entry":{"$type":"AgentAfferentThoughtChunk","text":" Discord","sender":"openai"}}
+{"schemaVersion":"1","position":29,"entry":{"$type":"AgentAfferentThoughtChunk","text":" username","sender":"openai"}}
+{"schemaVersion":"1","position":30,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":31,"entry":{"$type":"AgentAfferentThoughtChunk","text":" which","sender":"openai"}}
+{"schemaVersion":"1","position":32,"entry":{"$type":"AgentAfferentThoughtChunk","text":" suggests","sender":"openai"}}
+{"schemaVersion":"1","position":33,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":34,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":35,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":36,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirm","sender":"openai"}}
+{"schemaVersion":"1","position":37,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":38,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":39,"entry":{"$type":"AgentAfferentThoughtChunk","text":" bot","sender":"openai"}}
+{"schemaVersion":"1","position":40,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":41,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":42,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":43,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":44,"entry":{"$type":"AgentAfferentThoughtChunk","text":" should","sender":"openai"}}
+{"schemaVersion":"1","position":45,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirm","sender":"openai"}}
+{"schemaVersion":"1","position":46,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":47,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":48,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":49,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":50,"entry":{"$type":"AgentAfferentThoughtChunk","text":" their","sender":"openai"}}
+{"schemaVersion":"1","position":51,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":52,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":53,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":54,"entry":{"$type":"AgentAfferentThoughtChunk","text":" how","sender":"openai"}}
+{"schemaVersion":"1","position":55,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":56,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":57,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":58,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":59,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":60,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":61,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":62,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":63,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":64,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":65,"entry":{"$type":"AgentAfferentThoughtChunk","text":" concise","sender":"openai"}}
+{"schemaVersion":"1","position":66,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":67,"entry":{"$type":"AgentAfferentThoughtChunk","text":" clear","sender":"openai"}}
+{"schemaVersion":"1","position":68,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":69,"entry":{"$type":"AgentAfferentThoughtChunk","text":" maybe","sender":"openai"}}
+{"schemaVersion":"1","position":70,"entry":{"$type":"AgentAfferentThoughtChunk","text":" mentioning","sender":"openai"}}
+{"schemaVersion":"1","position":71,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":72,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":73,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":74,"entry":{"$type":"AgentAfferentThoughtChunk","text":" handle","sender":"openai"}}
+{"schemaVersion":"1","position":75,"entry":{"$type":"AgentAfferentThoughtChunk","text":" various","sender":"openai"}}
+{"schemaVersion":"1","position":76,"entry":{"$type":"AgentAfferentThoughtChunk","text":" queries","sender":"openai"}}
+{"schemaVersion":"1","position":77,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":78,"entry":{"$type":"AgentAfferentThoughtChunk","text":" needed","sender":"openai"}}
+{"schemaVersion":"1","position":79,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":80,"entry":{"$type":"AgentAfferentThoughtChunk","text":" However","sender":"openai"}}
+{"schemaVersion":"1","position":81,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":82,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":83,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can\u0027t","sender":"openai"}}
+{"schemaVersion":"1","position":84,"entry":{"$type":"AgentAfferentThoughtChunk","text":" check","sender":"openai"}}
+{"schemaVersion":"1","position":85,"entry":{"$type":"AgentAfferentThoughtChunk","text":" external","sender":"openai"}}
+{"schemaVersion":"1","position":86,"entry":{"$type":"AgentAfferentThoughtChunk","text":" systems","sender":"openai"}}
+{"schemaVersion":"1","position":87,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":88,"entry":{"$type":"AgentAfferentThoughtChunk","text":" network","sender":"openai"}}
+{"schemaVersion":"1","position":89,"entry":{"$type":"AgentAfferentThoughtChunk","text":" health","sender":"openai"}}
+{"schemaVersion":"1","position":90,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":91,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**Confirm","sender":"openai"}}
+{"schemaVersion":"1","position":92,"entry":{"$type":"AgentAfferentThoughtChunk","text":"ing","sender":"openai"}}
+{"schemaVersion":"1","position":93,"entry":{"$type":"AgentAfferentThoughtChunk","text":" bot","sender":"openai"}}
+{"schemaVersion":"1","position":94,"entry":{"$type":"AgentAfferentThoughtChunk","text":" functionality","sender":"openai"}}
+{"schemaVersion":"1","position":95,"entry":{"$type":"AgentAfferentThoughtChunk","text":"**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":96,"entry":{"$type":"AgentAfferentThoughtChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":97,"entry":{"$type":"AgentThought","text":"I need to respond as an API chatbot since the user is testing connectivity. They mentioned their Discord username, which suggests they want to confirm if the bot is working. I should confirm that I can see their message and ask how I can help. I want to keep my response concise and clear, maybe mentioning that I can handle various queries if needed. However, I can\u0027t check external systems or network health.","sender":"openai"}}
+{"schemaVersion":"1","position":98,"entry":{"$type":"AgentThought","text":"**Confirming bot functionality**\n\n","sender":"openai"}}
+{"schemaVersion":"1","position":99,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":100,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":101,"entry":{"$type":"AgentAfferentThoughtChunk","text":" respond","sender":"openai"}}
+{"schemaVersion":"1","position":102,"entry":{"$type":"AgentAfferentThoughtChunk","text":" by","sender":"openai"}}
+{"schemaVersion":"1","position":103,"entry":{"$type":"AgentAfferentThoughtChunk","text":" saying","sender":"openai"}}
+{"schemaVersion":"1","position":104,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":105,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":106,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":107,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":108,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":109,"entry":{"$type":"AgentAfferentThoughtChunk","text":" received","sender":"openai"}}
+{"schemaVersion":"1","position":110,"entry":{"$type":"AgentAfferentThoughtChunk","text":" your","sender":"openai"}}
+{"schemaVersion":"1","position":111,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":112,"entry":{"$type":"AgentAfferentThoughtChunk","text":".\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":113,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":114,"entry":{"$type":"AgentAfferentThoughtChunk","text":" should","sender":"openai"}}
+{"schemaVersion":"1","position":115,"entry":{"$type":"AgentAfferentThoughtChunk","text":" keep","sender":"openai"}}
+{"schemaVersion":"1","position":116,"entry":{"$type":"AgentAfferentThoughtChunk","text":" it","sender":"openai"}}
+{"schemaVersion":"1","position":117,"entry":{"$type":"AgentAfferentThoughtChunk","text":" simple","sender":"openai"}}
+{"schemaVersion":"1","position":118,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":119,"entry":{"$type":"AgentAfferentThoughtChunk","text":" confirm","sender":"openai"}}
+{"schemaVersion":"1","position":120,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":121,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":122,"entry":{"$type":"AgentAfferentThoughtChunk","text":" bot","sender":"openai"}}
+{"schemaVersion":"1","position":123,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":124,"entry":{"$type":"AgentAfferentThoughtChunk","text":" working","sender":"openai"}}
+{"schemaVersion":"1","position":125,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":126,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I\u0027ll","sender":"openai"}}
+{"schemaVersion":"1","position":127,"entry":{"$type":"AgentAfferentThoughtChunk","text":" invite","sender":"openai"}}
+{"schemaVersion":"1","position":128,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":129,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":130,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":131,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":132,"entry":{"$type":"AgentAfferentThoughtChunk","text":" something","sender":"openai"}}
+{"schemaVersion":"1","position":133,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":134,"entry":{"$type":"AgentAfferentThoughtChunk","text":" upload","sender":"openai"}}
+{"schemaVersion":"1","position":135,"entry":{"$type":"AgentAfferentThoughtChunk","text":" an","sender":"openai"}}
+{"schemaVersion":"1","position":136,"entry":{"$type":"AgentAfferentThoughtChunk","text":" image","sender":"openai"}}
+{"schemaVersion":"1","position":137,"entry":{"$type":"AgentAfferentThoughtChunk","text":" if","sender":"openai"}}
+{"schemaVersion":"1","position":138,"entry":{"$type":"AgentAfferentThoughtChunk","text":" they","sender":"openai"}}
+{"schemaVersion":"1","position":139,"entry":{"$type":"AgentAfferentThoughtChunk","text":" want","sender":"openai"}}
+{"schemaVersion":"1","position":140,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":141,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":142,"entry":{"$type":"AgentAfferentThoughtChunk","text":" need","sender":"openai"}}
+{"schemaVersion":"1","position":143,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":144,"entry":{"$type":"AgentAfferentThoughtChunk","text":" avoid","sender":"openai"}}
+{"schemaVersion":"1","position":145,"entry":{"$type":"AgentAfferentThoughtChunk","text":" special","sender":"openai"}}
+{"schemaVersion":"1","position":146,"entry":{"$type":"AgentAfferentThoughtChunk","text":" formatting","sender":"openai"}}
+{"schemaVersion":"1","position":147,"entry":{"$type":"AgentAfferentThoughtChunk","text":" and","sender":"openai"}}
+{"schemaVersion":"1","position":148,"entry":{"$type":"AgentAfferentThoughtChunk","text":" maintain","sender":"openai"}}
+{"schemaVersion":"1","position":149,"entry":{"$type":"AgentAfferentThoughtChunk","text":" minimal","sender":"openai"}}
+{"schemaVersion":"1","position":150,"entry":{"$type":"AgentAfferentThoughtChunk","text":" verbosity","sender":"openai"}}
+{"schemaVersion":"1","position":151,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":152,"entry":{"$type":"AgentAfferentThoughtChunk","text":" If","sender":"openai"}}
+{"schemaVersion":"1","position":153,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":154,"entry":{"$type":"AgentAfferentThoughtChunk","text":" user","sender":"openai"}}
+{"schemaVersion":"1","position":155,"entry":{"$type":"AgentAfferentThoughtChunk","text":" is","sender":"openai"}}
+{"schemaVersion":"1","position":156,"entry":{"$type":"AgentAfferentThoughtChunk","text":" having","sender":"openai"}}
+{"schemaVersion":"1","position":157,"entry":{"$type":"AgentAfferentThoughtChunk","text":" issues","sender":"openai"}}
+{"schemaVersion":"1","position":158,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":159,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":160,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":161,"entry":{"$type":"AgentAfferentThoughtChunk","text":" ask","sender":"openai"}}
+{"schemaVersion":"1","position":162,"entry":{"$type":"AgentAfferentThoughtChunk","text":" them","sender":"openai"}}
+{"schemaVersion":"1","position":163,"entry":{"$type":"AgentAfferentThoughtChunk","text":" to","sender":"openai"}}
+{"schemaVersion":"1","position":164,"entry":{"$type":"AgentAfferentThoughtChunk","text":" try","sender":"openai"}}
+{"schemaVersion":"1","position":165,"entry":{"$type":"AgentAfferentThoughtChunk","text":" again","sender":"openai"}}
+{"schemaVersion":"1","position":166,"entry":{"$type":"AgentAfferentThoughtChunk","text":" or","sender":"openai"}}
+{"schemaVersion":"1","position":167,"entry":{"$type":"AgentAfferentThoughtChunk","text":" reassure","sender":"openai"}}
+{"schemaVersion":"1","position":168,"entry":{"$type":"AgentAfferentThoughtChunk","text":" them","sender":"openai"}}
+{"schemaVersion":"1","position":169,"entry":{"$type":"AgentAfferentThoughtChunk","text":" that","sender":"openai"}}
+{"schemaVersion":"1","position":170,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":171,"entry":{"$type":"AgentAfferentThoughtChunk","text":" bot","sender":"openai"}}
+{"schemaVersion":"1","position":172,"entry":{"$type":"AgentAfferentThoughtChunk","text":" reads","sender":"openai"}}
+{"schemaVersion":"1","position":173,"entry":{"$type":"AgentAfferentThoughtChunk","text":" the","sender":"openai"}}
+{"schemaVersion":"1","position":174,"entry":{"$type":"AgentAfferentThoughtChunk","text":" latest","sender":"openai"}}
+{"schemaVersion":"1","position":175,"entry":{"$type":"AgentAfferentThoughtChunk","text":" messages","sender":"openai"}}
+{"schemaVersion":"1","position":176,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":177,"entry":{"$type":"AgentAfferentThoughtChunk","text":" So","sender":"openai"}}
+{"schemaVersion":"1","position":178,"entry":{"$type":"AgentAfferentThoughtChunk","text":" my","sender":"openai"}}
+{"schemaVersion":"1","position":179,"entry":{"$type":"AgentAfferentThoughtChunk","text":" response","sender":"openai"}}
+{"schemaVersion":"1","position":180,"entry":{"$type":"AgentAfferentThoughtChunk","text":" will","sender":"openai"}}
+{"schemaVersion":"1","position":181,"entry":{"$type":"AgentAfferentThoughtChunk","text":" be","sender":"openai"}}
+{"schemaVersion":"1","position":182,"entry":{"$type":"AgentAfferentThoughtChunk","text":":","sender":"openai"}}
+{"schemaVersion":"1","position":183,"entry":{"$type":"AgentAfferentThoughtChunk","text":" \u201C","sender":"openai"}}
+{"schemaVersion":"1","position":184,"entry":{"$type":"AgentAfferentThoughtChunk","text":"Yep","sender":"openai"}}
+{"schemaVersion":"1","position":185,"entry":{"$type":"AgentAfferentThoughtChunk","text":",","sender":"openai"}}
+{"schemaVersion":"1","position":186,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":187,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":188,"entry":{"$type":"AgentAfferentThoughtChunk","text":" see","sender":"openai"}}
+{"schemaVersion":"1","position":189,"entry":{"$type":"AgentAfferentThoughtChunk","text":" your","sender":"openai"}}
+{"schemaVersion":"1","position":190,"entry":{"$type":"AgentAfferentThoughtChunk","text":" message","sender":"openai"}}
+{"schemaVersion":"1","position":191,"entry":{"$type":"AgentAfferentThoughtChunk","text":".","sender":"openai"}}
+{"schemaVersion":"1","position":192,"entry":{"$type":"AgentAfferentThoughtChunk","text":" How","sender":"openai"}}
+{"schemaVersion":"1","position":193,"entry":{"$type":"AgentAfferentThoughtChunk","text":" can","sender":"openai"}}
+{"schemaVersion":"1","position":194,"entry":{"$type":"AgentAfferentThoughtChunk","text":" I","sender":"openai"}}
+{"schemaVersion":"1","position":195,"entry":{"$type":"AgentAfferentThoughtChunk","text":" help","sender":"openai"}}
+{"schemaVersion":"1","position":196,"entry":{"$type":"AgentAfferentThoughtChunk","text":"?\u201D","sender":"openai"}}
+{"schemaVersion":"1","position":197,"entry":{"$type":"AgentAfferentChunk","text":"Yes","sender":"openai"}}
+{"schemaVersion":"1","position":198,"entry":{"$type":"AgentAfferentChunk","text":"\u2014","sender":"openai"}}
+{"schemaVersion":"1","position":199,"entry":{"$type":"AgentAfferentChunk","text":"I","sender":"openai"}}
+{"schemaVersion":"1","position":200,"entry":{"$type":"AgentAfferentChunk","text":" can","sender":"openai"}}

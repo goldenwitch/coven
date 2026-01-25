@@ -24,6 +24,8 @@ Project overview: see [README](/README.md).
 
 - Agents (branch): [/src/Coven.Agents](/src/Coven.Agents/) ([README](/src/Coven.Agents/README.md))
 - Agents OpenAI (leaf): [/src/Coven.Agents.OpenAI](/src/Coven.Agents.OpenAI/) ([README](/src/Coven.Agents.OpenAI/README.md))
+- Gemini Client: [/src/Coven.Gemini.Client](/src/Coven.Gemini.Client/) ([README](/src/Coven.Gemini.Client/README.md))
+- Agents Gemini (leaf): [/src/Coven.Agents.Gemini](/src/Coven.Agents.Gemini/) ([README](/src/Coven.Agents.Gemini/README.md))
 
 - Scriveners: [/src/Coven.Scriveners.FileScrivener](/src/Coven.Scriveners.FileScrivener/) ([README](/src/Coven.Scriveners.FileScrivener/README.md))
 
@@ -34,6 +36,7 @@ Project overview: see [README](/README.md).
 
 ## Toys
 - [/src/toys/Coven.Toys.ConsoleChat](/src/toys/Coven.Toys.ConsoleChat/)
+- [/src/toys/Coven.Toys.ConsoleGemini](/src/toys/Coven.Toys.ConsoleGemini/)
 - [/src/toys/Coven.Toys.ConsoleOpenAI](/src/toys/Coven.Toys.ConsoleOpenAI/)
 - [/src/toys/Coven.Toys.ConsoleOpenAIStreaming](/src/toys/Coven.Toys.ConsoleOpenAIStreaming/)
 - [/src/toys/Coven.Toys.DiscordChat](/src/toys/Coven.Toys.DiscordChat/)
