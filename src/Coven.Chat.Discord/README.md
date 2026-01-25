@@ -31,6 +31,10 @@ services.AddDiscordChat(new DiscordClientConfig
 
 This registers the Discord client, session factory, journals, transmuter, daemon, and windowing/shattering tuned for Discord.
 
+## Gateway Abstraction
+
+`IDiscordGateway` abstracts over Discord.Net's `DiscordSocketClient`, enabling test virtualization and alternative client implementations. See `IDiscordGateway.cs` for comprehensive XML documentation.
+
 ## See Also
 
 - Branch: `Coven.Chat`.

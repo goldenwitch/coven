@@ -44,9 +44,3 @@ Scriveners are append‑only journals that record typed entries. They decouple p
 ## Related
 - Windowing/Shattering: see “Windowing and Shattering”.
 - Daemon lifecycle: see `src/Coven.Daemonology/README.md`.
-
-## Acceptance Criteria
-- Describes the role of scriveners in decoupling boundaries.
-- Explains append/tail and typed streams with concrete families.
-- Provides patterns for completion markers and pure transmutation.
-- Links to related topics and package docs.

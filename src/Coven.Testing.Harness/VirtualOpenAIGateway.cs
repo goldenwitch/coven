@@ -151,14 +151,12 @@ public sealed class VirtualOpenAIGateway : IOpenAIGatewayConnection
     /// <inheritdoc />
     public Task ConnectAsync()
     {
-        Console.WriteLine("[VirtualOpenAIGateway] ConnectAsync called");
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
     public async Task SendAsync(OpenAIEfferent outgoing, CancellationToken cancellationToken)
     {
-        Console.WriteLine($"[VirtualOpenAIGateway] SendAsync called with: {outgoing.Text}");
         IScriptedResponse response;
         lock (_lock)
         {
@@ -177,9 +175,7 @@ public sealed class VirtualOpenAIGateway : IOpenAIGatewayConnection
         string responseId = Guid.NewGuid().ToString("N");
         DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
-        Console.WriteLine("[VirtualOpenAIGateway] Emitting response");
         await EmitResponseAsync(response, responseId, timestamp, cancellationToken).ConfigureAwait(false);
-        Console.WriteLine("[VirtualOpenAIGateway] Response emitted");
     }
 
     private async Task EmitResponseAsync(

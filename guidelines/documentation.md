@@ -49,9 +49,6 @@ Literal C# code blocks that look like they could compile:
 - **File links**: Direct links to actual source (e.g., `[ChatEntry.cs](../src/Coven.Chat/ChatEntry.cs)`)
 - **Validation error examples**: Showing what the tooling rejects (not working code)
 
-### Future: Live Code References
-
-The markdown code reference system ([proposals/markdown-code-references.md](../proposals/markdown-code-references.md)) will enable embedding actual source code that stays synchronized with the implementation. Until then, prefer links over inline code.
 
 ### Enforcement
 
@@ -71,3 +68,41 @@ When reviewing architecture docs:
 - Every non-test project has a README.
 - README describes: what it is, how to use it, prerequisites.
 - Samples and toys: include how to run (`dotnet run`, required config).
+
+## Proposals
+
+Proposals are the **only** place for aspirational documentation. Ideas, future features, and design documents for unimplemented work belong in `proposals/`.
+
+### What Goes Where
+
+| Content Type | Location |
+|--------------|----------|
+| Ideas, designs for unimplemented features | `proposals/` |
+| How the current system works | `architecture/` |
+| How to use a specific component | Component `README.md` |
+
+### Proposal Lifecycle
+
+1. **Draft** → Initial idea, incomplete, seeking early feedback
+2. **Proposal** → Complete design ready for review
+3. **Accepted** → Approved for implementation
+4. **Implemented** → Code is merged; proposal awaits integration
+5. **Deleted** → Content integrated into architecture/READMEs; file removed
+
+### Integration Requirement
+
+When a proposal is implemented:
+1. Integrate relevant content into `architecture/` docs and/or component READMEs
+2. Delete the proposal file
+
+Proposals are not permanent documentation. They are temporary artifacts that exist only while work is unimplemented.
+
+### Status Format
+
+Each proposal must include a status header:
+
+```
+Status: Draft | Proposal | Accepted | Implemented
+```
+
+Mark proposals as `Implemented` only after the code is merged. Delete them only after content is integrated elsewhere.

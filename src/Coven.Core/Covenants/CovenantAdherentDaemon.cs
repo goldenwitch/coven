@@ -19,8 +19,6 @@ internal sealed class CovenantAdherentDaemon(
 
     public Task Start(CancellationToken cancellationToken = default)
     {
-        System.Console.Error.WriteLine($"[CovenantAdherentDaemon] Start called, covenant has {_covenant.Pumps.Count} pumps");
-        System.Console.Error.Flush();
         if (Status != Status.Stopped)
         {
             throw new InvalidOperationException($"Cannot start daemon in state {Status}.");

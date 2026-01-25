@@ -4,10 +4,11 @@ Long‑running background services (daemons) with a small, testable surface. Pro
 
 ## What’s Inside
 
-- IDaemon: minimal lifecycle contract (Start/Shutdown, Status)
-- ContractDaemon: base class that fulfills status/failure promises via a journal
+- ContractDaemon: base class that fulfills status/failure promises via a journal (implements `IDaemon` from `Coven.Core`)
 - Status: lifecycle states (Stopped, Running, Completed)
 - DaemonEvent: internal event records written for status/failure changes
+
+> **Note:** The `IDaemon` interface lives in `Coven.Core`. This package provides daemon implementation utilities built on that core contract.
 
 ## Why use it?
 
@@ -18,7 +19,7 @@ Long‑running background services (daemons) with a small, testable surface. Pro
 
 ## Key Types
 
-- IDaemon
+- IDaemon (defined in `Coven.Core`)
   - `Status Status { get; }`
   - `Task Start(CancellationToken cancellationToken = default)`
   - `Task Shutdown(CancellationToken cancellationToken = default)`

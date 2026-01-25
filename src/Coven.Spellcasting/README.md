@@ -1,8 +1,6 @@
 # Coven.Spellcasting
 
-Structured "tool" actions for agents and apps. Define spells with typed inputs/outputs, compose them into a spellbook, and optionally generate schemas.
-
-> **Note**: This library provides foundational infrastructure for tool/function definitions. Integration with agent orchestration (e.g., `Coven.Agents.OpenAI`) is planned but not yet implemented. Contributions welcome!
+Foundational infrastructure for defining typed "tool" actions. Define spells with typed inputs/outputs, compose them into a spellbook, and generate JSON schemas for tool registration.
 
 ## What's Inside
 

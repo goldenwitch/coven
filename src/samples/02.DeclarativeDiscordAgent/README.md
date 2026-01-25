@@ -98,4 +98,4 @@ dotnet run
 ## Related
 
 - [Sample 01 - DiscordAgent](../01.DiscordAgent/README.md) — Imperative RouterBlock approach
-- [Declarative Covenants Proposal](../../../proposals/declarative-covenants.md) — Design rationale
+- [Covenants Architecture](../../../architecture/Covenants-and-Routing.md) — Design documentation
