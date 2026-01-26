@@ -16,6 +16,7 @@ public sealed class E2ETestHost : IAsyncDisposable
     private readonly IHost _host;
     private readonly VirtualConsoleIO? _console;
     private readonly VirtualOpenAIGateway? _openAI;
+    private readonly VirtualGeminiGateway? _gemini;
     private readonly VirtualDiscordGateway? _discord;
     private readonly TimeSpan _startupTimeout;
     private readonly TimeSpan _shutdownTimeout;
@@ -27,6 +28,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         IHost host,
         VirtualConsoleIO? console,
         VirtualOpenAIGateway? openAI,
+        VirtualGeminiGateway? gemini,
         VirtualDiscordGateway? discord,
         TimeSpan startupTimeout,
         TimeSpan shutdownTimeout)
@@ -34,6 +36,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         _host = host;
         _console = console;
         _openAI = openAI;
+        _gemini = gemini;
         _discord = discord;
         _startupTimeout = startupTimeout;
         _shutdownTimeout = shutdownTimeout;
@@ -71,6 +74,13 @@ public sealed class E2ETestHost : IAsyncDisposable
         "OpenAI not configured. Call UseVirtualOpenAI() on the builder.");
 
     /// <summary>
+    /// Gets the virtual Gemini gateway.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Gemini was not configured for this host.</exception>
+    public VirtualGeminiGateway Gemini => _gemini ?? throw new InvalidOperationException(
+        "Gemini not configured. Call UseVirtualGemini() on the builder.");
+
+    /// <summary>
     /// Gets the virtual Discord gateway.
     /// </summary>
     /// <exception cref="InvalidOperationException">Discord was not configured for this host.</exception>
@@ -86,6 +96,11 @@ public sealed class E2ETestHost : IAsyncDisposable
     /// Gets whether the virtual OpenAI gateway is configured.
     /// </summary>
     public bool HasOpenAI => _openAI is not null;
+
+    /// <summary>
+    /// Gets whether the virtual Gemini gateway is configured.
+    /// </summary>
+    public bool HasGemini => _gemini is not null;
 
     /// <summary>
     /// Gets whether the virtual Discord gateway is configured.
@@ -123,6 +138,9 @@ public sealed class E2ETestHost : IAsyncDisposable
 
             // Set the scope for VirtualOpenAIGateway so it can resolve scriveners
             _openAI?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
+
+            // Set the scope for VirtualGeminiGateway so it can resolve scriveners
+            _gemini?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
 
             // 3. Wait for all daemons to reach Running status
             foreach (IDaemon daemon in _daemonScope.Daemons)
@@ -175,6 +193,7 @@ public sealed class E2ETestHost : IAsyncDisposable
             // Clear the ambient scopes first
             CovenExecutionScope.SetCurrentScope(null);
             _openAI?.SetScopedProvider(null);
+            _gemini?.SetScopedProvider(null);
 
             // End the daemon scope (shuts down daemons in reverse order)
             if (_daemonScope is not null)

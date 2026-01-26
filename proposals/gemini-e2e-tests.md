@@ -147,70 +147,25 @@ public sealed class VirtualGeminiGateway : IGeminiGatewayConnection
 
 ### 2. Scripted Response Types
 
-Following the `IScriptedResponse` pattern from OpenAI:
+Following the `IScriptedResponse` pattern from OpenAI. These types encapsulate the emission logic for each response pattern.
+
+| Type | Input | Emits |
+|------|-------|-------|
+| `ScriptedGeminiCompleteResponse` | content, model | `GeminiAfferent` |
+| `ScriptedGeminiStreamingResponse` | chunks[], model | `GeminiAfferentChunk`... → `GeminiStreamCompleted` → `GeminiAfferent` |
+| `ScriptedGeminiStreamingWithReasoningResponse` | reasoningChunks[], responseChunks[], model | `GeminiAfferentReasoningChunk`... → `GeminiAfferentChunk`... → `GeminiStreamCompleted` → `GeminiThought` → `GeminiAfferent` |
+
+**Implementation note**: All Gemini entry constructors require full metadata (`Sender`, `Text`, `ResponseId`, `Timestamp`, `Model`). The scripted response types generate synthetic values for `ResponseId` and `Timestamp` at emission time, matching the pattern in `VirtualOpenAIGateway`.
 
 ```csharp
-// Coven.Testing.Harness/Scripting/IScriptedGeminiResponse.cs
-
+// Interface mirrors IScriptedResponse from OpenAI
 public interface IScriptedGeminiResponse
 {
     Task EmitAsync(IScrivener<GeminiEntry> scrivener, CancellationToken cancellationToken);
 }
-
-// Complete (non-streaming) response
-public sealed class ScriptedGeminiCompleteResponse(string content, string model) : IScriptedGeminiResponse
-{
-    public async Task EmitAsync(IScrivener<GeminiEntry> scrivener, CancellationToken cancellationToken)
-    {
-        await scrivener.WriteAsync(new GeminiAfferent(model, content), cancellationToken);
-    }
-}
-
-// Streaming response (chunks only)
-public sealed class ScriptedGeminiStreamingResponse(List<string> chunks, string model) : IScriptedGeminiResponse
-{
-    public async Task EmitAsync(IScrivener<GeminiEntry> scrivener, CancellationToken cancellationToken)
-    {
-        foreach (string chunk in chunks)
-        {
-            await scrivener.WriteAsync(new GeminiAfferentChunk(model, chunk), cancellationToken);
-        }
-        
-        string fullText = string.Concat(chunks);
-        await scrivener.WriteAsync(new GeminiStreamCompleted(), cancellationToken);
-        await scrivener.WriteAsync(new GeminiAfferent(model, fullText), cancellationToken);
-    }
-}
-
-// Streaming with reasoning (Gemini's thinking/reasoning feature)
-public sealed class ScriptedGeminiStreamingWithReasoningResponse(
-    List<string> reasoningChunks,
-    List<string> responseChunks,
-    string model) : IScriptedGeminiResponse
-{
-    public async Task EmitAsync(IScrivener<GeminiEntry> scrivener, CancellationToken cancellationToken)
-    {
-        // Emit reasoning chunks
-        foreach (string chunk in reasoningChunks)
-        {
-            await scrivener.WriteAsync(new GeminiAfferentReasoningChunk(model, chunk), cancellationToken);
-        }
-
-        // Emit response chunks
-        foreach (string chunk in responseChunks)
-        {
-            await scrivener.WriteAsync(new GeminiAfferentChunk(model, chunk), cancellationToken);
-        }
-
-        string fullReasoning = string.Concat(reasoningChunks);
-        string fullResponse = string.Concat(responseChunks);
-        
-        await scrivener.WriteAsync(new GeminiStreamCompleted(), cancellationToken);
-        await scrivener.WriteAsync(new GeminiAfferentReasoning(model, fullReasoning), cancellationToken);
-        await scrivener.WriteAsync(new GeminiAfferent(model, fullResponse), cancellationToken);
-    }
-}
 ```
+
+The concrete implementations (`ScriptedGeminiCompleteResponse`, etc.) follow the same record-based pattern as the OpenAI scripted responses in [ScriptedResponse.cs](../src/Coven.Testing.Harness/Scripting/ScriptedResponse.cs)
 
 ### 3. E2ETestHostBuilder Extension
 

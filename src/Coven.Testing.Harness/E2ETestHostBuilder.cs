@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Agents.Gemini;
 using Coven.Agents.OpenAI;
 using Coven.Chat.Console;
 using Coven.Chat.Discord;
@@ -20,6 +21,7 @@ public sealed class E2ETestHostBuilder
     private readonly List<Type> _inMemoryScrivenerTypes = [];
     private bool _useVirtualConsole;
     private bool _useVirtualOpenAI;
+    private bool _useVirtualGemini;
     private bool _useVirtualDiscord;
     private TimeSpan _startupTimeout = TimeSpan.FromSeconds(30);
     private TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(10);
@@ -61,6 +63,16 @@ public sealed class E2ETestHostBuilder
     public E2ETestHostBuilder UseVirtualDiscord()
     {
         _useVirtualDiscord = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures the test host to use a virtual Gemini gateway with scripted responses.
+    /// </summary>
+    /// <returns>This builder for chaining.</returns>
+    public E2ETestHostBuilder UseVirtualGemini()
+    {
+        _useVirtualGemini = true;
         return this;
     }
 
@@ -139,6 +151,7 @@ public sealed class E2ETestHostBuilder
     {
         VirtualConsoleIO? virtualConsole = null;
         VirtualOpenAIGateway? virtualOpenAI = null;
+        VirtualGeminiGateway? virtualGemini = null;
         VirtualDiscordGateway? virtualDiscord = null;
 
         // Pre-create virtual gateways that need singleton semantics
@@ -183,6 +196,17 @@ public sealed class E2ETestHostBuilder
             _builder.Services.AddSingleton<IDiscordGateway>(virtualDiscord!);
         }
 
+        if (_useVirtualGemini)
+        {
+            // Create the gateway as a singleton. It uses AsyncLocal to access the
+            // current daemon scope's service provider for scrivener resolution.
+            // E2ETestHost.StartAsync sets the scope via VirtualGeminiGateway.SetScopedProvider.
+            virtualGemini = new VirtualGeminiGateway();
+
+            _builder.Services.RemoveAll<IGeminiGatewayConnection>();
+            _builder.Services.AddSingleton<IGeminiGatewayConnection>(virtualGemini);
+        }
+
         // Replace file scriveners with in-memory equivalents
         foreach (Type entryType in _inMemoryScrivenerTypes)
         {
@@ -200,6 +224,7 @@ public sealed class E2ETestHostBuilder
             host,
             virtualConsole,
             virtualOpenAI,
+            virtualGemini,
             virtualDiscord,
             _startupTimeout,
             _shutdownTimeout);
