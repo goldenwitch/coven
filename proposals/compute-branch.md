@@ -1,7 +1,8 @@
 # Compute Branch
 
 > **Status**: Draft  
-> **Created**: 2026-01-25
+> **Created**: 2026-01-25  
+> **Depends on**: Spellcasting and Target Branches (tooling-branch.md)
 
 ---
 
@@ -67,6 +68,7 @@ ShellExec
 ├── Environment     : Dictionary? # Additional/override env vars
 ├── Timeout         : TimeSpan?   # Optional execution timeout
 ├── StreamOutput    : bool        # Whether to emit chunks or wait for completion
+├── UseShell        : bool        # If true, invoke via shell interpreter (bash -c / cmd /c)
 ```
 
 **Design decision**: Structured command + arguments, not a shell string.
