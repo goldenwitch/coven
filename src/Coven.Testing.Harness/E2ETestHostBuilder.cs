@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Agents.Claude;
 using Coven.Agents.Gemini;
 using Coven.Agents.OpenAI;
 using Coven.Chat.Console;
@@ -22,6 +23,7 @@ public sealed class E2ETestHostBuilder
     private bool _useVirtualConsole;
     private bool _useVirtualOpenAI;
     private bool _useVirtualGemini;
+    private bool _useVirtualClaude;
     private bool _useVirtualDiscord;
     private TimeSpan _startupTimeout = TimeSpan.FromSeconds(30);
     private TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(10);
@@ -73,6 +75,16 @@ public sealed class E2ETestHostBuilder
     public E2ETestHostBuilder UseVirtualGemini()
     {
         _useVirtualGemini = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures the test host to use a virtual Claude gateway with scripted responses.
+    /// </summary>
+    /// <returns>This builder for chaining.</returns>
+    public E2ETestHostBuilder UseVirtualClaude()
+    {
+        _useVirtualClaude = true;
         return this;
     }
 
@@ -152,6 +164,7 @@ public sealed class E2ETestHostBuilder
         VirtualConsoleIO? virtualConsole = null;
         VirtualOpenAIGateway? virtualOpenAI = null;
         VirtualGeminiGateway? virtualGemini = null;
+        VirtualClaudeGateway? virtualClaude = null;
         VirtualDiscordGateway? virtualDiscord = null;
 
         // Pre-create virtual gateways that need singleton semantics
@@ -207,6 +220,17 @@ public sealed class E2ETestHostBuilder
             _builder.Services.AddSingleton<IGeminiGatewayConnection>(virtualGemini);
         }
 
+        if (_useVirtualClaude)
+        {
+            // Create the gateway as a singleton. It uses AsyncLocal to access the
+            // current daemon scope's service provider for scrivener resolution.
+            // E2ETestHost.StartAsync sets the scope via VirtualClaudeGateway.SetScopedProvider.
+            virtualClaude = new VirtualClaudeGateway();
+
+            _builder.Services.RemoveAll<IClaudeGatewayConnection>();
+            _builder.Services.AddSingleton<IClaudeGatewayConnection>(virtualClaude);
+        }
+
         // Replace file scriveners with in-memory equivalents
         foreach (Type entryType in _inMemoryScrivenerTypes)
         {
@@ -225,6 +249,7 @@ public sealed class E2ETestHostBuilder
             virtualConsole,
             virtualOpenAI,
             virtualGemini,
+            virtualClaude,
             virtualDiscord,
             _startupTimeout,
             _shutdownTimeout);

@@ -17,6 +17,7 @@ public sealed class E2ETestHost : IAsyncDisposable
     private readonly VirtualConsoleIO? _console;
     private readonly VirtualOpenAIGateway? _openAI;
     private readonly VirtualGeminiGateway? _gemini;
+    private readonly VirtualClaudeGateway? _claude;
     private readonly VirtualDiscordGateway? _discord;
     private readonly TimeSpan _startupTimeout;
     private readonly TimeSpan _shutdownTimeout;
@@ -29,6 +30,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         VirtualConsoleIO? console,
         VirtualOpenAIGateway? openAI,
         VirtualGeminiGateway? gemini,
+        VirtualClaudeGateway? claude,
         VirtualDiscordGateway? discord,
         TimeSpan startupTimeout,
         TimeSpan shutdownTimeout)
@@ -37,6 +39,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         _console = console;
         _openAI = openAI;
         _gemini = gemini;
+        _claude = claude;
         _discord = discord;
         _startupTimeout = startupTimeout;
         _shutdownTimeout = shutdownTimeout;
@@ -81,6 +84,13 @@ public sealed class E2ETestHost : IAsyncDisposable
         "Gemini not configured. Call UseVirtualGemini() on the builder.");
 
     /// <summary>
+    /// Gets the virtual Claude gateway.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Claude was not configured for this host.</exception>
+    public VirtualClaudeGateway Claude => _claude ?? throw new InvalidOperationException(
+        "Claude not configured. Call UseVirtualClaude() on the builder.");
+
+    /// <summary>
     /// Gets the virtual Discord gateway.
     /// </summary>
     /// <exception cref="InvalidOperationException">Discord was not configured for this host.</exception>
@@ -101,6 +111,11 @@ public sealed class E2ETestHost : IAsyncDisposable
     /// Gets whether the virtual Gemini gateway is configured.
     /// </summary>
     public bool HasGemini => _gemini is not null;
+
+    /// <summary>
+    /// Gets whether the virtual Claude gateway is configured.
+    /// </summary>
+    public bool HasClaude => _claude is not null;
 
     /// <summary>
     /// Gets whether the virtual Discord gateway is configured.
@@ -141,6 +156,9 @@ public sealed class E2ETestHost : IAsyncDisposable
 
             // Set the scope for VirtualGeminiGateway so it can resolve scriveners
             _gemini?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
+
+            // Set the scope for VirtualClaudeGateway so it can resolve scriveners
+            _claude?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
 
             // 3. Wait for all daemons to reach Running status
             foreach (IDaemon daemon in _daemonScope.Daemons)
@@ -194,6 +212,7 @@ public sealed class E2ETestHost : IAsyncDisposable
             CovenExecutionScope.SetCurrentScope(null);
             _openAI?.SetScopedProvider(null);
             _gemini?.SetScopedProvider(null);
+            _claude?.SetScopedProvider(null);
 
             // End the daemon scope (shuts down daemons in reverse order)
             if (_daemonScope is not null)
