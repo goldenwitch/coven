@@ -108,6 +108,50 @@ public sealed class CovenServiceBuilder
     }
 
     /// <summary>
+    /// Creates a composite branch manifest with encapsulated inner structure.
+    /// </summary>
+    /// <typeparam name="TBoundary">The boundary entry type (e.g., SpellEntry).</typeparam>
+    /// <typeparam name="TCompositeDaemon">The composite daemon type that hosts this branch.</typeparam>
+    /// <param name="name">Human-readable branch name.</param>
+    /// <param name="produces">Entry types the boundary produces (exposed to outer covenant).</param>
+    /// <param name="consumes">Entry types the boundary consumes (exposed to outer covenant).</param>
+    /// <param name="configureInner">Action to configure inner branches and routes.</param>
+    /// <returns>The composite branch manifest for connecting to the outer covenant.</returns>
+    public CompositeBranchManifest CompositeManifest<TBoundary, TCompositeDaemon>(
+        string name,
+        IReadOnlySet<Type> produces,
+        IReadOnlySet<Type> consumes,
+        Action<IInnerCovenantBuilder> configureInner)
+        where TBoundary : Entry
+        where TCompositeDaemon : CompositeDaemon<TBoundary>
+    {
+        EnsureNotFinalized();
+        ArgumentNullException.ThrowIfNull(name);
+        ArgumentNullException.ThrowIfNull(produces);
+        ArgumentNullException.ThrowIfNull(consumes);
+        ArgumentNullException.ThrowIfNull(configureInner);
+
+        // Create the inner covenant builder
+        InnerCovenantBuilder innerBuilder = new(
+            typeof(TBoundary),
+            produces,
+            consumes);
+
+        // Let caller configure inner branches and routes
+        configureInner(innerBuilder);
+
+        // Build the composite manifest
+        return new CompositeBranchManifest(
+            name,
+            typeof(TBoundary),
+            produces,
+            consumes,
+            innerBuilder.InnerManifests,
+            innerBuilder.InnerPumps,
+            typeof(TCompositeDaemon));
+    }
+
+    /// <summary>
     /// Finalizes the builder and registers the runtime services.
     /// </summary>
     /// <param name="pull">When true, creates a pull-oriented board.</param>

@@ -17,6 +17,14 @@ public interface ICovenantBuilder
     ICovenantBuilder Connect(BranchManifest manifest);
 
     /// <summary>
+    /// Connects a composite branch manifest for routing.
+    /// The outer covenant sees only the boundary; inner structure is opaque.
+    /// </summary>
+    /// <param name="manifest">The composite branch manifest to connect.</param>
+    /// <returns>The same builder for fluent chaining.</returns>
+    ICovenantBuilder Connect(CompositeBranchManifest manifest);
+
+    /// <summary>
     /// Defines routes within the covenant. Called after all manifests are connected.
     /// Every type in any connected manifest's Produces must have a Route or Terminal.
     /// Every type in any connected manifest's Consumes must have a Route producing it.

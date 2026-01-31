@@ -91,14 +91,23 @@ The composite daemon appears as a single daemon to the outer scope. Its children
 
 ### Build-Time Validation
 
-Inner covenants get the same validation as outer covenants:
+Inner covenants get the same validation as outer covenants, plus boundary coherence:
 
-1. **Coverage**: Every type in any inner manifest's `Consumes` must have a `Route` or `Terminal`
+1. **Coverage**: Every type in any inner manifest's `Produces` must have a `Route` or `Terminal`
 2. **Uniqueness**: Each source type has at most one route
-3. **Production**: Every type in any inner manifest's `Produces` must have a route producing it
-4. **Boundary coherence**: Inner routes that cross the boundary must connect to declared `produces`/`consumes`
+3. **Consumer satisfaction**: Every type in any inner manifest's `Consumes` must have a route producing it
+4. **Boundary coherence**: 
+   - Every type in the composite's `produces` must be a route target from some inner branch
+   - Every type in the composite's `consumes` must be a route source to some inner branch
 
-Validation runs at `BuildCoven()` time, before any daemon starts.
+Validation runs at `BuildCoven()` time, before any daemon starts. **If validation fails, the application does not start.**
+
+```
+// Example validation error
+CovenantValidationException: 
+  SpellResult is declared in Spellcasting.produces but no inner route targets it.
+  Add: inner.Route<SomeInnerType, SpellResult>(...)
+```
 
 ### Metagraph Publishing (Optional)
 
@@ -191,41 +200,42 @@ COVENANT inner (owned by SpellcastingDaemon)
 // Extension method returns composite manifest
 public static CompositeBranchManifest UseSpellcasting(this CovenServiceBuilder coven)
 {
-    return coven.CompositeManifest(
+    return coven.CompositeManifest<SpellEntry, SpellcastingDaemon>(
         name: "Spellcasting",
-        boundaryJournal: typeof(SpellEntry),
-        produces: [typeof(SpellResult), typeof(SpellFault)],
-        consumes: [typeof(SpellInvocation)],
-        inner: inner =>
+        produces: new HashSet<Type> { typeof(SpellResult), typeof(SpellFault) },
+        consumes: new HashSet<Type> { typeof(FileReadSpell), typeof(ShellExecSpell) },
+        inner =>
         {
             // Declare inner branches
             BranchManifest fs = inner.Branch("FileSystem", typeof(FileSystemEntry),
-                produces: [typeof(FileContent), typeof(FileWritten), typeof(FileFault)],
-                consumes: [typeof(FileRead), typeof(FileWrite)],
+                produces: new HashSet<Type> { typeof(FileContent), typeof(FileWritten), typeof(FileFault) },
+                consumes: new HashSet<Type> { typeof(FileRead), typeof(FileWrite) },
                 daemons: [typeof(FileSystemDaemon)]);
             
             BranchManifest compute = inner.Branch("Compute", typeof(ComputeEntry),
-                produces: [typeof(ShellOutput), typeof(ShellFault)],
-                consumes: [typeof(ShellExec)],
+                produces: new HashSet<Type> { typeof(ShellOutput), typeof(ShellFault) },
+                consumes: new HashSet<Type> { typeof(ShellExec) },
                 daemons: [typeof(ComputeDaemon)]);
             
-            // Wire inner covenant
-            inner.Covenant()
-                .Connect(fs)
-                .Connect(compute)
-                .Routes(c =>
-                {
-                    // Dispatch
-                    c.Route<FileReadSpell, FileRead>(...);
-                    c.Route<FileWriteSpell, FileWrite>(...);
-                    c.Route<ShellExecSpell, ShellExec>(...);
-                    
-                    // Gather
-                    c.Route<FileContent, SpellResult>(...);
-                    c.Route<FileFault, SpellFault>(...);
-                    c.Route<ShellOutput, SpellResult>(...);
-                    c.Route<ShellFault, SpellFault>(...);
-                });
+            // Connect boundary and inner branches
+            inner.ConnectBoundary();
+            inner.Connect(fs);
+            inner.Connect(compute);
+            
+            // Define routes
+            inner.Routes(c =>
+            {
+                // Dispatch: boundary → inner
+                c.Route<FileReadSpell, FileRead>(...);
+                c.Route<FileWriteSpell, FileWrite>(...);
+                c.Route<ShellExecSpell, ShellExec>(...);
+                
+                // Gather: inner → boundary
+                c.Route<FileContent, SpellResult>(...);
+                c.Route<FileFault, SpellFault>(...);
+                c.Route<ShellOutput, SpellResult>(...);
+                c.Route<ShellFault, SpellFault>(...);
+            });
         });
 }
 ```
@@ -321,34 +331,81 @@ From validation's perspective: FileSystem has ≥1 leaf, so its spell types are 
 
 ---
 
-## Open Questions
+## Design Decisions
 
-1. **Scrivener lifecycle**: Inner scriveners are created by `CompositeDaemon`. Should they be `InMemoryScrivener` by default, or configurable (e.g., for persistence/debugging)?
+### Build-Time Validation (Critical)
 
-2. **Inner daemon DI**: Inner daemons need services (logging, config). Do they share the outer `IServiceProvider`, or get a child scope?
+Inner covenants exist to provide **the same compile-time guarantees as outer covenants**. When `BuildCoven()` runs, validation must prove:
 
-3. **Error propagation**: If an inner daemon faults, how does that surface? Options:
-   - `CompositeDaemon` faults (kills outer scope)
-   - Fault entry written to boundary journal
-   - Inner daemon restarts with backoff
+1. **Boundary produces are reachable**: Every type in the composite's `produces` must be the target of some inner route. If `SpellResult` is declared as produced, there must be `ROUTE SomeInnerType → SpellResult`.
 
-4. **Observability**: How do we expose inner journal contents for debugging without breaking encapsulation?
+2. **Boundary consumes are dispatched**: Every type in the composite's `consumes` must be the source of some inner route. If `SpellInvocation` (polymorphic) is consumed, each concrete subtype (`FileReadSpell`, etc.) must have a route.
+
+3. **No dead letters**: Every produced type in every inner manifest must route somewhere—either to another inner branch, back to the boundary, or be explicitly terminal. Silence is not an option.
+
+4. **Auto-fault completeness**: If a substrate is disabled, its spell types must auto-route to `SpellFault`. The boundary's `consumes` surface is stable regardless of configuration.
+
+**Failure mode**: `CovenantValidationException` at build time with actionable error messages. The application does not start.
+
+### Scrivener Lifecycle
+
+Inner scriveners are `InMemoryScrivener<T>` by default, created by `CompositeDaemon` at startup. Future work may allow configurable scrivener factories for debugging/persistence, but the default is in-memory and ephemeral.
+
+### Inner Daemon DI
+
+Inner daemons receive a **child `IServiceProvider` scope** that:
+- Inherits outer services (logging, configuration, etc.)
+- Registers inner scriveners as `IScrivener<TInner>`
+- Isolates inner infrastructure from outer DI
+
+This gives inner daemons full DI capabilities while keeping inner scriveners invisible to outer code.
+
+### Runtime Error Propagation
+
+**Fail-fast**: If an inner daemon faults during operation, the `CompositeDaemon` faults. The outer scope sees a daemon failure and can react (typically by failing the ritual).
+
+Rationale: The inner sub-graph is an implementation detail. If it breaks, the composite is broken. Sophisticated recovery (restart with backoff, circuit breakers) is future work—see [Daemon Magistrate](daemon-magistrate.md).
+
+### Observability
+
+Out of scope for MVP. Inner journals are opaque to outer code. Future work may add:
+- Debug scrivener decorator that logs entries
+- Metagraph queries for inner structure introspection
+- Diagnostic endpoints for inner journal state
 
 ---
 
 ## Checklist
 
-- [ ] `CompositeBranchManifest` type
+**Types and Builders**
+- [ ] `CompositeBranchManifest` type (boundary + inner structure)
 - [ ] `InnerCovenantBuilder` for declaring inner branches and routes
 - [ ] `CompositeDaemon<TBoundary>` base class
-- [ ] Validation: inner covenant coverage and boundary coherence
-- [ ] Integration with `CovenantBuilder.Connect()` for composite manifests
-- [ ] Inner scrivener creation and lifecycle
-- [ ] Inner daemon instantiation and lifecycle
-- [ ] Substrate configuration API (`UseLocal`, `UseMock`, etc.)
+
+**Build-Time Validation (Critical Path)**
+- [ ] Inner covenant coverage validation (every produces has route/terminal)
+- [ ] Inner covenant uniqueness validation (one route per source)
+- [ ] Inner covenant consumer satisfaction (every consumes has producer)
+- [ ] Boundary coherence: `produces` reachable from inner routes
+- [ ] Boundary coherence: `consumes` dispatched to inner routes
 - [ ] Auto-fault routes for unconfigured substrates
-- [ ] Build-time validation: enabled paths complete
-- [ ] SpellFault includes reason ("substrate not configured")
+- [ ] `CovenantValidationException` with actionable messages
+
+**Runtime Infrastructure**
+- [ ] Integration with `CovenantBuilder.Connect()` for composite manifests
+- [ ] Inner scrivener creation (`InMemoryScrivener` by default)
+- [ ] Child `IServiceProvider` scope for inner daemons
+- [ ] Inner daemon instantiation and lifecycle
+- [ ] Inner pump execution
+- [ ] Fail-fast on inner daemon fault
+
+**Configuration**
+- [ ] Substrate configuration API (`UseLocal`, `UseMock`, etc.)
+- [ ] `SpellFault` includes reason ("substrate not configured")
+
+**Tests**
 - [ ] Test: composite with two inner branches, full round-trip
 - [ ] Test: configure FileSystem only, route FileReadSpell → SpellResult
-- [ ] Test: configure FileSystem only, route ShellExecSpell → SpellFault
+- [ ] Test: configure FileSystem only, route ShellExecSpell → SpellFault (auto-fault)
+- [ ] Test: missing inner route → build-time validation error
+- [ ] Test: boundary produces unreachable → build-time validation error

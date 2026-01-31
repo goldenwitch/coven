@@ -13,6 +13,7 @@ internal sealed class CovenantBuilder : ICovenantBuilder
 {
     private readonly IServiceCollection _services;
     private readonly List<BranchManifest> _manifests = [];
+    private readonly List<CompositeBranchManifest> _compositeManifests = [];
     private bool _routesConfigured;
 
     internal CovenantBuilder(IServiceCollection services)
@@ -30,6 +31,30 @@ internal sealed class CovenantBuilder : ICovenantBuilder
                 "Cannot connect manifests after Routes() has been called.");
         }
         _manifests.Add(manifest);
+        return this;
+    }
+
+    /// <inheritdoc />
+    public ICovenantBuilder Connect(CompositeBranchManifest manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+        if (_routesConfigured)
+        {
+            throw new InvalidOperationException(
+                "Cannot connect manifests after Routes() has been called.");
+        }
+        _compositeManifests.Add(manifest);
+
+        // Convert to BranchManifest for outer covenant's perspective
+        // (boundary produces/consumes, composite daemon as required daemon)
+        BranchManifest boundaryView = new(
+            manifest.Name,
+            manifest.BoundaryJournalType,
+            manifest.Produces,
+            manifest.Consumes,
+            [manifest.CompositeDaemonType]);
+
+        _manifests.Add(boundaryView);
         return this;
     }
 
@@ -121,23 +146,16 @@ internal sealed class CovenantBuilder : ICovenantBuilder
         where TSourceJournal : Entry
         where TTargetJournal : Entry
     {
-        System.Console.Error.WriteLine($"[CovenantPump] Starting pump for {sourceLeafType.Name} -> {typeof(TTargetJournal).Name}");
-        System.Console.Error.Flush();
-        // Fully typed—no reflection, no dynamic dispatch
         IScrivener<TSourceJournal> source = sp.GetRequiredService<IScrivener<TSourceJournal>>();
         IScrivener<TTargetJournal> target = sp.GetRequiredService<IScrivener<TTargetJournal>>();
 
-        await foreach ((long pos, TSourceJournal entry) in source.TailAsync(0, ct))
+        await foreach ((long _, TSourceJournal entry) in source.TailAsync(0, ct))
         {
-            System.Console.Error.WriteLine($"[CovenantPump] Received {entry.GetType().Name} at position {pos}");
-            System.Console.Error.Flush();
             if (entry.GetType() != sourceLeafType)
             {
                 continue;
             }
 
-            System.Console.Error.WriteLine($"[CovenantPump] Processing {entry.GetType().Name}");
-            System.Console.Error.Flush();
             Entry result = await invoke(entry, ct);
             await target.WriteAsync((TTargetJournal)result, ct);
         }

@@ -6,7 +6,7 @@ namespace Coven.Core.Covenants;
 /// A pre-compiled pump that can be executed with a service provider.
 /// All type information is captured in the factory closure.
 /// </summary>
-internal sealed record PumpDescriptor(
+public sealed record PumpDescriptor(
     Type SourceType,
     Type TargetType,
     Func<IServiceProvider, CancellationToken, Task> CreatePump);

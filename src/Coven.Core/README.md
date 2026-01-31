@@ -7,8 +7,7 @@ Engine primitives for composing and running a Coven: MagikBlocks, Scriveners (jo
 - IMagikBlock<TIn,TOut>: unit of work with `DoMagik`.
 - IScrivener<T>: append‑only, typed journal with tailing; includes `InMemoryScrivener<T>`.
 - Builder: `BuildCoven`, `CovenServiceBuilder` to register blocks and finalize runtime.
-- Orchestration: `ICoven` to invoke rituals; `IBoard` and pull mode options.
-- Utilities: `Empty` marker type; capability tags and selection strategy hooks.
+- Orchestration: `ICoven` to invoke rituals; `IBoard` and pull mode options.- CompositeDaemon<T>: base class for branches with encapsulated inner covenants.- Utilities: `Empty` marker type; capability tags and selection strategy hooks.
 
 ## Why use it?
 
