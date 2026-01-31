@@ -13,7 +13,6 @@ internal sealed class CovenantBuilder : ICovenantBuilder
 {
     private readonly IServiceCollection _services;
     private readonly List<BranchManifest> _manifests = [];
-    private readonly List<CompositeBranchManifest> _compositeManifests = [];
     private bool _routesConfigured;
 
     internal CovenantBuilder(IServiceCollection services)
@@ -43,7 +42,6 @@ internal sealed class CovenantBuilder : ICovenantBuilder
             throw new InvalidOperationException(
                 "Cannot connect manifests after Routes() has been called.");
         }
-        _compositeManifests.Add(manifest);
 
         // Convert to BranchManifest for outer covenant's perspective
         // (boundary produces/consumes, composite daemon as required daemon)
