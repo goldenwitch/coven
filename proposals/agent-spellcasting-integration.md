@@ -165,7 +165,7 @@ The outer covenant connects branches. Each branch's internal structure is opaque
 - Correlation-based result matching in agent leaves
 
 **Out of scope:**
-- Parallel tool execution (future enhancement)
+- Parallel tool execution
 - Tool call streaming (tool calls complete atomically)
 - Agent-to-agent tool delegation
 

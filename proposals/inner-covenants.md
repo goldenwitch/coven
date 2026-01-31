@@ -117,7 +117,7 @@ COMPOSITE-MANIFEST Spellcasting
 
 This is purely optional. The composite works without it. Consumers (like agents) can query this metadata if they want dynamic discovery, or they can hardcode their knowledge of the composite's types.
 
-See [Spellcasting Branch](tooling-branch.md) for details on metagraph usage.
+See [Metagraph](metagraph.md) for details on capability discovery.
 
 ---
 
