@@ -200,7 +200,7 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
         IScrivener<TSourceJournal> source = sp.GetRequiredService<IScrivener<TSourceJournal>>();
         IScrivener<TTargetJournal> target = sp.GetRequiredService<IScrivener<TTargetJournal>>();
 
-        await foreach ((_, TSourceJournal entry) in source.TailAsync(0, ct))
+        await foreach ((long _, TSourceJournal entry) in source.TailAsync(0, ct))
         {
             if (entry.GetType() != sourceLeafType)
             {

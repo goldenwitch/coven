@@ -1,8 +1,7 @@
 # Inner Covenant Test Coverage
 
 > **Status**: Draft  
-> **Created**: 2026-01-31  
-> **Depends on**: inner-covenants.md, boundary-as-ports.md
+> **Created**: 2026-01-31
 
 ---
 
@@ -216,10 +215,3 @@ Requires a merge type that both A and B produce. Validation depends on whether m
 3. **Builder state machine** — Documents API contract
 4. **Multi-branch linear** — Most common real scenario
 5. **Edge cases** — Defensive coverage
-
----
-
-## References
-
-- [inner-covenants.md](inner-covenants.md) — Parent proposal
-- [boundary-as-ports.md](boundary-as-ports.md) — Boundary design

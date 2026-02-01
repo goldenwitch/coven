@@ -161,7 +161,6 @@ CompositeBranchManifest spellcasting = coven.CompositeManifest<SpellEntry, Spell
     {
         BranchManifest filesystem = inner.Branch("FileSystem", typeof(FileSystemEntry), ...);
         
-        inner.ConnectBoundary();
         inner.Connect(filesystem);
         
         inner.Routes(c =>

@@ -14,7 +14,6 @@ Project overview: see [README](/README.md).
 - Core: [/src/Coven.Core](/src/Coven.Core/) ([README](/src/Coven.Core/README.md))
 - Core Debug: [/src/Coven.Core.Debug](/src/Coven.Core.Debug/) ([README](/src/Coven.Core.Debug/README.md))
 - Streaming: [/src/Coven.Core.Streaming](/src/Coven.Core.Streaming/) ([README](/src/Coven.Core.Streaming/README.md))
-- Daemonology: [/src/Coven.Daemonology](/src/Coven.Daemonology/) ([README](/src/Coven.Daemonology/README.md))
 - Transmutation: [/src/Coven.Transmutation](/src/Coven.Transmutation/) ([README](/src/Coven.Transmutation/README.md))
 - Spellcasting: [/src/Coven.Spellcasting](/src/Coven.Spellcasting/) ([README](/src/Coven.Spellcasting/README.md))
 
@@ -29,7 +28,7 @@ Project overview: see [README](/README.md).
 
 - Scriveners: [/src/Coven.Scriveners.FileScrivener](/src/Coven.Scriveners.FileScrivener/) ([README](/src/Coven.Scriveners.FileScrivener/README.md))
 
-- Tests: [/src/Coven.Core.Tests](/src/Coven.Core.Tests/), [/src/Coven.Daemonology.Tests](/src/Coven.Daemonology.Tests/)
+- Tests: [/src/Coven.Core.Tests](/src/Coven.Core.Tests/)
 
 ## Samples
 - 01.DiscordAgent: [/src/samples/01.DiscordAgent](/src/samples/01.DiscordAgent/) ([README](/src/samples/01.DiscordAgent/README.md))

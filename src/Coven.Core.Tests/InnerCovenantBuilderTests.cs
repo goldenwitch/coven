@@ -1,32 +1,13 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core.Covenants;
+using Coven.Core.Tests.Infrastructure;
 using Xunit;
 
 namespace Coven.Core.Tests;
 
 public class InnerCovenantBuilderTests
 {
-    #region Test Entry Types
-
-    // Boundary entries
-    public abstract record BoundaryEntry : Entry;
-    public record BoundaryInput : BoundaryEntry;
-    public record BoundaryOutput : BoundaryEntry;
-    public record BoundaryFault : BoundaryEntry;
-
-    // Inner branch A entries
-    public abstract record InnerAEntry : Entry;
-    public record InnerAInput : InnerAEntry;
-    public record InnerAOutput : InnerAEntry;
-
-    // Inner branch B entries
-    public abstract record InnerBEntry : Entry;
-    public record InnerBInput : InnerBEntry;
-    public record InnerBOutput : InnerBEntry;
-
-    #endregion
-
     [Fact]
     public void ValidInnerCovenantBuildsSuccessfully()
     {

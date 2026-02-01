@@ -47,6 +47,5 @@ internal sealed class ClaudeAgentDaemon(
             _sessionCts?.Dispose();
             GC.SuppressFinalize(this);
         }
-        return;
     }
 }

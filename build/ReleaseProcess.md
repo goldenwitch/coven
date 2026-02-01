@@ -29,7 +29,6 @@ Package manifest
 - Current entries include (test/sample/toy projects omitted):
   - `Coven.Core` at `src/Coven.Core`
   - `Coven.Core.Streaming` at `src/Coven.Core.Streaming`
-  - `Coven.Daemonology` at `src/Coven.Daemonology`
   - `Coven.Transmutation` at `src/Coven.Transmutation`
   - `Coven.Spellcasting` at `src/Coven.Spellcasting`
   - `Coven.Chat` at `src/Coven.Chat`

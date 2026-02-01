@@ -1,8 +1,7 @@
 # Spellcasting Branch
 
 > **Status**: Draft  
-> **Created**: 2026-01-25  
-> **Depends on**: [Inner Covenants](inner-covenants.md)
+> **Created**: 2026-01-25
 
 ---
 
@@ -189,7 +188,6 @@ Spellcasting:
 
 | Proposal | Relationship |
 |----------|--------------|
-| [Inner Covenants](inner-covenants.md) | Defines the `CompositeDaemon` pattern used here |
 | [FileSystem Sub-branch](filesystem-branch.md) | FileSystem substrate details |
 | [Compute Sub-branch](compute-branch.md) | Compute substrate details |
 | [Metagraph](metagraph.md) | Capability discovery mechanism |
