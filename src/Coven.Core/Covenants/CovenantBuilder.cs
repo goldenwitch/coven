@@ -34,29 +34,6 @@ internal sealed class CovenantBuilder : ICovenantBuilder
     }
 
     /// <inheritdoc />
-    public ICovenantBuilder Connect(CompositeBranchManifest manifest)
-    {
-        ArgumentNullException.ThrowIfNull(manifest);
-        if (_routesConfigured)
-        {
-            throw new InvalidOperationException(
-                "Cannot connect manifests after Routes() has been called.");
-        }
-
-        // Convert to BranchManifest for outer covenant's perspective
-        // (boundary produces/consumes, composite daemon as required daemon)
-        BranchManifest boundaryView = new(
-            manifest.Name,
-            manifest.BoundaryJournalType,
-            manifest.Produces,
-            manifest.Consumes,
-            [manifest.CompositeDaemonType]);
-
-        _manifests.Add(boundaryView);
-        return this;
-    }
-
-    /// <inheritdoc />
     public void Routes(Action<ICovenant> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -79,10 +56,41 @@ internal sealed class CovenantBuilder : ICovenantBuilder
         }
 
         // Build entry-to-journal lookup from manifests
-        Dictionary<Type, Type> entryToJournal = _manifests
-            .SelectMany(m => m.Produces.Concat(m.Consumes)
-                .Select(t => (Entry: t, Journal: m.JournalEntryType)))
-            .ToDictionary(x => x.Entry, x => x.Journal);
+        List<(Type Entry, Type Journal, string Source)> allMappings =
+        [
+            .. _manifests
+                .SelectMany(m => m.Produces.Concat(m.Consumes)
+                    .Select(t => (Entry: t, Journal: m.JournalEntryType, Source: m.Name)))
+        ];
+
+        // Group by entry type to detect duplicates across journals
+        List<IGrouping<Type, (Type Entry, Type Journal, string Source)>> entryMappings =
+        [
+            .. allMappings.GroupBy(x => x.Entry)
+        ];
+
+        // Check for duplicate entry types across different journals
+        List<string> duplicateErrors = [];
+        foreach (IGrouping<Type, (Type Entry, Type Journal, string Source)> group in entryMappings)
+        {
+            Type[] distinctJournals = [.. group.Select(x => x.Journal).Distinct()];
+            if (distinctJournals.Length > 1)
+            {
+                string sources = string.Join(", ", group.Select(x => x.Source).Distinct());
+                duplicateErrors.Add(
+                    $"Entry type {group.Key.Name} appears in multiple journals: {sources}. " +
+                    $"Each entry type must belong to exactly one journal.");
+            }
+        }
+
+        if (duplicateErrors.Count > 0)
+        {
+            throw new CovenantValidationException(duplicateErrors);
+        }
+
+        Dictionary<Type, Type> entryToJournal = entryMappings.ToDictionary(
+            g => g.Key,
+            g => g.First().Journal);
 
         // Build typed pumps for each route (one-time reflection per route)
         List<PumpDescriptor> pumps =
