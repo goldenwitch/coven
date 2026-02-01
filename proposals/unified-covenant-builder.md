@@ -1,6 +1,6 @@
 # Proposal: Flat Covenant Model
 
-> **Status**: Draft  
+> **Status**: Implemented  
 > **Created**: 2026-01-31
 
 ## Summary

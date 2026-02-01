@@ -1,7 +1,9 @@
 # Spellcasting Branch
 
-> **Status**: Draft  
+> **Status**: Draft — Needs Revision  
 > **Created**: 2026-01-25
+
+**⚠️ Note**: This proposal uses the deleted composite/inner covenant model. The architecture should be revised to use the **flat covenant model** per [unified-covenant-builder.md](unified-covenant-builder.md). Spellcasting becomes a regular branch that registers its daemons and scriveners directly; FileSystem and Compute connect as peer branches in one flat graph.
 
 ---
 
@@ -9,7 +11,7 @@
 
 The **Spellcasting Branch** abstracts tool invocation as "fire a function, get a result."
 
-External branches write polymorphic `SpellInvocation` entries and receive `SpellResult` or `SpellFault`. Internally, Spellcasting is a **composite branch** with an inner covenant that routes spell types to substrate-specific leaves (FileSystem, Compute). The outer world sees only the boundary; internal dispatch is opaque.
+External branches write polymorphic `SpellInvocation` entries and receive `SpellResult` or `SpellFault`. ~~Internally, Spellcasting is a **composite branch** with an inner covenant that routes spell types to substrate-specific leaves (FileSystem, Compute). The outer world sees only the boundary; internal dispatch is opaque.~~
 
 ---
 

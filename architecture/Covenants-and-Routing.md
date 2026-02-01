@@ -139,62 +139,6 @@ Terminal types are explicitly not routed. They exist in the journal as endpoints
 
 Terminals require explicit declaration; the covenant does not implicitly ignore any produced type. This prevents accidental data loss from forgotten routes.
 
-## Composite Branches
-
-A composite branch encapsulates an inner covenant, exposing only a boundary to the outer world.
-
-### When to Use
-
-Use composite branches when:
-- A branch needs internal sub-routing (e.g., Spellcasting dispatching to FileSystem/Compute)
-- You want build-time validation of internal routes
-- Inner structure should be opaque to consumers
-
-### Declaration
-
-```csharp
-CompositeBranchManifest spellcasting = coven.CompositeManifest<SpellEntry, SpellcastingDaemon>(
-    "Spellcasting",
-    produces: new HashSet<Type> { typeof(SpellResult), typeof(SpellFault) },
-    consumes: new HashSet<Type> { typeof(FileReadSpell), typeof(ShellExecSpell) },
-    inner =>
-    {
-        BranchManifest filesystem = inner.Branch("FileSystem", typeof(FileSystemEntry), ...);
-        
-        inner.Connect(filesystem);
-        
-        inner.Routes(c =>
-        {
-            c.Route<FileReadSpell, FileRead>(...);
-            c.Route<FileContent, SpellResult>(...);
-        });
-    });
-
-coven.Covenant()
-    .Connect(chat)
-    .Connect(spellcasting)  // Looks like any other branch
-    .Routes(...);
-```
-
-### Validation
-
-Inner covenants get the same validation as outer covenants, plus boundary coherence:
-
-1. Every boundary `produces` type must be a route target
-2. Every boundary `consumes` type must be a route source
-3. No dead letters—inner produces must route somewhere
-
-Validation runs at `BuildCoven()` time. Failures throw `CovenantValidationException`.
-
-### Runtime
-
-`CompositeDaemon<TBoundary>` manages inner infrastructure:
-
-- Creates child service scope with inner scriveners
-- Instantiates and starts inner daemons
-- Runs inner covenant pumps
-- Fails fast if any inner daemon faults
-
 ## Windowing Relationship
 
 Covenants operate on individual entries. By the time entries reach the covenant, windowing decisions are complete. The covenant does not buffer, aggregate, or decide "when" to emit—that's the windowing layer's responsibility, upstream.
