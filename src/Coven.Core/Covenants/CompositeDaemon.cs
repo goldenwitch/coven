@@ -38,17 +38,6 @@ public abstract class CompositeDaemon<TBoundary>(
     /// <inheritdoc/>
     public override async Task Start(CancellationToken cancellationToken = default)
     {
-        // Guard: only start from Stopped state
-        if (Status == Status.Running)
-        {
-            return; // Already running (idempotent)
-        }
-
-        if (Status == Status.Completed)
-        {
-            throw new InvalidOperationException("Cannot start a completed daemon.");
-        }
-
         // Build inner service scope with isolated scriveners
         _innerScope = BuildInnerServiceProvider();
 
@@ -73,7 +62,20 @@ public abstract class CompositeDaemon<TBoundary>(
         _pumpTask = RunInnerPumpsAsync(_cts.Token);
 
         // Transition to Running only after successful startup
-        await Transition(Status.Running, cancellationToken);
+        // If transition fails (already running or invalid state), clean up
+        if (!await Transition(Status.Running, cancellationToken))
+        {
+            // Already running - roll back the duplicate startup
+            await _cts.CancelAsync();
+            await _pumpTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            _cts.Dispose();
+            _cts = null;
+            _pumpTask = null;
+            await RollbackStartedDaemonsAsync(CancellationToken.None);
+            _innerScope.Dispose();
+            _innerScope = null;
+            _innerDaemons = null;
+        }
     }
 
     /// <inheritdoc/>
@@ -186,5 +188,40 @@ public abstract class CompositeDaemon<TBoundary>(
     {
         IEnumerable<Task> tasks = _manifest.InnerPumps.Select(pump => pump.CreatePump(_innerScope!, ct));
         await Task.WhenAll(tasks);
+    }
+
+    /// <summary>
+    /// Releases resources held by the composite daemon.
+    /// Callers should prefer <see cref="Shutdown"/> for graceful cleanup.
+    /// </summary>
+    public new void Dispose()
+    {
+        // Cancel and clean up pumps
+        if (_cts is not null)
+        {
+            _cts.Cancel();
+            _cts.Dispose();
+            _cts = null;
+        }
+
+        // Best-effort daemon cleanup (can't await in Dispose)
+        if (_innerDaemons is not null)
+        {
+            foreach (IDaemon daemon in _innerDaemons)
+            {
+                if (daemon is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+            _innerDaemons = null;
+        }
+
+        // Dispose inner scope
+        _innerScope?.Dispose();
+        _innerScope = null;
+
+        // Call base dispose
+        base.Dispose();
     }
 }
