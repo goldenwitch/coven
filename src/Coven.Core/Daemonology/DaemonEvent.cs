@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace Coven.Daemonology;
+namespace Coven.Core.Daemonology;
 
 /// <summary>
 /// Base record for daemon lifecycle events emitted to journals.
@@ -12,7 +12,7 @@ namespace Coven.Daemonology;
     JsonDerivedType(typeof(StatusChanged), nameof(StatusChanged)),
     JsonDerivedType(typeof(FailureOccurred), nameof(FailureOccurred))
 ]
-public abstract record DaemonEvent;
+public abstract record DaemonEvent : Entry;
 
 internal sealed record StatusChanged(Status NewStatus) : DaemonEvent;
 

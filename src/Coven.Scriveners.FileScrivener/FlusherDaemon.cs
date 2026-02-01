@@ -2,7 +2,7 @@
 
 using System.Threading.Channels;
 using Coven.Core;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 using Microsoft.Extensions.Logging;
 
 namespace Coven.Scriveners.FileScrivener;

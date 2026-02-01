@@ -35,7 +35,6 @@
     <!-- Coven packages (centralized) -->
     <PackageVersion Include="Coven.Core" Version="2.0.1" />
     <PackageVersion Include="Coven.Core.Streaming" Version="2.0.1" />
-    <PackageVersion Include="Coven.Daemonology" Version="2.0.1" />
     <PackageVersion Include="Coven.Transmutation" Version="2.0.1" />
     <PackageVersion Include="Coven.Spellcasting" Version="2.0.1" />
     <PackageVersion Include="Coven.Chat" Version="2.0.1" />

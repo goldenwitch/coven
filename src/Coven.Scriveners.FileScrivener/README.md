@@ -12,7 +12,7 @@ File-backed `IScrivener<T>` with a snapshot flusher daemon. In‑process journal
 
 ```csharp
 using Coven.Core;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 using Coven.Scriveners.FileScrivener;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -61,7 +61,7 @@ Start `ContractDaemon`s from your block (pattern used across the repo):
 
 ```csharp
 using Coven.Core;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 
 internal sealed class StartDaemonsBlock(IEnumerable<ContractDaemon> daemons) : IMagikBlock<Empty, Empty>
 {

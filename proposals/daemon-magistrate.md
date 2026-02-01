@@ -304,7 +304,7 @@ magistrate.Supervise<DiscordChatDaemon>(policy =>
 ### New DaemonEvent Types
 
 ```csharp
-// In Coven.Daemonology
+// In Coven.Core.Daemonology
 
 [JsonDerivedType(typeof(Heartbeat), nameof(Heartbeat)),
  JsonDerivedType(typeof(Distress), nameof(Distress)),
@@ -369,7 +369,7 @@ public abstract class ContractDaemon
 ### Magistrate Configuration
 
 ```csharp
-// In Coven.Daemonology.Magistrate (new assembly or namespace)
+// In Coven.Core.Daemonology.Magistrate (new namespace)
 
 public static class MagistrateServiceCollectionExtensions
 {

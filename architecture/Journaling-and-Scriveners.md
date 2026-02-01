@@ -43,4 +43,4 @@ Scriveners are append‑only journals that record typed entries. They decouple p
 
 ## Related
 - Windowing/Shattering: see “Windowing and Shattering”.
-- Daemon lifecycle: see `src/Coven.Daemonology/README.md`.
+- Daemon lifecycle: see `Coven.Core.Daemonology` namespace.

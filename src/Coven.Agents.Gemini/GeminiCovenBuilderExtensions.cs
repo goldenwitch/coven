@@ -2,7 +2,7 @@
 
 using Coven.Core.Builder;
 using Coven.Core.Covenants;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 
 namespace Coven.Agents.Gemini;
 
