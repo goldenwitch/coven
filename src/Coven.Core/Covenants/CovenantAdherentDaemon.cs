@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core.Daemonology;
+
 namespace Coven.Core.Covenants;
 
 /// <summary>
@@ -7,31 +9,33 @@ namespace Coven.Core.Covenants;
 /// applying route transformations, and writing results to target journals.
 /// </summary>
 internal sealed class CovenantAdherentDaemon(
+    IScrivener<DaemonEvent> daemonEvents,
     CovenantDescriptor covenant,
-    IServiceProvider services) : IDaemon
+    IServiceProvider services) : ContractDaemon(daemonEvents)
 {
     private readonly CovenantDescriptor _covenant = covenant;
     private readonly IServiceProvider _services = services;
     private CancellationTokenSource? _cts;
     private Task? _pumpTask;
 
-    public Status Status { get; private set; } = Status.Stopped;
-
-    public Task Start(CancellationToken cancellationToken = default)
+    public override async Task Start(CancellationToken cancellationToken = default)
     {
-        if (Status != Status.Stopped)
+        if (!await Transition(Status.Running, cancellationToken))
         {
-            throw new InvalidOperationException($"Cannot start daemon in state {Status}.");
+            return; // Already running (idempotent)
         }
 
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _pumpTask = RunPumpsAsync(_cts.Token);
-        Status = Status.Running;
-        return Task.CompletedTask;
     }
 
-    public async Task Shutdown(CancellationToken cancellationToken = default)
+    public override async Task Shutdown(CancellationToken cancellationToken = default)
     {
+        if (!await Transition(Status.Completed, cancellationToken))
+        {
+            return; // Already completed (idempotent)
+        }
+
         if (_cts is not null)
         {
             await _cts.CancelAsync();
@@ -42,7 +46,6 @@ internal sealed class CovenantAdherentDaemon(
             _cts.Dispose();
             _cts = null;
         }
-        Status = Status.Completed;
     }
 
     private async Task RunPumpsAsync(CancellationToken ct)

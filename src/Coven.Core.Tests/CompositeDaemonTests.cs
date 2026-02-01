@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core.Covenants;
+using Coven.Core.Daemonology;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -95,10 +96,11 @@ public class CompositeDaemonTests
     #region Test Composite Daemon
 
     public class TestCompositeDaemon(
+        IScrivener<DaemonEvent> daemonEvents,
         IServiceProvider services,
         IScrivener<TestBoundaryEntry> boundaryScrivener,
         CompositeBranchManifest manifest)
-        : CompositeDaemon<TestBoundaryEntry>(services, boundaryScrivener, manifest);
+        : CompositeDaemon<TestBoundaryEntry>(daemonEvents, services, boundaryScrivener, manifest);
 
     #endregion
 
@@ -152,6 +154,11 @@ public class CompositeDaemonTests
         return services.BuildServiceProvider();
     }
 
+    private static InMemoryScrivener<DaemonEvent> CreateDaemonEventsScrivener()
+    {
+        return new InMemoryScrivener<DaemonEvent>();
+    }
+
     #endregion
 
     #region Tests
@@ -162,7 +169,8 @@ public class CompositeDaemonTests
         // Arrange
         (CompositeBranchManifest manifest, IScrivener<TestBoundaryEntry> boundary) = CreateTestManifest();
         ServiceProvider services = CreateServiceProvider();
-        TestCompositeDaemon daemon = new(services, boundary, manifest);
+        IScrivener<DaemonEvent> daemonEvents = CreateDaemonEventsScrivener();
+        TestCompositeDaemon daemon = new(daemonEvents, services, boundary, manifest);
 
         // Act
         await daemon.Start();
@@ -184,7 +192,8 @@ public class CompositeDaemonTests
         // Arrange
         (CompositeBranchManifest manifest, IScrivener<TestBoundaryEntry> boundary) = CreateTestManifest();
         ServiceProvider services = CreateServiceProvider();
-        TestCompositeDaemon daemon = new(services, boundary, manifest);
+        IScrivener<DaemonEvent> daemonEvents = CreateDaemonEventsScrivener();
+        TestCompositeDaemon daemon = new(daemonEvents, services, boundary, manifest);
 
         await daemon.Start();
 
@@ -201,7 +210,8 @@ public class CompositeDaemonTests
         // Arrange
         (CompositeBranchManifest manifest, IScrivener<TestBoundaryEntry> boundary) = CreateTestManifest();
         ServiceProvider services = CreateServiceProvider();
-        TestCompositeDaemon daemon = new(services, boundary, manifest);
+        IScrivener<DaemonEvent> daemonEvents = CreateDaemonEventsScrivener();
+        TestCompositeDaemon daemon = new(daemonEvents, services, boundary, manifest);
 
         await daemon.Start();
 
@@ -240,7 +250,8 @@ public class CompositeDaemonTests
         (CompositeBranchManifest manifest, IScrivener<TestBoundaryEntry> boundary) =
             CreateTestManifest(daemonType: typeof(FailingInnerDaemon));
         ServiceProvider services = CreateServiceProvider();
-        TestCompositeDaemon daemon = new(services, boundary, manifest);
+        IScrivener<DaemonEvent> daemonEvents = CreateDaemonEventsScrivener();
+        TestCompositeDaemon daemon = new(daemonEvents, services, boundary, manifest);
 
         // Act & Assert
         await Assert.ThrowsAsync<InvalidOperationException>(() => daemon.Start());

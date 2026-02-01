@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
-
-namespace Coven.Daemonology;
+namespace Coven.Core.Daemonology;
 
 /// <summary>
 /// Represents a Daemon that is capable of meeting a "Status contract" such that when status changes, promise are completed.
@@ -88,19 +86,38 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
     /// </summary>
     /// <param name="newStatus">The new status to set.</param>
     /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException"></exception>
-    protected async Task Transition(Status newStatus, CancellationToken cancellationToken = default)
+    /// <returns>True if the transition occurred, false if it was a valid no-op (idempotent).</returns>
+    /// <exception cref="InvalidOperationException">Thrown for invalid state transitions.</exception>
+    protected async Task<bool> Transition(Status newStatus, CancellationToken cancellationToken = default)
     {
         await _semaphoreSlim.WaitAsync(cancellationToken);
-        if (Status == Status.Completed)
-        {
-            throw new InvalidOperationException("A completed Daemon may not restart.");
-        }
         try
         {
+            // Idempotent: already in target state
+            if (Status == newStatus)
+            {
+                return false;
+            }
+
+            // Validate transition
+            bool isValid = (Status, newStatus) switch
+            {
+                (Status.Stopped, Status.Running) => true,
+                (Status.Running, Status.Completed) => true,
+                (Status.Completed, Status.Running) => false, // Cannot restart
+                (Status.Stopped, Status.Completed) => false, // Cannot shutdown without starting
+                _ => false
+            };
+
+            if (!isValid)
+            {
+                throw new InvalidOperationException(
+                    $"Invalid daemon state transition: {Status} → {newStatus}");
+            }
+
             Status = newStatus;
             await _scrivener.WriteAsync(new StatusChanged(newStatus), cancellationToken);
+            return true;
         }
         finally
         {

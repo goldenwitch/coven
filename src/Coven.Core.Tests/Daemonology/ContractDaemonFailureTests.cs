@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
-using Coven.Daemonology.Tests.Infrastructure;
+using Coven.Core.Tests.Infrastructure;
+using Xunit;
 
-namespace Coven.Daemonology.Tests;
+namespace Coven.Core.Daemonology.Tests;
 
 public class ContractDaemonFailureTests
 {

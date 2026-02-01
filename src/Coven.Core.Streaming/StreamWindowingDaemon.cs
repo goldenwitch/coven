@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 using Coven.Transmutation;
 
 namespace Coven.Core.Streaming;

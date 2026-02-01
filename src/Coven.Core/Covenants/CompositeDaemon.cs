@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using Coven.Core.Daemonology;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -10,13 +11,15 @@ namespace Coven.Core.Covenants;
 /// Manages inner scriveners, inner daemons, and inner covenant pumps.
 /// </summary>
 /// <typeparam name="TBoundary">The boundary entry type shared with the outer covenant.</typeparam>
+/// <param name="daemonEvents">Scrivener for daemon lifecycle events.</param>
 /// <param name="services">The outer service provider.</param>
 /// <param name="boundaryScrivener">The boundary scrivener shared with the outer covenant.</param>
 /// <param name="manifest">The composite branch manifest describing the inner structure.</param>
 public abstract class CompositeDaemon<TBoundary>(
+    IScrivener<DaemonEvent> daemonEvents,
     IServiceProvider services,
     IScrivener<TBoundary> boundaryScrivener,
-    CompositeBranchManifest manifest) : IDaemon
+    CompositeBranchManifest manifest) : ContractDaemon(daemonEvents)
     where TBoundary : Entry
 {
     private readonly IServiceProvider _outerServices = services;
@@ -27,20 +30,23 @@ public abstract class CompositeDaemon<TBoundary>(
     private CancellationTokenSource? _cts;
     private Task? _pumpTask;
 
-    /// <inheritdoc/>
-    public Status Status { get; private set; } = Status.Stopped;
-
     /// <summary>
     /// The boundary scrivener, shared with the outer covenant.
     /// </summary>
     protected IScrivener<TBoundary> BoundaryScrivener { get; } = boundaryScrivener;
 
     /// <inheritdoc/>
-    public async Task Start(CancellationToken cancellationToken = default)
+    public override async Task Start(CancellationToken cancellationToken = default)
     {
-        if (Status != Status.Stopped)
+        // Guard: only start from Stopped state
+        if (Status == Status.Running)
         {
-            throw new InvalidOperationException($"Cannot start daemon in state {Status}.");
+            return; // Already running (idempotent)
+        }
+
+        if (Status == Status.Completed)
+        {
+            throw new InvalidOperationException("Cannot start a completed daemon.");
         }
 
         // Build inner service scope with isolated scriveners
@@ -66,12 +72,18 @@ public abstract class CompositeDaemon<TBoundary>(
         _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _pumpTask = RunInnerPumpsAsync(_cts.Token);
 
-        Status = Status.Running;
+        // Transition to Running only after successful startup
+        await Transition(Status.Running, cancellationToken);
     }
 
     /// <inheritdoc/>
-    public async Task Shutdown(CancellationToken cancellationToken = default)
+    public override async Task Shutdown(CancellationToken cancellationToken = default)
     {
+        if (!await Transition(Status.Completed, cancellationToken))
+        {
+            return; // Already completed (idempotent)
+        }
+
         // Cancel pumps
         if (_cts is not null)
         {
@@ -97,8 +109,6 @@ public abstract class CompositeDaemon<TBoundary>(
         // Dispose child scope
         _innerScope?.Dispose();
         _innerScope = null;
-
-        Status = Status.Completed;
     }
 
     private ServiceProvider BuildInnerServiceProvider()
