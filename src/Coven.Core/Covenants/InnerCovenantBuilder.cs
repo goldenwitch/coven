@@ -12,16 +12,10 @@ namespace Coven.Core.Covenants;
 /// </summary>
 internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
 {
-    /// <summary>
-    /// The well-known name for the boundary manifest in inner covenants.
-    /// </summary>
-    internal const string BoundaryManifestName = "Boundary";
-
     private readonly Type _boundaryJournalType;
     private readonly IReadOnlySet<Type> _boundaryProduces;
     private readonly IReadOnlySet<Type> _boundaryConsumes;
     private readonly List<BranchManifest> _innerManifests = [];
-    private bool _boundaryConnected;
     private bool _routesConfigured;
 
     /// <summary>
@@ -89,35 +83,6 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
     }
 
     /// <inheritdoc />
-    public IInnerCovenantBuilder ConnectBoundary()
-    {
-        if (_routesConfigured)
-        {
-            throw new InvalidOperationException(
-                "Cannot connect boundary after Routes() has been called.");
-        }
-
-        if (_boundaryConnected)
-        {
-            throw new InvalidOperationException(
-                "ConnectBoundary() can only be called once.");
-        }
-
-        _boundaryConnected = true;
-
-        // Create a synthetic manifest for the boundary journal
-        BranchManifest boundaryManifest = new(
-            BoundaryManifestName,
-            _boundaryJournalType,
-            _boundaryProduces,
-            _boundaryConsumes,
-            []);
-
-        _innerManifests.Add(boundaryManifest);
-        return this;
-    }
-
-    /// <inheritdoc />
     public void Routes(Action<ICovenant> configure)
     {
         ArgumentNullException.ThrowIfNull(configure);
@@ -140,26 +105,33 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
             throw new CovenantValidationException(errors);
         }
 
-        // Build entry-to-journal lookup from manifests
-        // Group by entry type to detect duplicates across manifests
-        List<IGrouping<Type, (Type Entry, Type Journal, string Manifest)>> entryMappings =
+        // Build entry-to-journal lookup from inner manifests + boundary
+        // Include boundary types explicitly (boundary is not a manifest, it's the edge)
+        List<(Type Entry, Type Journal, string Source)> allMappings =
         [
             .. _innerManifests
                 .SelectMany(m => m.Produces.Concat(m.Consumes)
-                    .Select(t => (Entry: t, Journal: m.JournalEntryType, Manifest: m.Name)))
-                .GroupBy(x => x.Entry)
+                    .Select(t => (Entry: t, Journal: m.JournalEntryType, Source: m.Name))),
+            .. _boundaryProduces.Concat(_boundaryConsumes)
+                .Select(t => (Entry: t, Journal: _boundaryJournalType, Source: "Boundary"))
+        ];
+
+        // Group by entry type to detect duplicates across journals
+        List<IGrouping<Type, (Type Entry, Type Journal, string Source)>> entryMappings =
+        [
+            .. allMappings.GroupBy(x => x.Entry)
         ];
 
         // Check for duplicate entry types across different journals
         List<string> duplicateErrors = [];
-        foreach (IGrouping<Type, (Type Entry, Type Journal, string Manifest)> group in entryMappings)
+        foreach (IGrouping<Type, (Type Entry, Type Journal, string Source)> group in entryMappings)
         {
             Type[] distinctJournals = [.. group.Select(x => x.Journal).Distinct()];
             if (distinctJournals.Length > 1)
             {
-                string manifests = string.Join(", ", group.Select(x => x.Manifest).Distinct());
+                string sources = string.Join(", ", group.Select(x => x.Source).Distinct());
                 duplicateErrors.Add(
-                    $"Entry type {group.Key.Name} appears in multiple journals: {manifests}. " +
+                    $"Entry type {group.Key.Name} appears in multiple journals: {sources}. " +
                     $"Each entry type must belong to exactly one journal.");
             }
         }
@@ -247,19 +219,12 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
     {
         List<string> errors = [];
 
-        // Collect all produced and consumed types from inner manifests (excluding boundary)
-        // The boundary has inverted semantics: its "produces" are route targets (outputs),
-        // and its "consumes" are route sources (inputs from outer covenant).
-        // Boundary validation is handled separately by Rules 4 and 5.
+        // Collect all produced and consumed types from inner manifests
+        // (Boundary is not in _innerManifests — it's handled separately by Rules 4 and 5)
         HashSet<Type> allProduced = [];
         HashSet<Type> allConsumed = [];
         foreach (BranchManifest manifest in _innerManifests)
         {
-            if (manifest.Name == BoundaryManifestName)
-            {
-                continue;
-            }
-
             allProduced.UnionWith(manifest.Produces);
             allConsumed.UnionWith(manifest.Consumes);
         }

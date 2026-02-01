@@ -43,7 +43,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act
@@ -75,7 +74,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act & Assert
@@ -108,7 +106,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act & Assert
@@ -141,7 +138,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act & Assert
@@ -175,7 +171,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act & Assert
@@ -208,7 +203,6 @@ public class InnerCovenantBuilderTests
             consumes: new HashSet<Type> { typeof(InnerAInput) },
             daemons: []);
 
-        builder.ConnectBoundary();
         builder.Connect(innerA);
 
         // Act - should not throw because InnerAOutput is marked as terminal

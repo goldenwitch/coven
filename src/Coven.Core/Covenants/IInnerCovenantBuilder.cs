@@ -32,13 +32,6 @@ public interface IInnerCovenantBuilder
     IInnerCovenantBuilder Connect(BranchManifest manifest);
 
     /// <summary>
-    /// Connects the boundary journal for routing.
-    /// The boundary journal is implicitly shared with the outer covenant.
-    /// </summary>
-    /// <returns>The builder for fluent chaining.</returns>
-    IInnerCovenantBuilder ConnectBoundary();
-
-    /// <summary>
     /// Defines routes for the inner covenant using the standard covenant routing API.
     /// </summary>
     /// <param name="configure">Action to configure routes via <see cref="ICovenant"/>.</param>

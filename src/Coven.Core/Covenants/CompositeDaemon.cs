@@ -124,14 +124,9 @@ public abstract class CompositeDaemon<TBoundary>(
         innerServices.AddSingleton(BoundaryScrivener);
 
         // Register InMemoryScrivener for each inner manifest's journal entry type
-        // Skip the boundary manifest since its scrivener is already registered above
+        // (Boundary scrivener is already registered above — it's not in InnerManifests)
         foreach (BranchManifest innerManifest in _manifest.InnerManifests)
         {
-            if (innerManifest.Name == InnerCovenantBuilder.BoundaryManifestName)
-            {
-                continue;
-            }
-
             Type entryType = innerManifest.JournalEntryType;
             Type scrivenerInterface = typeof(IScrivener<>).MakeGenericType(entryType);
             Type scrivenerImpl = typeof(InMemoryScrivener<>).MakeGenericType(entryType);

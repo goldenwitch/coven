@@ -123,7 +123,6 @@ public class CompositeDaemonTests
             consumes: new HashSet<Type> { typeof(TestInnerInput) },
             daemons: [daemonType]);
 
-        builder.ConnectBoundary();
         builder.Connect(inner);
 
         builder.Routes(c =>
