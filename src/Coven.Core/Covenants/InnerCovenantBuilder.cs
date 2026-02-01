@@ -12,6 +12,11 @@ namespace Coven.Core.Covenants;
 /// </summary>
 internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
 {
+    /// <summary>
+    /// The well-known name for the boundary manifest in inner covenants.
+    /// </summary>
+    internal const string BoundaryManifestName = "Boundary";
+
     private readonly Type _boundaryJournalType;
     private readonly IReadOnlySet<Type> _boundaryProduces;
     private readonly IReadOnlySet<Type> _boundaryConsumes;
@@ -102,7 +107,7 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
 
         // Create a synthetic manifest for the boundary journal
         BranchManifest boundaryManifest = new(
-            "Boundary",
+            BoundaryManifestName,
             _boundaryJournalType,
             _boundaryProduces,
             _boundaryConsumes,
@@ -136,10 +141,37 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
         }
 
         // Build entry-to-journal lookup from manifests
-        Dictionary<Type, Type> entryToJournal = _innerManifests
-            .SelectMany(m => m.Produces.Concat(m.Consumes)
-                .Select(t => (Entry: t, Journal: m.JournalEntryType)))
-            .ToDictionary(x => x.Entry, x => x.Journal);
+        // Group by entry type to detect duplicates across manifests
+        List<IGrouping<Type, (Type Entry, Type Journal, string Manifest)>> entryMappings =
+        [
+            .. _innerManifests
+                .SelectMany(m => m.Produces.Concat(m.Consumes)
+                    .Select(t => (Entry: t, Journal: m.JournalEntryType, Manifest: m.Name)))
+                .GroupBy(x => x.Entry)
+        ];
+
+        // Check for duplicate entry types across different journals
+        List<string> duplicateErrors = [];
+        foreach (IGrouping<Type, (Type Entry, Type Journal, string Manifest)> group in entryMappings)
+        {
+            Type[] distinctJournals = [.. group.Select(x => x.Journal).Distinct()];
+            if (distinctJournals.Length > 1)
+            {
+                string manifests = string.Join(", ", group.Select(x => x.Manifest).Distinct());
+                duplicateErrors.Add(
+                    $"Entry type {group.Key.Name} appears in multiple journals: {manifests}. " +
+                    $"Each entry type must belong to exactly one journal.");
+            }
+        }
+
+        if (duplicateErrors.Count > 0)
+        {
+            throw new CovenantValidationException(duplicateErrors);
+        }
+
+        Dictionary<Type, Type> entryToJournal = entryMappings.ToDictionary(
+            g => g.Key,
+            g => g.First().Journal);
 
         // Build typed pumps for each route
         InnerPumps =
@@ -223,7 +255,7 @@ internal sealed class InnerCovenantBuilder : IInnerCovenantBuilder
         HashSet<Type> allConsumed = [];
         foreach (BranchManifest manifest in _innerManifests)
         {
-            if (manifest.Name == "Boundary")
+            if (manifest.Name == BoundaryManifestName)
             {
                 continue;
             }

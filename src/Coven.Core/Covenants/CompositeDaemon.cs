@@ -127,7 +127,7 @@ public abstract class CompositeDaemon<TBoundary>(
         // Skip the boundary manifest since its scrivener is already registered above
         foreach (BranchManifest innerManifest in _manifest.InnerManifests)
         {
-            if (innerManifest.Name == "Boundary")
+            if (innerManifest.Name == InnerCovenantBuilder.BoundaryManifestName)
             {
                 continue;
             }
