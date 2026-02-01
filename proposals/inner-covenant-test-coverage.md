@@ -1,9 +1,13 @@
 # Inner Covenant Test Coverage
 
-> **Status**: Draft  
+> **Status**: Superseded by unified-covenant-builder.md  
 > **Created**: 2026-01-31
 
+**Note**: This proposal is obsolete. The entire inner covenant infrastructure (InnerCovenantBuilder, CompositeDaemon) was deleted. Entry-journal uniqueness validation was ported to CovenantBuilder and tested in `EntryJournalUniquenessTests.cs`.
+
 ---
+
+*Original content preserved for historical context:*
 
 ## Summary
 

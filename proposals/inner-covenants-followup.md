@@ -1,5 +1,17 @@
 # Inner Covenants: Follow-up Items
 
+> **Status**: Superseded by unified-covenant-builder.md
+
+**Note**: This proposal is obsolete. The entire inner covenant infrastructure was deleted in favor of a flat covenant model. The items below are no longer applicable:
+
+- ~~State guard in CompositeDaemon.Shutdown()~~ → CompositeDaemon deleted
+- ~~Duplicate key handling~~ → Fixed: entry-journal uniqueness validation now in CovenantBuilder
+- ~~ServiceProvider leak~~ → CompositeDaemon deleted
+
+---
+
+*Original content preserved for historical context:*
+
 Tracked from PR #62 review feedback. These are non-blocking improvements to address in subsequent work.
 
 ## Should-Fix
