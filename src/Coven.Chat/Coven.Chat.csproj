@@ -16,7 +16,6 @@
   
   <ItemGroup>
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
-    <ProjectReference Include="..\Coven.Daemonology\Coven.Daemonology.csproj" />
     <ProjectReference Include="..\Coven.Transmutation\Coven.Transmutation.csproj" />
     <ProjectReference Include="..\Coven.Core.Streaming\Coven.Core.Streaming.csproj" />
   </ItemGroup>

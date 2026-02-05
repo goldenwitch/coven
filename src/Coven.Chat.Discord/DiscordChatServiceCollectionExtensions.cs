@@ -3,7 +3,7 @@
 using Coven.Core;
 using Coven.Core.Streaming;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 using Coven.Transmutation;
 using Discord;
 using Discord.WebSocket;

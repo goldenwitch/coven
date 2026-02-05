@@ -190,6 +190,22 @@ public sealed class InMemoryScrivener<TEntry> : IScrivener<TEntry> where TEntry 
         return (journalPosition, (TDerived)entry);
     }
 
+    /// <summary>
+    /// Returns a snapshot of all entries currently in the journal.
+    /// </summary>
+    /// <returns>A list of all entries in journal order.</returns>
+    /// <remarks>
+    /// This is a testing convenience method. It returns a snapshot; entries written after
+    /// this call are not included.
+    /// </remarks>
+    public List<TEntry> ReadAll()
+    {
+        lock (_lock)
+        {
+            return [.. _entries.Select(e => e.entry)];
+        }
+    }
+
     private static int IndexFromPosition(long position)
     {
         if (position < 1)

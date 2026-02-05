@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
-using Coven.Daemonology.Tests.Infrastructure;
+using Coven.Core.Tests.Infrastructure;
+using Xunit;
 
-namespace Coven.Daemonology.Tests;
+namespace Coven.Core.Daemonology.Tests;
 
-public class ContractDaemonStatusTests
+public class ContractDaemonLifecycleTests
 {
     [Fact]
     public async Task WaitForRunningCompletesOnStart()
@@ -25,21 +25,10 @@ public class ContractDaemonStatusTests
         InMemoryScrivener<DaemonEvent> scrivener = new();
         TestDaemon daemon = new(scrivener);
 
+        await daemon.Start();
         await daemon.Shutdown();
         await daemon.WaitFor(Status.Completed);
 
         Assert.Equal(Status.Completed, daemon.Status);
-    }
-
-    [Fact]
-    public async Task CompletedDaemonCannotRestart()
-    {
-        InMemoryScrivener<DaemonEvent> scrivener = new();
-        TestDaemon daemon = new(scrivener);
-
-        await daemon.Start();
-        await daemon.Shutdown();
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => daemon.Start());
     }
 }

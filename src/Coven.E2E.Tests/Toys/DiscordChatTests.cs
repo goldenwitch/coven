@@ -3,7 +3,7 @@
 using Coven.Chat;
 using Coven.Chat.Discord;
 using Coven.Core.Covenants;
-using Coven.Daemonology;
+using Coven.Core.Daemonology;
 using Coven.Testing.Harness;
 using Coven.Testing.Harness.Assertions;
 using Xunit;

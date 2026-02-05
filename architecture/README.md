@@ -6,7 +6,7 @@ Single takeaway: Coven provides Chat and Agent abstractions so your code talks t
 
 ## Critical Subtopics (Summaries)
 
-- Daemons & Lifecycle: All long‑running work runs as daemons implementing a minimal lifecycle (Start/Shutdown with `Status` and failure journaling). Daemons are auto-started by `CovenExecutionScope` when a ritual begins, eliminating manual startup boilerplate. See: `src/Coven.Daemonology/README.md`.
+- Daemons & Lifecycle: All long‑running work runs as daemons implementing a minimal lifecycle (Start/Shutdown with `Status` and failure journaling). Daemons are auto-started by `CovenExecutionScope` when a ritual begins, eliminating manual startup boilerplate. Core daemon infrastructure lives in `Coven.Core.Daemonology`.
 
 - Journaling & Scriveners: Append‑only, typed journals decouple producers from consumers, enable replay/time‑travel, and make streaming deterministic. Blocks, branches, and leaves communicate by writing/reading entries, not by callbacks. See: [Journaling and Scriveners](./Journaling-and-Scriveners.md).
 

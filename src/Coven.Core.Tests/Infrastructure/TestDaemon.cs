@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.Core;
+using Coven.Core.Daemonology;
 
-namespace Coven.Daemonology.Tests.Infrastructure;
+namespace Coven.Core.Tests.Infrastructure;
 
 internal sealed class TestDaemon(IScrivener<DaemonEvent> scrivener) : ContractDaemon(scrivener)
 {
@@ -16,4 +16,3 @@ internal sealed class TestDaemon(IScrivener<DaemonEvent> scrivener) : ContractDa
     public Task TriggerFailure(Exception error, CancellationToken cancellationToken = default)
         => Fail(error, cancellationToken);
 }
-
