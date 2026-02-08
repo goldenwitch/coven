@@ -97,6 +97,32 @@ DAEMON ImageGenDaemon (abstract template)
 
 The initial implementation targets DALL-E 3 via the OpenAI API.
 
+**DALL-E Extended Entry:**
+
+The DALL-E leaf defines its own extended entry type for provider-specific options:
+
+```
+DalleImageGen : ImageGen
+  correlation-id: guid
+  prompt: string
+  size: DalleSize?            -- "1024x1024" | "1792x1024" | "1024x1792"
+  quality: DalleQuality?      -- "standard" | "hd"
+  style: DalleStyle?          -- "vivid" | "natural"
+```
+
+When agents use DALL-E-specific features, they emit `DalleImageGen` instead of `ImageGen`. The daemon handles both:
+- `ImageGen` — uses configured defaults
+- `DalleImageGen` — uses specified options
+
+**DALL-E Extended Result:**
+
+```
+DalleImageGenerated : ImageGenerated
+  correlation-id: guid
+  image-uri: string
+  revised-prompt: string?     -- DALL-E may revise prompt for safety
+```
+
 **Configuration:**
 
 ```csharp
@@ -104,10 +130,13 @@ record DalleImageGenConfig
 {
     required string ApiKey { get; init; }
     string Model { get; init; } = "dall-e-3";
+    DalleSize DefaultSize { get; init; } = DalleSize.Square1024;
+    DalleQuality DefaultQuality { get; init; } = DalleQuality.Standard;
+    DalleStyle DefaultStyle { get; init; } = DalleStyle.Vivid;
 }
 ```
 
-DALL-E-specific options (size, quality, style) are configured at the leaf level, not passed through the branch entry. This keeps the branch abstraction clean while allowing the leaf full access to provider capabilities.
+This pattern keeps the core branch minimal while giving the DALL-E leaf full access to provider capabilities. Agents that don't need DALL-E-specific features use the base `ImageGen`; agents that want control over size/quality/style use `DalleImageGen`.
 
 ---
 
@@ -133,13 +162,15 @@ coven.UseSpellcasting(spellcasting =>
 - `ImageGenSpell` boundary type for Spellcasting
 - `ImageGenerated` with URI reference
 - `ImageGenFault` with fault kinds
+- `DalleImageGen` extended entry with size/quality/style
+- `DalleImageGenerated` extended result with revised-prompt
 - `DalleImageGenDaemon` leaf (OpenAI DALL-E)
 - `DalleImageGenConfig` record
 - Build-time configuration via `UseSpellcasting`
 
 **Out of scope (future proposals):**
 - Local model leaves (Stable Diffusion, etc.)
-- Provider-specific branch extensions
+- Other API provider leaves
 - Image editing (inpainting, outpainting, variations)
 - Image-to-image generation
 - Multiple image generation (batch)
@@ -153,6 +184,9 @@ coven.UseSpellcasting(spellcasting =>
 - [ ] `ImageGenSpell` with correlation-id, prompt
 - [ ] `ImageGenerated` with image-uri
 - [ ] `ImageGenFault` with fault kinds
+- [ ] `DalleImageGen` extended entry with size/quality/style
+- [ ] `DalleImageGenerated` extended result with revised-prompt
+- [ ] `DalleSize`, `DalleQuality`, `DalleStyle` enums
 - [ ] `DalleImageGenDaemon` extending `ContractDaemon`
 - [ ] `DalleImageGenConfig` record
 - [ ] `UseImageGen().UseDalle()` configuration
