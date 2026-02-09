@@ -1,16 +1,19 @@
-# ImageGen Substrate
+# ImageGen Branch
 
-> **Status**: Draft  
+> **Status**: Revised  
 > **Created**: 2026-02-05  
-> **Parent**: [Spellcasting Branch](spellcasting-branch.md)
+> **Revised**: 2026-02-09
 
 ---
 
 ## Summary
 
-Sub-branch of Spellcasting for AI image generation. Spells write efferent intent (`ImageGen`). Leaf daemons tail via `TailAsync`, generate images against their backend, write afferent fulfillment.
+Branch for AI image generation. Defines efferent entries (`ImageGen`) and afferent entries (`ImageGenerated`, `ImageGenFailure`). Leaves translate these to concrete backends.
 
-Initial leaf: OpenAI DALL-E. Additional providers (local models, other APIs) are future proposals that may extend the branch with provider-specific entry types.
+Initial leaf: OpenAI DALL-E. Additional providers (local models, other APIs) are future leaves.
+
+Branch package: `Coven.Spellcasting.ImageGen`  
+Companion: `Coven.Agents.ImageGen` (see [Spellcasting](spellcasting-branch.md))
 
 ---
 
@@ -22,7 +25,7 @@ Image generation is a foundational capability for:
 - Creative agent workflows
 - Report generation with embedded graphics
 
-By modeling image generation as a Spellcasting substrate, agents gain image capabilities through the existing tool-call pattern without new integration work.
+By modeling image generation as a Spellcasting branch, agents gain image capabilities through the existing tool-call pattern without new integration work.
 
 ---
 
@@ -30,9 +33,9 @@ By modeling image generation as a Spellcasting substrate, agents gain image capa
 
 Base: `ImageGenEntry : Entry`
 
-The branch defines minimal, universal entry types. Provider-specific options (e.g., negative prompts, seeds, sampler settings) belong in leaf extension libraries, not the core branch.
+The branch defines minimal, universal entry types. Provider-specific options (e.g., negative prompts, seeds, sampler settings) belong in leaf packages, not the core branch.
 
-### Efferent (Intent)
+### Efferent
 
 | Entry | Fields | Purpose |
 |-------|--------|---------|
@@ -48,12 +51,12 @@ ImageGen
 
 The core entry is intentionally minimal. Leaves that need additional parameters (size, quality, style) define their own extended entry types or configuration, following the pattern of other branch/leaf separations in Coven.
 
-### Afferent (Fulfillment)
+### Afferent
 
 | Entry | Fields | Purpose |
 |-------|--------|---------|
 | `ImageGenerated` | correlationId, imageUri | Success |
-| `ImageGenFault` | correlationId, faultKind, message | Failure |
+| `ImageGenFailure` | correlationId, failureKind, message | Failure |
 
 **Field details:**
 
@@ -62,9 +65,9 @@ ImageGenerated
   correlation-id: guid
   image-uri: string           -- URI reference to generated image
 
-ImageGenFault
+ImageGenFailure
   correlation-id: guid
-  fault-kind: ContentPolicy | RateLimited | ModelUnavailable | InvalidPrompt | Unknown
+  failure-kind: ContentPolicy | RateLimited | ModelUnavailable | InvalidPrompt | Unknown
   message: string
 ```
 
@@ -90,7 +93,7 @@ DAEMON ImageGenDaemon (abstract template)
     WRITE ImageGenerated { correlation-id, image-uri }
     
   ON error:
-    WRITE ImageGenFault { correlation-id, fault-kind, message }
+    WRITE ImageGenFailure { correlation-id, failure-kind, message }
 ```
 
 ### OpenAI DALL-E Leaf
@@ -143,13 +146,25 @@ This pattern keeps the core branch minimal while giving the DALL-E leaf full acc
 ## Build-Time Configuration
 
 ```csharp
-coven.UseSpellcasting(spellcasting =>
+services.BuildCoven(coven =>
 {
-    spellcasting.ImageGen.UseDalle(cfg =>
+    var agents = coven.UseOpenAIAgents(agentConfig);
+    var imagegen = coven.UseImageGen(cfg => cfg.UseDalle(dalle =>
     {
-        cfg.ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
-        cfg.Model = "dall-e-3";
-    });
+        dalle.ApiKey = Environment.GetEnvironmentVariable("OPENAI_API_KEY");
+        dalle.Model = "dall-e-3";
+    }));
+
+    coven.Covenant()
+        .Connect(agents)
+        .Connect(imagegen)
+        .Routes(c =>
+        {
+            // From Coven.Agents.ImageGen companion
+            c.Route<AgentToolCall, ImageGen, AgentToolCallToImageGen>();
+            c.Route<ImageGenerated, AgentToolResult, ImageGeneratedToAgentToolResult>();
+            c.Route<ImageGenFailure, AgentToolFailure, ImageGenFailureToAgentToolFailure>();
+        });
 });
 ```
 
@@ -159,14 +174,13 @@ coven.UseSpellcasting(spellcasting =>
 
 **In scope:**
 - `ImageGenEntry` hierarchy with polymorphic serialization
-- `ImageGenSpell` boundary type for Spellcasting
 - `ImageGenerated` with URI reference
-- `ImageGenFault` with fault kinds
+- `ImageGenFailure` with failure kinds
 - `DalleImageGen` extended entry with size/quality/style
 - `DalleImageGenerated` extended result with revised-prompt
 - `DalleImageGenDaemon` leaf (OpenAI DALL-E)
 - `DalleImageGenConfig` record
-- Build-time configuration via `UseSpellcasting`
+- Build-time configuration via `UseImageGen`
 
 **Out of scope (future proposals):**
 - Local model leaves (Stable Diffusion, etc.)
@@ -181,14 +195,14 @@ coven.UseSpellcasting(spellcasting =>
 ## Checklist
 
 - [ ] `ImageGenEntry` hierarchy with `[JsonPolymorphic]`
-- [ ] `ImageGenSpell` with correlation-id, prompt
 - [ ] `ImageGenerated` with image-uri
-- [ ] `ImageGenFault` with fault kinds
+- [ ] `ImageGenFailure` with failure kinds
 - [ ] `DalleImageGen` extended entry with size/quality/style
 - [ ] `DalleImageGenerated` extended result with revised-prompt
 - [ ] `DalleSize`, `DalleQuality`, `DalleStyle` enums
 - [ ] `DalleImageGenDaemon` extending `ContractDaemon`
 - [ ] `DalleImageGenConfig` record
 - [ ] `UseImageGen().UseDalle()` configuration
-- [ ] Integration test: spell → daemon → result round-trip (mock backend)
+- [ ] `Coven.Agents.ImageGen` companion with tool definitions and transmuters
+- [ ] Integration test: agent → companion → daemon → companion → agent round-trip
 - [ ] Toy: console app that generates image from prompt

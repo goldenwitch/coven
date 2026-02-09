@@ -23,6 +23,8 @@ internal sealed class ClaudeTransmuter
             ClaudeAfferentThinkingChunk thinking => Task.FromResult<AgentEntry>(new AgentAfferentThoughtChunk(thinking.Sender, thinking.Text)),
             ClaudeThought thought => Task.FromResult<AgentEntry>(new AgentThought(thought.Sender, thought.Text)),
             ClaudeStreamCompleted done => Task.FromResult<AgentEntry>(new AgentStreamCompleted(done.Sender)),
+            ClaudeToolUse toolUse => Task.FromResult<AgentEntry>(new AgentToolCall(toolUse.Sender, toolUse.ToolUseId, toolUse.ToolName, toolUse.ArgumentsJson)),
+            ClaudeToolResult toolResult => Task.FromResult<AgentEntry>(new AgentAck(toolResult.Sender, Reagent)),
             ClaudeEfferent outgoing => Task.FromResult<AgentEntry>(new AgentAck(outgoing.Sender, Reagent)),
             ClaudeAck => Task.FromResult<AgentEntry>(new AgentAck(Input.Sender, Reagent)),
             _ => throw new ArgumentOutOfRangeException(nameof(Input))
@@ -36,6 +38,10 @@ internal sealed class ClaudeTransmuter
         return Input switch
         {
             AgentPrompt prompt => Task.FromResult<ClaudeEntry>(new ClaudeEfferent(prompt.Sender, prompt.Text)),
+
+            AgentToolResult result => Task.FromResult<ClaudeEntry>(new ClaudeToolResult(result.Sender, result.CorrelationId, result.Result)),
+            AgentToolFailure failure => Task.FromResult<ClaudeEntry>(new ClaudeToolResult(failure.Sender, failure.CorrelationId, failure.Error, IsError: true)),
+            AgentToolCall toolCall => Task.FromResult<ClaudeEntry>(new ClaudeAck(toolCall.Sender, Reagent)),
 
             AgentResponse response => Task.FromResult<ClaudeEntry>(new ClaudeAck(response.Sender, Reagent)),
             AgentThought thought => Task.FromResult<ClaudeEntry>(new ClaudeAck(thought.Sender, Reagent)),

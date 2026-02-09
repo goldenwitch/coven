@@ -16,6 +16,8 @@ namespace Coven.Agents.Claude;
 [JsonDerivedType(typeof(ClaudeThought), nameof(ClaudeThought))]
 [JsonDerivedType(typeof(ClaudeAck), nameof(ClaudeAck))]
 [JsonDerivedType(typeof(ClaudeStreamCompleted), nameof(ClaudeStreamCompleted))]
+[JsonDerivedType(typeof(ClaudeToolUse), nameof(ClaudeToolUse))]
+[JsonDerivedType(typeof(ClaudeToolResult), nameof(ClaudeToolResult))]
 public abstract record ClaudeEntry(string Sender) : Entry;
 
 /// <summary>Outgoing request payload destined for Claude.</summary>
@@ -62,3 +64,20 @@ public sealed record ClaudeStreamCompleted(
     string MessageId,
     DateTimeOffset Timestamp,
     string Model) : ClaudeEntry(Sender), IDraft;
+
+/// <summary>Claude requested a tool call via tool_use content block.</summary>
+public sealed record ClaudeToolUse(
+    string Sender,
+    string ToolUseId,
+    string ToolName,
+    string ArgumentsJson,
+    string MessageId,
+    DateTimeOffset Timestamp,
+    string Model) : ClaudeEntry(Sender);
+
+/// <summary>Tool result to send back to Claude in a follow-up request.</summary>
+public sealed record ClaudeToolResult(
+    string Sender,
+    string ToolUseId,
+    string Result,
+    bool IsError = false) : ClaudeEntry(Sender);

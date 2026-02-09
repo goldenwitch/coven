@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Text.Json;
+
 namespace Coven.Agents.Claude;
 
 /// <summary>
@@ -17,6 +19,7 @@ internal sealed class ClaudeMessagesRequest
     public IReadOnlyList<string>? StopSequences { get; set; }
     public bool? Stream { get; set; }
     public ClaudeThinkingConfig? Thinking { get; set; }
+    public List<ClaudeToolDefinition>? Tools { get; set; }
 }
 
 /// <summary>
@@ -35,8 +38,8 @@ public sealed class ClaudeMessage
 {
     /// <summary>Gets or sets the role (user or assistant).</summary>
     public required string Role { get; set; }
-    /// <summary>Gets or sets the message content.</summary>
-    public required string Content { get; set; }
+    /// <summary>Gets or sets the message content (string or List&lt;ClaudeContentBlock&gt;).</summary>
+    public required object Content { get; set; }
 }
 
 /// <summary>
@@ -61,6 +64,14 @@ internal sealed class ClaudeContentBlock
     public string? Type { get; set; }
     public string? Text { get; set; }
     public string? Thinking { get; set; }
+    // Tool use (response from Claude)
+    public string? Id { get; set; }
+    public string? Name { get; set; }
+    public JsonElement? Input { get; set; }
+    // Tool result (request to Claude)
+    public string? ToolUseId { get; set; }
+    public string? Content { get; set; }
+    public bool? IsError { get; set; }
 }
 
 /// <summary>
@@ -128,4 +139,14 @@ internal sealed class ClaudeRequestOptions
     public int? TopK { get; set; }
     public IReadOnlyList<string>? StopSequences { get; set; }
     public ClaudeThinkingConfig? Thinking { get; set; }
+}
+
+/// <summary>
+/// Tool definition for Claude API requests.
+/// </summary>
+internal sealed class ClaudeToolDefinition
+{
+    public required string Name { get; set; }
+    public string? Description { get; set; }
+    public JsonElement? InputSchema { get; set; }
 }

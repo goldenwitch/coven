@@ -63,13 +63,25 @@ public static class ClaudeCovenBuilderExtensions
             produces.Add(typeof(AgentAfferentChunk));
             produces.Add(typeof(AgentAfferentThoughtChunk));
         }
+        if (registration.ToolsEnabled)
+        {
+            produces.Add(typeof(AgentToolCall));
+        }
+
+        // Build consumes set based on tool configuration
+        HashSet<Type> consumes = [typeof(AgentPrompt)];
+        if (registration.ToolsEnabled)
+        {
+            consumes.Add(typeof(AgentToolResult));
+            consumes.Add(typeof(AgentToolFailure));
+        }
 
         // Return manifest for covenant connection
         return new BranchManifest(
             Name: "ClaudeAgents",
             JournalEntryType: typeof(AgentEntry),
             Produces: produces,
-            Consumes: new HashSet<Type> { typeof(AgentPrompt) },
+            Consumes: consumes,
             RequiredDaemons: [typeof(ContractDaemon)]);
     }
 }

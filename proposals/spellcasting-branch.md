@@ -1,188 +1,132 @@
-# Spellcasting Branch
+# Spellcasting
 
-> **Status**: Draft — Needs Revision  
-> **Created**: 2026-01-25
-
-**⚠️ Note**: This proposal uses the deleted composite/inner covenant model. The architecture should be revised to use the **flat covenant model** per [unified-covenant-builder.md](unified-covenant-builder.md). Spellcasting becomes a regular branch that registers its daemons and scriveners directly; FileSystem and Compute connect as peer branches in one flat graph.
+> **Status**: Revised  
+> **Created**: 2026-01-25  
+> **Revised**: 2026-02-09
 
 ---
 
 ## Summary
 
-The **Spellcasting Branch** abstracts tool invocation as "fire a function, get a result."
+**Spellcasting** is Coven's pattern for tool invocation. The `Coven.Spellcasting` package is a slim **utility library** providing `SpellDefinition` and `SchemaGen`. It is not a branch.
 
-External branches write polymorphic `SpellInvocation` entries and receive `SpellResult` or `SpellFault`. ~~Internally, Spellcasting is a **composite branch** with an inner covenant that routes spell types to substrate-specific leaves (FileSystem, Compute). The outer world sees only the boundary; internal dispatch is opaque.~~
-
----
-
-## Vocabulary
-
-Coven terms used in this proposal:
-
-| Term | Definition |
-|------|------------|
-| **Branch** | Abstraction layer with typed journals + services (Chat, Agents, Spellcasting) |
-| **Leaf** | Integration translating a branch to an external system (Discord, OpenAI, FileSystem) |
-| **Scrivener** | Append-only typed journal (`IScrivener<T>`) |
-| **Daemon** | Long-running service with lifecycle (Start/Shutdown/Status) |
-| **Covenant** | Declarative routes between branch journals |
-| **Composite Branch** | A branch containing inner branches with its own internal covenant |
-| **Substrate** | An inner leaf within a composite branch (e.g., FileSystem within Spellcasting) |
+Each tool capability (FileSystem, Compute, ImageGen) is its own **branch** — defining entry types the same way Chat defines `ChatAfferent`/`ChatEfferent`. Each branch has **leaves** that translate those entries to concrete backends (POSIX, Windows, DALL-E). **Companion libraries** bridge agents to tool branches, keeping types scoped to exactly where they're needed.
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                      OUTER COVENANT                             │
-│                                                                 │
-│   Agents                         Spellcasting                   │
-│   ┌─────────┐                   ┌─────────────────────────────┐ │
-│   │         │ AgentToolCall     │                             │ │
-│   │         │──────────────────▶│  SpellcastingDaemon         │ │
-│   │         │                   │  (CompositeDaemon)          │ │
-│   │         │                   │                             │ │
-│   │         │                   │  ┌─────────────────────────┐│ │
-│   │         │◀──────────────────│  │ INNER COVENANT         ││ │
-│   │         │ SpellResult       │  │                         ││ │
-│   └─────────┘                   │  │ FileSystem    Compute   ││ │
-│                                 │  │ ┌────────┐  ┌────────┐  ││ │
-│                                 │  │ │        │  │        │  ││ │
-│                                 │  │ └────────┘  └────────┘  ││ │
-│                                 │  └─────────────────────────┘│ │
-│                                 └─────────────────────────────┘ │
-└─────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        FLAT COVENANT                             │
+│                                                                  │
+│   Chat           Agents          FileSystem        Compute       │
+│   ┌────────┐    ┌──────────┐    ┌────────────┐   ┌──────────┐   │
+│   │Discord │    │ OpenAI   │    │ POSIX      │   │ POSIX    │   │
+│   │  leaf  │    │  leaf    │    │  leaf      │   │  leaf    │   │
+│   └────────┘    └──────────┘    └────────────┘   └──────────┘   │
+│                                                                  │
+│   Branches define entry types. Leaves talk to backends.          │
+│   Covenant routes between branches.                              │
+└──────────────────────────────────────────────────────────────────┘
 ```
-
-The `SpellcastingDaemon` is a `CompositeDaemon` that:
-- Owns inner scriveners (`FileSystemEntry`, `ComputeEntry`)
-- Runs inner covenant routing pumps
-- Manages child daemons (`FileSystemDaemon`, `ComputeDaemon`)
 
 ---
 
-## Composite Manifest
+## Type Containment
 
-```
-COMPOSITE-MANIFEST Spellcasting
+Types are surfaced only in the exact package that needs them:
 
-  BOUNDARY
-    journal: SpellEntry
-    produces: SpellResult, SpellFault
-    consumes: SpellInvocation
+- **Branch packages** (`Coven.Spellcasting.FileSystem`) own entry types. They don't know about agents.
+- **Leaf packages** (`Coven.Spellcasting.FileSystem.Posix`) own daemons that back a branch. They don't know about agents.
+- **Agent packages** (`Coven.Agents.OpenAI`) own agent entry types. They don't know about tool branches.
+- **Companion libraries** (`Coven.Agents.FileSystem`) reference agent and branch packages, providing the transmuters.
 
-  INNER-BRANCHES
-    FileSystem
-      journal: FileSystemEntry
-      produces: FileContent, FileWritten, FileFault
-      consumes: FileRead, FileWrite, FileDelete
-      daemons: FileSystemDaemon
-    
-    Compute
-      journal: ComputeEntry
-      produces: ShellOutput, ShellFault
-      consumes: ShellExec
-      daemons: ComputeDaemon
-
-  INNER-COVENANT
-    -- Dispatch: boundary → substrates
-    ROUTE FileReadSpell → FileRead
-    ROUTE FileWriteSpell → FileWrite
-    ROUTE FileDeleteSpell → FileDelete
-    ROUTE ShellExecSpell → ShellExec
-    
-    -- Gather: substrates → boundary
-    ROUTE FileContent → SpellResult
-    ROUTE FileWritten → SpellResult
-    ROUTE FileFault → SpellFault
-    ROUTE ShellOutput → SpellResult
-    ROUTE ShellFault → SpellFault
-```
-
-**Dispatch is type-based.** The polymorphic `SpellInvocation` hierarchy enables standard covenant routing—no special dispatch logic needed.
+If you don't use a branch, you don't have its types. If you don't bridge an agent to a branch, neither knows the other exists.
 
 ---
 
-## Boundary Entries (SpellEntry)
+## Package Structure
 
-```
-ENTRY SpellEntry (polymorphic, discriminator: $type)
+Four tiers per tool capability:
 
-  -- Invocations (consumed from outer covenant)
-  SpellInvocation (abstract)
-    correlation-id: guid
-  
-  FileReadSpell : SpellInvocation
-    path: string
-  
-  FileWriteSpell : SpellInvocation
-    path: string
-    content: bytes
-  
-  FileDeleteSpell : SpellInvocation
-    path: string
-  
-  ShellExecSpell : SpellInvocation
-    command: string
-    working-dir: string?
-  
-  -- Results (produced for outer covenant)
-  SpellResult
-    correlation-id: guid
-    payload: object
-  
-  SpellFault
-    correlation-id: guid
-    error: string
-```
+| Tier | Example Package | Contains | References |
+|------|----------------|----------|------------|
+| **Branch** | `Coven.Spellcasting.FileSystem` | Entry types (`FileRead`, `FileContent`, etc.), `BranchManifest` | `Coven.Core` |
+| **Leaf** | `Coven.Spellcasting.FileSystem.Posix` | Daemon (`PosixFSDaemon`), `UseFileSystem().UsePosix()` | Branch package |
+| **Companion** | `Coven.Agents.FileSystem` | Tool definitions, transmuters | `Coven.Agents` + branch package |
+| **Utility** | `Coven.Spellcasting` | `SpellDefinition`, `SchemaGen` | `Coven.Core` |
 
-All entries carry `correlation-id` for request/response matching across journal boundaries.
+The companion bridges agents to the branch, not to a specific leaf. `Coven.Agents.FileSystem` provides transmuters from `AgentToolCall` → `FileRead` regardless of whether POSIX or Windows is backing the FileSystem branch.
 
 ---
 
-## Substrate Integration
+## What Coven.Spellcasting Provides
 
-Substrates (FileSystem, Compute) are detailed in separate proposals:
-- [FileSystem Sub-branch](filesystem-branch.md)
-- [Compute Sub-branch](compute-branch.md)
+A slim utility package:
 
-Each substrate declares the spell types it handles:
+| Type | Purpose |
+|------|---------|
+| `SpellDefinition` | Tool name + description + input/output JSON schemas |
+| `SchemaGen` | Generate JSON schemas from CLR types |
 
-```
-SUBSTRATE-MANIFEST FileSystem
-  spell-types: [FileReadSpell, FileWriteSpell, FileDeleteSpell]
-  inner-journal: FileSystemEntry
-  daemon: FileSystemDaemon
-  
-  transforms:
-    FileReadSpell → FileRead
-    FileWriteSpell → FileWrite
-    FileDeleteSpell → FileDelete
-  
-  result-transforms:
-    FileContent → SpellResult
-    FileWritten → SpellResult
-    FileFault → SpellFault
-```
+No journal. No daemon. No branch manifest. No `ISpell`. No `Spellbook`.
 
-### Build-Time Aggregation
+Companion libraries use `SpellDefinition` to describe their tools. Agent leaves consume `SpellDefinition` to format LLM tool registrations.
 
-When building the composite:
+---
+
+## Companion Libraries
+
+A companion library bridges agents to a tool branch. It provides:
+
+1. **Tool definitions** — `SpellDefinition[]` describing available operations
+2. **Transmuters** — route `AgentToolCall` → branch efferent entries, and branch afferent entries → `AgentToolResult`
 
 ```
-coven.UseSpellcasting(spellcasting =>
+Coven.Agents.FileSystem
+  ├── FileSystemTools              → SpellDefinition[] for FileRead, FileWrite, etc.
+  ├── AgentToolCallToFileRead      → transmuter
+  ├── AgentToolCallToFileWrite     → transmuter
+  ├── FileContentToAgentToolResult → transmuter
+  └── FileFailureToAgentToolFailure → transmuter
+```
+
+Each transmuter returns null when the tool name doesn't match, so multiple routes from `AgentToolCall` coexist cleanly.
+
+---
+
+## Covenant Routing
+
+Users wire routes at design time. Companion libraries provide the transmuters:
+
+```csharp
+services.BuildCoven(coven =>
 {
-    spellcasting.FileSystem.UseLocal(root: "/workspace");
-    // Compute not configured
+    var chat = coven.UseDiscordChat(discordConfig);
+    var agents = coven.UseOpenAIAgents(agentConfig);
+    var filesystem = coven.UseFileSystem(fs => fs.UsePosix(root: "/workspace"));
+
+    coven.Covenant()
+        .Connect(chat)
+        .Connect(agents)
+        .Connect(filesystem)
+        .Routes(c =>
+        {
+            // Chat ↔ Agents
+            c.Route<ChatAfferent, AgentPrompt>(/* ... */);
+            c.Route<AgentResponse, ChatEfferentDraft>(/* ... */);
+
+            // Agents ↔ FileSystem (from Coven.Agents.FileSystem companion)
+            c.Route<AgentToolCall, FileRead, AgentToolCallToFileRead>();
+            c.Route<AgentToolCall, FileWrite, AgentToolCallToFileWrite>();
+            c.Route<FileContent, AgentToolResult, FileContentToAgentToolResult>();
+            c.Route<FileFailure, AgentToolFailure, FileFailureToAgentToolFailure>();
+
+            c.Terminal<AgentThought>();
+        });
 });
 ```
-
-Spellcasting:
-1. Collects spell types from enabled substrates
-2. Generates inner covenant routes for those types
-3. Generates auto-fault routes for disabled substrate types
-4. Publishes capabilities to metagraph (see [Metagraph](metagraph.md))
 
 ---
 
@@ -190,19 +134,24 @@ Spellcasting:
 
 | Proposal | Relationship |
 |----------|--------------|
-| [FileSystem Sub-branch](filesystem-branch.md) | FileSystem substrate details |
-| [Compute Sub-branch](compute-branch.md) | Compute substrate details |
-| [Metagraph](metagraph.md) | Capability discovery mechanism |
-| [Agent-Spellcasting Integration](agent-spellcasting-integration.md) | How agents consume Spellcasting |
+| [FileSystem Branch](filesystem-branch.md) | FileSystem entry types and leaves |
+| [Compute Branch](compute-branch.md) | Compute entry types and leaves |
+| [ImageGen Branch](imagegen-substrate.md) | ImageGen entry types and leaves |
+| [Agent Tool Calls](agent-spellcasting-integration.md) | Agent entry types and tool call flow |
 
 ---
 
 ## Checklist
 
-- [ ] `SpellEntry` hierarchy with polymorphic invocation types
-- [ ] `SpellResult` and `SpellFault` boundary entries
-- [ ] `SubstrateManifest` with spell types and transforms
-- [ ] `UseSpellcasting()` returning `CompositeBranchManifest`
-- [ ] Inner covenant wiring (dispatch + gather routes)
-- [ ] Auto-fault routes for disabled substrates
-- [ ] Integration test: spell → substrate → result round-trip
+- [ ] Delete `ISpellContract`, `ISpell`, `Spellbook`, `SpellbookBuilder` (replaced by companion pattern)
+- [ ] Slim `Coven.Spellcasting` to `SpellDefinition` + `SchemaGen`
+- [ ] `Coven.Spellcasting.FileSystem` branch package with entry types
+- [ ] `Coven.Spellcasting.FileSystem.Posix` leaf with daemon, `UseFileSystem().UsePosix()`
+- [ ] `Coven.Spellcasting.Compute` branch package with entry types
+- [ ] `Coven.Spellcasting.Compute.Posix` leaf with daemon, `UseCompute().UsePosix()`
+- [ ] `Coven.Spellcasting.ImageGen` branch package with entry types
+- [ ] `Coven.Spellcasting.ImageGen.Dalle` leaf with daemon, `UseImageGen().UseDalle()`
+- [ ] `Coven.Agents.FileSystem` companion with tool definitions and transmuters
+- [ ] `Coven.Agents.Compute` companion with tool definitions and transmuters
+- [ ] `Coven.Agents.ImageGen` companion with tool definitions and transmuters
+- [ ] Integration test: agent → companion → branch → leaf → branch → companion → agent round-trip
