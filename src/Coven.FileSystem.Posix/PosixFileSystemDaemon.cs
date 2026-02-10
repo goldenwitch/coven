@@ -109,8 +109,15 @@ internal sealed partial class PosixFileSystemDaemon(
     {
         string resolved = Path.GetFullPath(Path.Combine(_config.Root, path));
 
+        // Append trailing separator so "/work" doesn't match "/workspace/..."
         string normalizedRoot = Path.GetFullPath(_config.Root);
+        if (!normalizedRoot.EndsWith(Path.DirectorySeparatorChar))
+        {
+            normalizedRoot += Path.DirectorySeparatorChar;
+        }
+
         return resolved.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(resolved, normalizedRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)
             ? resolved
             : throw new UnauthorizedAccessException(
                 $"Path '{path}' resolves outside the configured root '{normalizedRoot}'.");

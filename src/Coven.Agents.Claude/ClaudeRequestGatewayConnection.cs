@@ -49,6 +49,8 @@ internal sealed class ClaudeRequestGatewayConnection(
         ClaudeRequestOptions options = await _responseOptionsTransmuter.Transmute(_configuration, cancellationToken).ConfigureAwait(false);
 
         // Tool call loop: send, handle tool_use, wait for results, repeat
+        const int maxToolRoundTrips = 25;
+        int toolRoundTrips = 0;
         while (true)
         {
             ClaudeMessagesResponse messagesResponse = await SendRequestAsync(messages, options, cancellationToken).ConfigureAwait(false);
@@ -122,6 +124,11 @@ internal sealed class ClaudeRequestGatewayConnection(
                 messages.Add(new ClaudeMessage { Role = "user", Content = toolResultBlocks });
 
                 // Continue loop — send again with tool results
+                if (++toolRoundTrips >= maxToolRoundTrips)
+                {
+                    throw new InvalidOperationException(
+                        $"Claude tool call loop exceeded {maxToolRoundTrips} round-trips. Terminating to prevent infinite loop.");
+                }
                 continue;
             }
 
@@ -203,9 +210,12 @@ internal sealed class ClaudeRequestGatewayConnection(
         List<ClaudeToolDefinition> definitions = [];
         foreach (ToolDefinition tool in tools)
         {
-            JsonElement? inputSchema = tool.InputSchema is not null
-                ? JsonDocument.Parse(tool.InputSchema).RootElement.Clone()
-                : null;
+            JsonElement? inputSchema = null;
+            if (tool.InputSchema is not null)
+            {
+                using JsonDocument doc = JsonDocument.Parse(tool.InputSchema);
+                inputSchema = doc.RootElement.Clone();
+            }
             definitions.Add(new ClaudeToolDefinition
             {
                 Name = tool.Name,
