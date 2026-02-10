@@ -33,6 +33,8 @@
     <ProjectReference Include="..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\Coven.Scriveners.FileScrivener\Coven.Scriveners.FileScrivener.csproj" />
+    <ProjectReference Include="..\Coven.FileSystem\Coven.FileSystem.csproj" />
+    <ProjectReference Include="..\Coven.FileSystem.Posix\Coven.FileSystem.Posix.csproj" />
   </ItemGroup>
 
 </Project>

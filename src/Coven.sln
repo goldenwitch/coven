@@ -67,6 +67,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleClaudeFileSystem", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.FileSystem.Posix", "Coven.FileSystem.Posix\Coven.FileSystem.Posix.csproj", "{1BF80B55-8268-44B8-AE5B-8FBC2573FBA1}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Coven.Toys.PosixFileReader", "toys\Coven.Toys.PosixFileReader\Coven.Toys.PosixFileReader.csproj", "{A958AA9D-8C77-408B-8EAF-0009C6591CBC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -425,6 +427,18 @@ Global
 		{1BF80B55-8268-44B8-AE5B-8FBC2573FBA1}.Release|x64.Build.0 = Release|Any CPU
 		{1BF80B55-8268-44B8-AE5B-8FBC2573FBA1}.Release|x86.ActiveCfg = Release|Any CPU
 		{1BF80B55-8268-44B8-AE5B-8FBC2573FBA1}.Release|x86.Build.0 = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|x64.Build.0 = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Debug|x86.Build.0 = Debug|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|x64.ActiveCfg = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|x64.Build.0 = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|x86.ActiveCfg = Release|Any CPU
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -441,5 +455,6 @@ Global
 		{B5FB3861-8C03-4B18-A326-8DAA91D9E06F} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 		{E269FDAC-D11C-B006-7B48-966B8EA58866} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 		{6B450756-0DD9-46EB-B26E-660B90295880} = {E269FDAC-D11C-B006-7B48-966B8EA58866}
+		{A958AA9D-8C77-408B-8EAF-0009C6591CBC} = {28A4673F-9138-6225-6D15-8B1CCBEDA19D}
 	EndGlobalSection
 EndGlobal
