@@ -101,7 +101,7 @@ internal sealed class ClaudeRequestGatewayConnection(
                 // Append assistant message with tool_use content to conversation
                 List<ClaudeContentBlock> assistantContent = [.. messagesResponse.Content!
                     .Where(b => !string.Equals(b.Type, "thinking", StringComparison.OrdinalIgnoreCase))];
-                messages.Add(new ClaudeMessage { Role = "assistant", Content = assistantContent });
+                messages.Add(new ClaudeMessage { Role = "assistant", Content = ClaudeMessageContent.FromBlocks(assistantContent) });
 
                 // Wait for all tool results (routed back via covenant → session pump)
                 List<ClaudeContentBlock> toolResultBlocks = [];
@@ -121,7 +121,7 @@ internal sealed class ClaudeRequestGatewayConnection(
                 }
 
                 // Append tool results as user message
-                messages.Add(new ClaudeMessage { Role = "user", Content = toolResultBlocks });
+                messages.Add(new ClaudeMessage { Role = "user", Content = ClaudeMessageContent.FromBlocks(toolResultBlocks) });
 
                 // Continue loop — send again with tool results
                 if (++toolRoundTrips >= maxToolRoundTrips)

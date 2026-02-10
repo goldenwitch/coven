@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Coven.Agents.Claude;
 
@@ -38,8 +39,61 @@ public sealed class ClaudeMessage
 {
     /// <summary>Gets or sets the role (user or assistant).</summary>
     public required string Role { get; set; }
-    /// <summary>Gets or sets the message content (string or List&lt;ClaudeContentBlock&gt;).</summary>
-    public required object Content { get; set; }
+    /// <summary>Gets or sets the message content (text or content blocks).</summary>
+    public required ClaudeMessageContent Content { get; set; }
+}
+
+/// <summary>
+/// Message content: either a text string or a list of content blocks.
+/// Serializes to bare string or bare array to match Claude's API contract.
+/// </summary>
+[JsonConverter(typeof(ClaudeMessageContentConverter))]
+public abstract record ClaudeMessageContent
+{
+    /// <summary>Plain text content.</summary>
+    public sealed record Text(string Value) : ClaudeMessageContent;
+
+    /// <summary>Structured content blocks (tool use, tool result, etc.).</summary>
+    public sealed record Blocks(List<ClaudeContentBlock> Items) : ClaudeMessageContent;
+
+    /// <summary>Creates text content.</summary>
+    public static ClaudeMessageContent FromText(string text) => new Text(text);
+
+    /// <summary>Creates block content.</summary>
+    public static ClaudeMessageContent FromBlocks(List<ClaudeContentBlock> blocks) => new Blocks(blocks);
+}
+
+/// <summary>
+/// Serializes <see cref="ClaudeMessageContent"/> as a bare JSON string or array
+/// to match Claude's Messages API contract.
+/// </summary>
+internal sealed class ClaudeMessageContentConverter : JsonConverter<ClaudeMessageContent>
+{
+    public override ClaudeMessageContent Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+    {
+        return reader.TokenType switch
+        {
+            JsonTokenType.String => new ClaudeMessageContent.Text(reader.GetString()!),
+            JsonTokenType.StartArray => new ClaudeMessageContent.Blocks(
+                JsonSerializer.Deserialize<List<ClaudeContentBlock>>(ref reader, options)!),
+            _ => throw new JsonException($"Expected string or array for ClaudeMessageContent, got {reader.TokenType}")
+        };
+    }
+
+    public override void Write(Utf8JsonWriter writer, ClaudeMessageContent value, JsonSerializerOptions options)
+    {
+        switch (value)
+        {
+            case ClaudeMessageContent.Text text:
+                writer.WriteStringValue(text.Value);
+                break;
+            case ClaudeMessageContent.Blocks blocks:
+                JsonSerializer.Serialize(writer, blocks.Items, options);
+                break;
+            default:
+                throw new JsonException($"Unknown ClaudeMessageContent type: {value.GetType().Name}");
+        }
+    }
 }
 
 /// <summary>

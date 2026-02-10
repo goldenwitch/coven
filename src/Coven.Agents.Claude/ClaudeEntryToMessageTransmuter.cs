@@ -18,12 +18,12 @@ internal sealed class ClaudeEntryToMessageTransmuter : ITransmuter<ClaudeEntry, 
             ClaudeEfferent efferent => Task.FromResult(new ClaudeMessage
             {
                 Role = "user",
-                Content = efferent.Text
+                Content = ClaudeMessageContent.FromText(efferent.Text)
             }),
             ClaudeAfferent afferent => Task.FromResult(new ClaudeMessage
             {
                 Role = "assistant",
-                Content = afferent.Text
+                Content = ClaudeMessageContent.FromText(afferent.Text)
             }),
             _ => throw new ArgumentOutOfRangeException(nameof(Input), $"Cannot convert {Input.GetType().Name} to ClaudeMessage")
         };
