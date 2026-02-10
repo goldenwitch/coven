@@ -2,22 +2,20 @@
 
 using Coven.Core;
 using Coven.Core.Daemonology;
-using Microsoft.Extensions.Logging;
 
 namespace Coven.FileSystem.Posix;
 
 /// <summary>
-/// POSIX leaf daemon that tails the FileSystem journal and processes efferent entries via System.IO.
+/// Leaf daemon that tails the FileSystem journal and delegates file operations to <see cref="PosixFileOperations"/>.
+/// Owns only lifecycle and journal routing — no I/O logic.
 /// </summary>
-internal sealed partial class PosixFileSystemDaemon(
+internal sealed class PosixFileSystemDaemon(
     IScrivener<DaemonEvent> scrivener,
     IScrivener<FileSystemEntry> journal,
-    PosixFileSystemConfig config,
-    ILogger<PosixFileSystemDaemon> logger) : ContractDaemon(scrivener), IAsyncDisposable
+    PosixFileOperations fileOps) : ContractDaemon(scrivener), IAsyncDisposable
 {
     private readonly IScrivener<FileSystemEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
-    private readonly PosixFileSystemConfig _config = config ?? throw new ArgumentNullException(nameof(config));
-    private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly PosixFileOperations _fileOps = fileOps ?? throw new ArgumentNullException(nameof(fileOps));
     private CancellationTokenSource? _cts;
     private Task? _processTask;
 
@@ -80,52 +78,16 @@ internal sealed partial class PosixFileSystemDaemon(
 
     private async Task HandleFileRead(FileRead read, CancellationToken ct)
     {
-        try
-        {
-            string fullPath = ResolvePath(read.Path);
-            LogReadingFile(_logger, fullPath);
+        FileOperationResult result = await _fileOps.ReadFileAsync(read.Path, ct).ConfigureAwait(false);
 
-            if (!File.Exists(fullPath))
-            {
-                await _journal.WriteAsync(
-                    new FileFailure(read.CorrelationId, "NotFound", $"File not found: {read.Path}"), ct).ConfigureAwait(false);
-                return;
-            }
-
-            string content = await File.ReadAllTextAsync(fullPath, ct).ConfigureAwait(false);
-            await _journal.WriteAsync(
-                new FileContent(read.CorrelationId, content), ct).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) { throw; }
-        catch (Exception ex)
+        FileSystemEntry response = result switch
         {
-            LogReadFailed(_logger, ex, read.Path);
-            await _journal.WriteAsync(
-                new FileFailure(read.CorrelationId, "ReadFailed", ex.Message), ct).ConfigureAwait(false);
-        }
+            FileOperationResult.Success ok => new FileContent(read.CorrelationId, ok.Content),
+            FileOperationResult.NotFound nf => new FileFailure(read.CorrelationId, "NotFound", $"File not found: {nf.Path}"),
+            FileOperationResult.ReadFailed rf => new FileFailure(read.CorrelationId, "ReadFailed", rf.Message),
+            _ => throw new InvalidOperationException($"Unexpected result type: {result.GetType().Name}")
+        };
+
+        await _journal.WriteAsync(response, ct).ConfigureAwait(false);
     }
-
-    private string ResolvePath(string path)
-    {
-        string resolved = Path.GetFullPath(Path.Combine(_config.Root, path));
-
-        // Append trailing separator so "/work" doesn't match "/workspace/..."
-        string normalizedRoot = Path.GetFullPath(_config.Root);
-        if (!normalizedRoot.EndsWith(Path.DirectorySeparatorChar))
-        {
-            normalizedRoot += Path.DirectorySeparatorChar;
-        }
-
-        return resolved.StartsWith(normalizedRoot, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(resolved, normalizedRoot.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase)
-            ? resolved
-            : throw new UnauthorizedAccessException(
-                $"Path '{path}' resolves outside the configured root '{normalizedRoot}'.");
-    }
-
-    [LoggerMessage(Level = LogLevel.Debug, Message = "PosixFS reading: {Path}")]
-    private static partial void LogReadingFile(ILogger logger, string path);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "PosixFS read failed for {Path}")]
-    private static partial void LogReadFailed(ILogger logger, Exception exception, string path);
 }
