@@ -5,7 +5,7 @@ namespace Coven.Agents.Claude;
 /// <summary>
 /// Builds the conversation transcript for Claude API requests.
 /// </summary>
-public interface IClaudeTranscriptBuilder
+internal interface IClaudeTranscriptBuilder
 {
     /// <summary>
     /// Builds a list of Claude messages from the journal for the given outgoing request.

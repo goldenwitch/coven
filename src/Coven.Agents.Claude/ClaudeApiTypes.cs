@@ -35,7 +35,7 @@ internal sealed class ClaudeThinkingConfig
 /// <summary>
 /// A message in the Claude conversation.
 /// </summary>
-public sealed class ClaudeMessage
+internal sealed class ClaudeMessage
 {
     /// <summary>Gets or sets the role (user or assistant).</summary>
     public required string Role { get; set; }
@@ -48,7 +48,7 @@ public sealed class ClaudeMessage
 /// Serializes to bare string or bare array to match Claude's API contract.
 /// </summary>
 [JsonConverter(typeof(ClaudeMessageContentConverter))]
-public abstract record ClaudeMessageContent
+internal abstract record ClaudeMessageContent
 {
     /// <summary>Plain text content.</summary>
     public sealed record Text(string Value) : ClaudeMessageContent;
@@ -71,13 +71,12 @@ internal sealed class ClaudeMessageContentConverter : JsonConverter<ClaudeMessag
 {
     public override ClaudeMessageContent Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {
-        return reader.TokenType switch
-        {
-            JsonTokenType.String => new ClaudeMessageContent.Text(reader.GetString()!),
-            JsonTokenType.StartArray => new ClaudeMessageContent.Blocks(
-                JsonSerializer.Deserialize<List<ClaudeContentBlock>>(ref reader, options)!),
-            _ => throw new JsonException($"Expected string or array for ClaudeMessageContent, got {reader.TokenType}")
-        };
+        return reader.TokenType is JsonTokenType.String
+            ? new ClaudeMessageContent.Text(reader.GetString()!)
+            : reader.TokenType is JsonTokenType.StartArray
+                ? new ClaudeMessageContent.Blocks(
+                    JsonSerializer.Deserialize<List<ClaudeContentBlock>>(ref reader, options)!)
+                : throw new JsonException($"Expected string or array for ClaudeMessageContent, got {reader.TokenType}");
     }
 
     public override void Write(Utf8JsonWriter writer, ClaudeMessageContent value, JsonSerializerOptions options)

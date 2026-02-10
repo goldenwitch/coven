@@ -50,7 +50,7 @@ internal sealed class CovenantAdherentDaemon(
 
     private async Task RunPumpsAsync(CancellationToken ct)
     {
-        Task[] tasks = _covenant.Pumps.Select(pump => pump.CreatePump(_services, ct)).ToArray();
+        Task[] tasks = [.. _covenant.Pumps.Select(pump => pump.CreatePump(_services, ct))];
 
         try
         {
