@@ -11,5 +11,6 @@ internal abstract record FileOperationResult
 
     internal sealed record Success(string Content) : FileOperationResult;
     internal sealed record NotFound(string Path) : FileOperationResult;
+    internal sealed record AccessDenied(string Path, string Message) : FileOperationResult;
     internal sealed record ReadFailed(string Message) : FileOperationResult;
 }

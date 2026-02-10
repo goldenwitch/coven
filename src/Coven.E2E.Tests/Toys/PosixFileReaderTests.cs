@@ -154,6 +154,23 @@ public sealed class PosixFileReaderTests : IDisposable
         Assert.Contains("[NotFound]", output);
     }
 
+    /// <summary>
+    /// Attempting to read a path that escapes the sandbox returns an AccessDenied failure.
+    /// </summary>
+    [Fact]
+    public async Task ReadPathTraversalReturnsAccessDenied()
+    {
+        await using E2ETestHost host = BuildHost();
+        await host.StartAsync();
+
+        await host.Console.SendInputAsync("../../../etc/passwd");
+
+        string output = await host.Console.WaitForOutputContainingAsync(
+            "[AccessDenied]", TimeSpan.FromSeconds(5));
+
+        Assert.Contains("[AccessDenied]", output);
+    }
+
     // ── Journal tests ────────────────────────────────────────────────────
 
     /// <summary>

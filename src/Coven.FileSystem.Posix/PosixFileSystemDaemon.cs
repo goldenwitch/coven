@@ -84,6 +84,7 @@ internal sealed class PosixFileSystemDaemon(
         {
             FileOperationResult.Success ok => new FileContent(read.CorrelationId, ok.Content),
             FileOperationResult.NotFound nf => new FileFailure(read.CorrelationId, "NotFound", $"File not found: {nf.Path}"),
+            FileOperationResult.AccessDenied ad => new FileFailure(read.CorrelationId, "AccessDenied", ad.Message),
             FileOperationResult.ReadFailed rf => new FileFailure(read.CorrelationId, "ReadFailed", rf.Message),
             _ => throw new InvalidOperationException($"Unexpected result type: {result.GetType().Name}")
         };

@@ -30,9 +30,12 @@ ConsoleClientConfig consoleConfig = new()
     OutputSender = "BOT"
 };
 
+string apiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY")
+    ?? throw new InvalidOperationException("ANTHROPIC_API_KEY environment variable is required.");
+
 ClaudeClientConfig claudeConfig = new()
 {
-    ApiKey = Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY") ?? "",
+    ApiKey = apiKey,
     Model = Environment.GetEnvironmentVariable("CLAUDE_MODEL") ?? "claude-sonnet-4-20250514",
     SystemPrompt = "You are a helpful assistant with access to the file system. You can read files when asked. Use the read_file tool to read file contents."
 };

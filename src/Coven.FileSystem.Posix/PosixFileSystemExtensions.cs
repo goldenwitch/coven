@@ -40,7 +40,7 @@ public static class PosixFileSystemExtensions
         PosixFileSystemConfig config = new() { Root = root };
         coven.Services.AddScoped(_ => config);
         coven.Services.AddScoped<PosixFileOperations>();
-        coven.Services.AddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
+        coven.Services.TryAddScoped<IScrivener<DaemonEvent>, InMemoryScrivener<DaemonEvent>>();
         coven.Services.AddScoped<ContractDaemon, PosixFileSystemDaemon>();
 
         return new BranchManifest(

@@ -77,7 +77,7 @@ internal sealed class ClaudeRequestGatewayConnection(
             if (toolUseBlocks.Count > 0)
             {
                 // Write tool use entries to journal (session pump will route via covenant)
-                long firstToolUsePos = 0;
+                long? firstToolUsePos = null;
                 List<string> pendingToolUseIds = [];
                 foreach (ClaudeContentBlock block in toolUseBlocks)
                 {
@@ -94,7 +94,7 @@ internal sealed class ClaudeRequestGatewayConnection(
                         Timestamp: timestamp,
                         Model: model);
                     long pos = await _journal.WriteAsync(toolUseEntry, cancellationToken).ConfigureAwait(false);
-                    firstToolUsePos = firstToolUsePos == 0 ? pos : firstToolUsePos;
+                    firstToolUsePos ??= pos;
                     pendingToolUseIds.Add(toolUseId);
                 }
 
@@ -108,7 +108,7 @@ internal sealed class ClaudeRequestGatewayConnection(
                 foreach (string toolUseId in pendingToolUseIds)
                 {
                     (_, ClaudeToolResult result) = await _journal.WaitForAsync<ClaudeToolResult>(
-                        firstToolUsePos - 1,
+                        firstToolUsePos!.Value - 1,
                         r => r.ToolUseId == toolUseId,
                         cancellationToken).ConfigureAwait(false);
                     toolResultBlocks.Add(new ClaudeContentBlock
