@@ -1,4 +1,4 @@
-# Local OpenAI Leaf
+# OpenAI Local Leaf
 
 > **Status**: Draft  
 > **Created**: 2026-02-14  
@@ -44,11 +44,11 @@ The leaf defines entries parallel to the cloud OpenAI leaf:
 
 | Entry | Direction | Purpose |
 |-------|-----------|---------|
-| `LocalOpenAIEfferent` | Outbound | Request payload to local server |
-| `LocalOpenAIAfferent` | Inbound | Complete response from server |
-| `LocalOpenAIAfferentChunk` | Inbound | Streaming response fragment |
-| `LocalOpenAIStreamCompleted` | Inbound | Marks end of streaming response |
-| `LocalOpenAIAck` | Internal | Position-based acknowledgement |
+| `OpenAILocalEfferent` | Outbound | Request payload to local server |
+| `OpenAILocalAfferent` | Inbound | Complete response from server |
+| `OpenAILocalAfferentChunk` | Inbound | Streaming response fragment |
+| `OpenAILocalStreamCompleted` | Inbound | Marks end of streaming response |
+| `OpenAILocalAck` | Internal | Position-based acknowledgement |
 
 All entries carry `Sender`, with response entries including `Model`, `Timestamp`, and `ResponseId`.
 
@@ -58,7 +58,7 @@ The gateway communicates with the local server via OpenAI-compatible HTTP:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│              LocalOpenAIStreamingGateway                │
+│              OpenAILocalStreamingGateway                │
 │                                                         │
 │  ┌─────────────┐    ┌──────────────────────────────┐   │
 │  │   Config    │───▶│  HTTP Client                 │   │
@@ -71,22 +71,22 @@ The gateway communicates with the local server via OpenAI-compatible HTTP:
 └─────────────────────────────────────────────────────────┘
 ```
 
-Streams Server-Sent Events, writes `LocalOpenAIAfferentChunk` per delta, then `LocalOpenAIStreamCompleted`.
+Streams Server-Sent Events, writes `OpenAILocalAfferentChunk` per delta, then `OpenAILocalStreamCompleted`.
 
 ### Session Architecture
 
 Follows the established leaf pattern with bidirectional pumps:
 
 ```
-                LocalOpenAI Leaf                           Agents Branch
+                OpenAILocal Leaf                           Agents Branch
 ┌─────────────────────────────────────────┐    ┌─────────────────────────────────┐
 │                                         │    │                                 │
-│  LocalOpenAIScrivener                   │    │  IScrivener<AgentEntry>         │
+│  OpenAILocalScrivener                   │    │  IScrivener<AgentEntry>         │
 │  ┌───────────────────────────────────┐  │    │  ┌───────────────────────────┐  │
-│  │ LocalOpenAIAfferent               │──┼────┼─▶│ AgentResponse             │  │
-│  │ LocalOpenAIAfferentChunk          │──┼────┼─▶│ AgentAfferentChunk        │  │
+│  │ OpenAILocalAfferent               │──┼────┼─▶│ AgentResponse             │  │
+│  │ OpenAILocalAfferentChunk          │──┼────┼─▶│ AgentAfferentChunk        │  │
 │  │                                   │  │    │  │                           │  │
-│  │ LocalOpenAIEfferent               │◀─┼────┼──│ AgentPrompt               │  │
+│  │ OpenAILocalEfferent               │◀─┼────┼──│ AgentPrompt               │  │
 │  └───────────────────────────────────┘  │    │  └───────────────────────────┘  │
 │           │                             │    │                                 │
 │           ▼                             │    │                                 │
@@ -97,7 +97,7 @@ Follows the established leaf pattern with bidirectional pumps:
 └─────────────────────────────────────────┘    └─────────────────────────────────┘
 ```
 
-The `LocalOpenAIScrivener` intercepts `LocalOpenAIEfferent` writes and dispatches to the gateway, which streams response entries back.
+The `OpenAILocalScrivener` intercepts `OpenAILocalEfferent` writes and dispatches to the gateway, which streams response entries back.
 
 ### Transmuter
 
@@ -105,11 +105,11 @@ Bidirectional `IImbuingTransmuter` mapping:
 
 | Source | Target | Notes |
 |--------|--------|-------|
-| `LocalOpenAIAfferent` | `AgentResponse` | Complete response |
-| `LocalOpenAIAfferentChunk` | `AgentAfferentChunk` | Streaming fragment |
-| `LocalOpenAIStreamCompleted` | `AgentStreamCompleted` | Stream termination |
-| `AgentPrompt` | `LocalOpenAIEfferent` | Outbound request |
-| Other agent entries | `LocalOpenAIAck` | Loop prevention |
+| `OpenAILocalAfferent` | `AgentResponse` | Complete response |
+| `OpenAILocalAfferentChunk` | `AgentAfferentChunk` | Streaming fragment |
+| `OpenAILocalStreamCompleted` | `AgentStreamCompleted` | Stream termination |
+| `AgentPrompt` | `OpenAILocalEfferent` | Outbound request |
+| Other agent entries | `OpenAILocalAck` | Loop prevention |
 
 Source journal position carried as reagent for ACK generation.
 
@@ -117,7 +117,7 @@ Source journal position carried as reagent for ACK generation.
 
 Builds conversation history from journal entries for context window:
 
-- Filters to relevant entries (`LocalOpenAIEfferent`, `LocalOpenAIAfferent`)
+- Filters to relevant entries (`OpenAILocalEfferent`, `OpenAILocalAfferent`)
 - Respects `HistoryClip` configuration to limit context size
 - Outputs OpenAI-format message array for API request
 
@@ -138,11 +138,11 @@ Builds conversation history from journal entries for context window:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                   LocalOpenAIAgentDaemon                    │
+│                   OpenAILocalAgentDaemon                    │
 │                                                             │
 │  Start()                                                    │
 │    ├── Create linked CancellationTokenSource                │
-│    ├── Create LocalOpenAIAgentSession                       │
+│    ├── Create OpenAILocalAgentSession                       │
 │    ├── session.StartAsync()                                 │
 │    │     ├── gateway.ConnectAsync() (verify endpoint)       │
 │    │     ├── Start leaf→branch pump                         │
@@ -163,16 +163,16 @@ Default policies when streaming:
 
 | Policy | Target | Behavior |
 |--------|--------|----------|
-| `LocalOpenAIParagraphWindowPolicy` | Response chunks | Emit on paragraph boundary |
-| `LocalOpenAIMaxLengthWindowPolicy` | Response chunks | Emit when buffer exceeds threshold |
+| `OpenAILocalParagraphWindowPolicy` | Response chunks | Emit on paragraph boundary |
+| `OpenAILocalMaxLengthWindowPolicy` | Response chunks | Emit when buffer exceeds threshold |
 
 Composite policy applies OR logic: emit when any condition is satisfied.
 
 ### DI Registration
 
 ```
-AddLocalOpenAIAgents(config)
-  ├── Register LocalOpenAIClientConfig
+AddOpenAILocalAgents(config)
+  ├── Register OpenAILocalClientConfig
   ├── Register streaming gateway
   ├── Register session factory
   ├── Register journals (keyed inner + tapped scrivener)
@@ -182,8 +182,8 @@ AddLocalOpenAIAgents(config)
   ├── Register windowing policies
   └── Register windowing daemons
 
-UseLocalOpenAIAgents(config)
-  ├── Call AddLocalOpenAIAgents
+UseOpenAILocalAgents(config)
+  ├── Call AddOpenAILocalAgents
   └── Return BranchManifest for covenant wiring
 ```
 
