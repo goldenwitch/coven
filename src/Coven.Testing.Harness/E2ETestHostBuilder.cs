@@ -2,6 +2,7 @@
 
 using Coven.Agents.Claude;
 using Coven.Agents.Gemini;
+using Coven.Agents.LLamaSharp;
 using Coven.Agents.OpenAI;
 using Coven.Chat.Console;
 using Coven.Chat.Discord;
@@ -25,6 +26,7 @@ public sealed class E2ETestHostBuilder
     private bool _useVirtualGemini;
     private bool _useVirtualClaude;
     private bool _useVirtualDiscord;
+    private bool _useVirtualLLamaSharp;
     private TimeSpan _startupTimeout = TimeSpan.FromSeconds(30);
     private TimeSpan _shutdownTimeout = TimeSpan.FromSeconds(10);
     private Action<CovenServiceBuilder>? _covenConfiguration;
@@ -85,6 +87,16 @@ public sealed class E2ETestHostBuilder
     public E2ETestHostBuilder UseVirtualClaude()
     {
         _useVirtualClaude = true;
+        return this;
+    }
+
+    /// <summary>
+    /// Configures the test host to use a virtual LLamaSharp gateway with scripted responses.
+    /// </summary>
+    /// <returns>This builder for chaining.</returns>
+    public E2ETestHostBuilder UseVirtualLLamaSharp()
+    {
+        _useVirtualLLamaSharp = true;
         return this;
     }
 
@@ -166,6 +178,7 @@ public sealed class E2ETestHostBuilder
         VirtualGeminiGateway? virtualGemini = null;
         VirtualClaudeGateway? virtualClaude = null;
         VirtualDiscordGateway? virtualDiscord = null;
+        VirtualLLamaSharpGateway? virtualLLamaSharp = null;
 
         // Pre-create virtual gateways that need singleton semantics
         if (_useVirtualConsole)
@@ -231,6 +244,14 @@ public sealed class E2ETestHostBuilder
             _builder.Services.AddSingleton<IClaudeGatewayConnection>(virtualClaude);
         }
 
+        if (_useVirtualLLamaSharp)
+        {
+            virtualLLamaSharp = new VirtualLLamaSharpGateway();
+
+            _builder.Services.RemoveAll<ILLamaSharpGatewayConnection>();
+            _builder.Services.AddSingleton<ILLamaSharpGatewayConnection>(virtualLLamaSharp);
+        }
+
         // Replace file scriveners with in-memory equivalents
         foreach (Type entryType in _inMemoryScrivenerTypes)
         {
@@ -251,6 +272,7 @@ public sealed class E2ETestHostBuilder
             virtualGemini,
             virtualClaude,
             virtualDiscord,
+            virtualLLamaSharp,
             _startupTimeout,
             _shutdownTimeout);
     }

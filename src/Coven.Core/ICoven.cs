@@ -35,4 +35,12 @@ public interface ICoven
     /// <typeparam name="TOutput">Output type.</typeparam>
     /// <returns>The ritual output.</returns>
     Task<TOutput> Ritual<TOutput>(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Starts all daemons and keeps them running until <paramref name="cancellationToken"/> fires.
+    /// Use for long-running, daemon-only scenarios (e.g., interactive console apps)
+    /// where there is no pipeline work to run through the board.
+    /// </summary>
+    /// <param name="cancellationToken">Token that signals the daemons should shut down.</param>
+    Task Inhabit(CancellationToken cancellationToken = default);
 }
