@@ -24,7 +24,8 @@ ConsoleClientConfig consoleConfig = new()
 
 LLamaSharpClientConfig llamaConfig = new()
 {
-    ModelPath = @"D:\GPT-oss\gpt-oss-20b-UD-Q8_K_XL.gguf",
+    ModelPath = Environment.GetEnvironmentVariable("LLAMASHARP_MODEL_PATH")
+        ?? throw new InvalidOperationException("Set the LLAMASHARP_MODEL_PATH environment variable to a GGUF model file."),
     GpuLayerCount = int.TryParse(Environment.GetEnvironmentVariable("LLAMASHARP_GPU_LAYERS"), out int layers) ? layers : 20,
     ContextSize = uint.TryParse(Environment.GetEnvironmentVariable("LLAMASHARP_CONTEXT_SIZE"), out uint ctx) ? ctx : 2048,
     SystemPrompt = "You are a helpful assistant."
@@ -62,7 +63,7 @@ builder.Services.BuildCoven(coven =>
         });
 });
 
-IHost host = builder.Build();
+using IHost host = builder.Build();
 
 // Inhabit — start daemons and keep them alive until Ctrl+C
 using CancellationTokenSource cts = new();

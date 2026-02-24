@@ -30,20 +30,21 @@ internal sealed class LLamaSharpRequestGatewayConnection(
     private StatelessExecutor? _executor;
     private ModelParams? _modelParams;
 
-    public Task ConnectAsync()
+    public async Task ConnectAsync()
     {
         LLamaSharpLog.ModelLoading(_logger, _configuration.ModelPath);
         Stopwatch sw = Stopwatch.StartNew();
 
-        _modelParams = BuildModelParams();
-        _weights = LLamaWeights.LoadFromFile(_modelParams);
-        _executor = new StatelessExecutor(_weights, _modelParams);
+        await Task.Run(() =>
+        {
+            _modelParams = BuildModelParams();
+            _weights = LLamaWeights.LoadFromFile(_modelParams);
+            _executor = new StatelessExecutor(_weights, _modelParams);
+        }).ConfigureAwait(false);
 
         sw.Stop();
         LLamaSharpLog.ModelLoaded(_logger, sw.ElapsedMilliseconds);
         LLamaSharpLog.Connected(_logger);
-
-        return Task.CompletedTask;
     }
 
     public async Task SendAsync(LLamaSharpEfferent outgoing, CancellationToken cancellationToken)

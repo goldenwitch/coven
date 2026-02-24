@@ -29,13 +29,16 @@ internal sealed class LLamaSharpScrivener : TappedScrivener<LLamaSharpEntry>
 
     public override async Task<long> WriteAsync(LLamaSharpEntry entry, CancellationToken cancellationToken = default)
     {
+        // Write to the inner journal FIRST so that the efferent appears
+        // before any afferent the gateway writes during SendAsync.
+        long pos = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);
+        LLamaSharpLog.LLamaSharpScrivenerAppended(_logger, entry.GetType().Name, pos);
+
         if (entry is LLamaSharpEfferent outgoing)
         {
             await _gateway.SendAsync(outgoing, cancellationToken).ConfigureAwait(false);
         }
 
-        long pos = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);
-        LLamaSharpLog.LLamaSharpScrivenerAppended(_logger, entry.GetType().Name, pos);
         return pos;
     }
 }
