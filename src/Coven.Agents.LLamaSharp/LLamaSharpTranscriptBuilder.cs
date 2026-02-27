@@ -2,13 +2,15 @@
 
 using System.Text;
 using Coven.Core;
+using LLama;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Agents.LLamaSharp;
 
 /// <summary>
 /// Default transcript builder that converts journal entries to a formatted prompt string.
-/// Reads the journal backward, collects user/assistant turns, and formats them for local model inference.
+/// Uses the model's embedded GGUF chat template (<see cref="LLamaTemplate"/>) to produce
+/// correctly formatted prompts for any supported model architecture.
 /// </summary>
 internal sealed class LLamaSharpTranscriptBuilder(
     [FromKeyedServices("Coven.InternalLLamaSharpScrivener")] IScrivener<LLamaSharpEntry> journal,
@@ -17,10 +19,10 @@ internal sealed class LLamaSharpTranscriptBuilder(
     private readonly IScrivener<LLamaSharpEntry> _journal = journal ?? throw new ArgumentNullException(nameof(journal));
     private readonly LLamaSharpClientConfig _config = config ?? throw new ArgumentNullException(nameof(config));
 
-    public async Task<string> BuildAsync(LLamaSharpEfferent outgoing, int? historyClip, CancellationToken cancellationToken)
+    public async Task<string> BuildAsync(LLamaWeights weights, LLamaSharpEfferent outgoing, int? historyClip, CancellationToken cancellationToken)
     {
         List<(string Role, string Text)> messages = [];
-        int maxMessages = historyClip ?? 100;
+        int maxMessages = historyClip ?? int.MaxValue;
 
         // Read entries backwards from the journal (most recent first)
         await foreach ((long _, LLamaSharpEntry entry) in _journal.ReadBackwardAsync(long.MaxValue, cancellationToken).ConfigureAwait(false))
@@ -28,11 +30,11 @@ internal sealed class LLamaSharpTranscriptBuilder(
             // Only include efferent (user) and afferent (assistant) messages, skip acks/chunks/drafts
             if (entry is LLamaSharpEfferent { Text.Length: > 0 } efferent)
             {
-                messages.Add(("User", efferent.Text));
+                messages.Add(("user", efferent.Text));
             }
             else if (entry is LLamaSharpAfferent { Text.Length: > 0 } afferent)
             {
-                messages.Add(("Assistant", afferent.Text));
+                messages.Add(("assistant", afferent.Text));
             }
 
             if (messages.Count >= maxMessages)
@@ -44,24 +46,25 @@ internal sealed class LLamaSharpTranscriptBuilder(
         // Reverse to get chronological order (oldest first)
         messages.Reverse();
 
-        // Build the prompt string
-        StringBuilder sb = new();
+        // Build prompt using the model's native chat template
+        LLamaTemplate template = new(weights, strict: false)
+        {
+            AddAssistant = true
+        };
 
         if (!string.IsNullOrWhiteSpace(_config.SystemPrompt))
         {
-            sb.Append("System: ").AppendLine(_config.SystemPrompt);
-            sb.AppendLine();
+            template.Add("system", _config.SystemPrompt);
         }
 
         foreach ((string role, string text) in messages)
         {
-            sb.Append(role).Append(": ").AppendLine(text);
+            template.Add(role, text);
         }
 
         // Add the current outgoing message
-        sb.Append("User: ").AppendLine(outgoing.Text);
-        sb.Append("Assistant:");
+        template.Add("user", outgoing.Text);
 
-        return sb.ToString();
+        return Encoding.UTF8.GetString(template.Apply());
     }
 }

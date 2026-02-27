@@ -118,6 +118,7 @@ internal sealed class LLamaSharpAgentSession(
         {
             _llamaSharpToAgentsPump = null;
             _agentsToLLamaSharpPump = null;
+            await _gateway.DisposeAsync().ConfigureAwait(false);
             GC.SuppressFinalize(this);
         }
     }

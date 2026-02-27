@@ -37,6 +37,14 @@ public sealed class LLamaSharpClientConfig
     /// <summary>Gets or sets the number of CPU threads for inference. Null = auto.</summary>
     public int? Threads { get; set; }
 
+    /// <summary>
+    /// Gets or sets a marker string that separates thinking/analysis output from the actual response.
+    /// When set, only the text after the last occurrence of this marker is returned.
+    /// Useful for thinking/reasoning models (e.g., gpt-oss) that output an analysis channel
+    /// before the final response.
+    /// </summary>
+    public string? ResponseStartMarker { get; set; }
+
     /// <summary>Gets the resolved model display name, falling back to the filename from <see cref="ModelPath"/>.</summary>
     internal string ResolvedModelName => ModelName ?? Path.GetFileNameWithoutExtension(ModelPath);
 }

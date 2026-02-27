@@ -81,29 +81,4 @@ internal class Coven : ICoven
         }
     }
 
-    public async Task Inhabit(CancellationToken cancellationToken = default)
-    {
-        DaemonScope? scope = _rootProvider is not null
-            ? await CovenExecutionScope.BeginScopeAsync(_rootProvider, cancellationToken)
-            : null;
-
-        CovenExecutionScope.SetCurrentScope(scope);
-        try
-        {
-            // Block until cancellation — daemons stay alive
-            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
-        }
-        catch (OperationCanceledException)
-        {
-            // Expected — shutdown requested
-        }
-        finally
-        {
-            CovenExecutionScope.SetCurrentScope(null);
-            if (scope is not null)
-            {
-                await CovenExecutionScope.EndScopeAsync(scope, CancellationToken.None);
-            }
-        }
-    }
 }

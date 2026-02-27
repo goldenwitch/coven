@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using System.Diagnostics;
+using System.Text;
 using Coven.Core;
 using LLama;
 using LLama.Common;
@@ -57,29 +58,64 @@ internal sealed class LLamaSharpStreamingGatewayConnection(
 
         LLamaSharpLog.OutboundSendStart(_logger);
 
-        string prompt = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
+        string prompt = await _transcriptBuilder.BuildAsync(_weights!, outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         InferenceParams inferParams = BuildInferenceParams();
 
         DateTimeOffset timestamp = DateTimeOffset.UtcNow;
         string model = _configuration.ResolvedModelName;
         bool firstToken = true;
+        string? responseStartMarker = _configuration.ResponseStartMarker;
+        bool markerFound = responseStartMarker is null;
+        StringBuilder? buffer = markerFound ? null : new StringBuilder();
 
         await foreach (string token in _executor.InferAsync(prompt, inferParams, cancellationToken).ConfigureAwait(false))
         {
-            // Skip leading whitespace on the first token
-            string text = firstToken ? token.TrimStart() : token;
+            if (!markerFound)
+            {
+                buffer!.Append(token);
+                string accumulated = buffer!.ToString();
+                int markerIndex = accumulated.IndexOf(responseStartMarker!, StringComparison.Ordinal);
+                if (markerIndex < 0)
+                {
+                    continue;
+                }
+
+                // Marker found — emit any text after it as the first token
+                markerFound = true;
+                string remaining = accumulated[(markerIndex + responseStartMarker!.Length)..];
+                buffer = null;
+
+                string text = remaining.TrimStart();
+                if (text.Length == 0)
+                {
+                    continue;
+                }
+
+                firstToken = false;
+                LLamaSharpLog.StreamToken(_logger, text);
+                LLamaSharpAfferentChunk firstChunk = new(
+                    Sender: "llamasharp",
+                    Text: text,
+                    Timestamp: timestamp,
+                    Model: model);
+                await _journal.WriteAsync(firstChunk, cancellationToken).ConfigureAwait(false);
+                continue;
+            }
+
+            // Normal streaming path
+            string tokenText = firstToken ? token.TrimStart() : token;
             firstToken = false;
 
-            if (text.Length == 0)
+            if (tokenText.Length == 0)
             {
                 continue;
             }
 
-            LLamaSharpLog.StreamToken(_logger, text);
+            LLamaSharpLog.StreamToken(_logger, tokenText);
 
             LLamaSharpAfferentChunk chunk = new(
                 Sender: "llamasharp",
-                Text: text,
+                Text: tokenText,
                 Timestamp: timestamp,
                 Model: model);
             await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
@@ -124,7 +160,7 @@ internal sealed class LLamaSharpStreamingGatewayConnection(
         InferenceParams inferParams = new()
         {
             MaxTokens = _configuration.MaxTokens ?? 256,
-            AntiPrompts = ["User:", "\nUser:"]
+            AntiPrompts = []
         };
 
         if (_configuration.Temperature.HasValue || _configuration.TopP.HasValue)

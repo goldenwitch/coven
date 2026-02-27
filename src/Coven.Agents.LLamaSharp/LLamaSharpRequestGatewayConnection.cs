@@ -58,7 +58,7 @@ internal sealed class LLamaSharpRequestGatewayConnection(
 
         LLamaSharpLog.OutboundSendStart(_logger);
 
-        string prompt = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
+        string prompt = await _transcriptBuilder.BuildAsync(_weights!, outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         InferenceParams inferParams = BuildInferenceParams();
 
         StringBuilder sb = new();
@@ -67,9 +67,12 @@ internal sealed class LLamaSharpRequestGatewayConnection(
             sb.Append(token);
         }
 
+        string responseText = sb.ToString().TrimStart();
+        responseText = LLamaSharpOutputFilter.ExtractResponse(responseText, _configuration.ResponseStartMarker);
+
         LLamaSharpAfferent afferent = new(
             Sender: "llamasharp",
-            Text: sb.ToString().TrimStart(),
+            Text: responseText,
             Timestamp: DateTimeOffset.UtcNow,
             Model: _configuration.ResolvedModelName);
         await _journal.WriteAsync(afferent, cancellationToken).ConfigureAwait(false);
@@ -107,7 +110,7 @@ internal sealed class LLamaSharpRequestGatewayConnection(
         InferenceParams inferParams = new()
         {
             MaxTokens = _configuration.MaxTokens ?? 256,
-            AntiPrompts = ["User:", "\nUser:"]
+            AntiPrompts = []
         };
 
         if (_configuration.Temperature.HasValue || _configuration.TopP.HasValue)
