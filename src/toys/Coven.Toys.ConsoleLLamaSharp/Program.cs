@@ -68,9 +68,8 @@ builder.Services.BuildCoven(coven =>
         });
 });
 
-using IHost host = builder.Build();
+IHost host = builder.Build();
 
-// Inhabit — start daemons and keep them alive until Ctrl+C
-using CancellationTokenSource cts = new();
-Console.CancelKeyPress += (_, e) => { e.Cancel = true; cts.Cancel(); };
-await host.Services.Inhabit(cts.Token);
+// Execute ritual — daemons auto-start via CovenExecutionScope
+ICoven coven = host.Services.GetRequiredService<ICoven>();
+await coven.Ritual<Empty, Empty>(new Empty());
