@@ -18,17 +18,19 @@ Set environment variables:
 | `LLAMASHARP_MODEL_PATH` | Absolute path to the GGUF model file | (required) |
 | `LLAMASHARP_GPU_LAYERS` | GPU layers to offload (0 = CPU, -1 = all) | `0` |
 | `LLAMASHARP_CONTEXT_SIZE` | Context window size in tokens | `2048` |
-| `LLAMASHARP_BACKEND` | Set to `cuda` to use CUDA backend; otherwise auto-detect | (auto) |
-
+| `LLAMASHARP_BACKEND` | Set to `cuda` to use CUDA backend; otherwise auto-detect | (auto) || `LLAMASHARP_RESPONSE_MARKER` | Marker separating thinking output from the response (for reasoning models) | (none) |
 ## Running
 
 ```bash
-# Install a backend package first
-dotnet add package LLamaSharp.Backend.Cpu
-
-# Set the model path and run
+# Set the model path and run (CPU backend is included by default)
 export LLAMASHARP_MODEL_PATH="/path/to/model.gguf"
 dotnet run
+
+# For NVIDIA GPU acceleration, swap the backend package:
+# dotnet remove package LLamaSharp.Backend.Cpu
+# dotnet add package LLamaSharp.Backend.Cuda12
+# export LLAMASHARP_BACKEND=cuda
+# export LLAMASHARP_GPU_LAYERS=-1
 ```
 
 ## Features

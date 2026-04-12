@@ -121,6 +121,22 @@ internal sealed class LLamaSharpStreamingGatewayConnection(
             await _journal.WriteAsync(chunk, cancellationToken).ConfigureAwait(false);
         }
 
+        // If the marker was never found, flush the buffered content as a single chunk
+        // so the response is not silently dropped.
+        if (!markerFound && buffer is { Length: > 0 })
+        {
+            string fallbackText = buffer.ToString().TrimStart();
+            if (fallbackText.Length > 0)
+            {
+                LLamaSharpAfferentChunk fallbackChunk = new(
+                    Sender: "llamasharp",
+                    Text: fallbackText,
+                    Timestamp: timestamp,
+                    Model: model);
+                await _journal.WriteAsync(fallbackChunk, cancellationToken).ConfigureAwait(false);
+            }
+        }
+
         LLamaSharpStreamCompleted done = new(
             Sender: "llamasharp",
             Timestamp: timestamp,

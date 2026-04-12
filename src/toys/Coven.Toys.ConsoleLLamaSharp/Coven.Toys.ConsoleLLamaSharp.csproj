@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="LLamaSharp.Backend.Cuda12" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="LLamaSharp" />
   </ItemGroup>

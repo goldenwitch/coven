@@ -30,10 +30,10 @@ LLamaSharpClientConfig llamaConfig = new()
 {
     ModelPath = Environment.GetEnvironmentVariable("LLAMASHARP_MODEL_PATH")
         ?? throw new InvalidOperationException("Set the LLAMASHARP_MODEL_PATH environment variable to a GGUF model file."),
-    GpuLayerCount = int.TryParse(Environment.GetEnvironmentVariable("LLAMASHARP_GPU_LAYERS"), out int layers) ? layers : 20,
+    GpuLayerCount = int.TryParse(Environment.GetEnvironmentVariable("LLAMASHARP_GPU_LAYERS"), out int layers) ? layers : 0,
     ContextSize = uint.TryParse(Environment.GetEnvironmentVariable("LLAMASHARP_CONTEXT_SIZE"), out uint ctx) ? ctx : 2048,
     SystemPrompt = "You are a helpful assistant.",
-    ResponseStartMarker = Environment.GetEnvironmentVariable("LLAMASHARP_RESPONSE_MARKER") ?? "assistantfinal"
+    ResponseStartMarker = Environment.GetEnvironmentVariable("LLAMASHARP_RESPONSE_MARKER")
 };
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -64,7 +64,7 @@ builder.Services.BuildCoven(coven =>
             // Agents → Chat: responses become outgoing messages
             c.Route<AgentResponse, ChatEfferent>(
                 (r, ct) => Task.FromResult(
-                    new ChatEfferent("BOT", r.Text)));
+                    new ChatEfferent(consoleConfig.OutputSender, r.Text)));
         });
 });
 

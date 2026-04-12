@@ -23,6 +23,7 @@ internal sealed class LLamaSharpTranscriptBuilder(
     {
         List<(string Role, string Text)> messages = [];
         int maxMessages = historyClip ?? int.MaxValue;
+        bool skippedCurrentOutgoing = false;
 
         // Read entries backwards from the journal (most recent first)
         await foreach ((long _, LLamaSharpEntry entry) in _journal.ReadBackwardAsync(long.MaxValue, cancellationToken).ConfigureAwait(false))
@@ -30,6 +31,14 @@ internal sealed class LLamaSharpTranscriptBuilder(
             // Only include efferent (user) and afferent (assistant) messages, skip acks/chunks/drafts
             if (entry is LLamaSharpEfferent { Text.Length: > 0 } efferent)
             {
+                // The scrivener writes the current outgoing to the journal before SendAsync,
+                // so skip the most-recent efferent that matches to avoid duplicating it.
+                if (!skippedCurrentOutgoing && efferent.Text == outgoing.Text)
+                {
+                    skippedCurrentOutgoing = true;
+                    continue;
+                }
+
                 messages.Add(("user", efferent.Text));
             }
             else if (entry is LLamaSharpAfferent { Text.Length: > 0 } afferent)
