@@ -19,6 +19,7 @@ public sealed class E2ETestHost : IAsyncDisposable
     private readonly VirtualGeminiGateway? _gemini;
     private readonly VirtualClaudeGateway? _claude;
     private readonly VirtualDiscordGateway? _discord;
+    private readonly VirtualLLamaSharpGateway? _llamaSharp;
     private readonly TimeSpan _startupTimeout;
     private readonly TimeSpan _shutdownTimeout;
 
@@ -32,6 +33,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         VirtualGeminiGateway? gemini,
         VirtualClaudeGateway? claude,
         VirtualDiscordGateway? discord,
+        VirtualLLamaSharpGateway? llamaSharp,
         TimeSpan startupTimeout,
         TimeSpan shutdownTimeout)
     {
@@ -41,6 +43,7 @@ public sealed class E2ETestHost : IAsyncDisposable
         _gemini = gemini;
         _claude = claude;
         _discord = discord;
+        _llamaSharp = llamaSharp;
         _startupTimeout = startupTimeout;
         _shutdownTimeout = shutdownTimeout;
         // JournalAccessor is initialized lazily after StartAsync creates the daemon scope
@@ -123,6 +126,18 @@ public sealed class E2ETestHost : IAsyncDisposable
     public bool HasDiscord => _discord is not null;
 
     /// <summary>
+    /// Gets the virtual LLamaSharp gateway.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">LLamaSharp was not configured for this host.</exception>
+    public VirtualLLamaSharpGateway LLamaSharp => _llamaSharp ?? throw new InvalidOperationException(
+        "LLamaSharp not configured. Call UseVirtualLLamaSharp() on the builder.");
+
+    /// <summary>
+    /// Gets whether the virtual LLamaSharp gateway is configured.
+    /// </summary>
+    public bool HasLLamaSharp => _llamaSharp is not null;
+
+    /// <summary>
     /// Provides access to registered journals for test inspection.
     /// Uses the daemon scope's service provider for correct scoped service resolution.
     /// </summary>
@@ -159,6 +174,9 @@ public sealed class E2ETestHost : IAsyncDisposable
 
             // Set the scope for VirtualClaudeGateway so it can resolve scriveners
             _claude?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
+
+            // Set the scope for VirtualLLamaSharpGateway so it can resolve scriveners
+            _llamaSharp?.SetScopedProvider(_daemonScope.Scope.ServiceProvider);
 
             // 3. Wait for all daemons to reach Running status
             foreach (IDaemon daemon in _daemonScope.Daemons)
@@ -213,6 +231,7 @@ public sealed class E2ETestHost : IAsyncDisposable
             _openAI?.SetScopedProvider(null);
             _gemini?.SetScopedProvider(null);
             _claude?.SetScopedProvider(null);
+            _llamaSharp?.SetScopedProvider(null);
 
             // End the daemon scope (shuts down daemons in reverse order)
             if (_daemonScope is not null)

@@ -1,12 +1,14 @@
-# OpenAI Local Leaf
+# Local LLM Leaf (formerly OpenAI Local Leaf)
 
-> **Status**: Draft  
+> **Status**: Superseded — implemented as `Coven.Agents.LLamaSharp` (in-process via LLamaSharp)  
 > **Created**: 2026-02-14  
 > **Dependencies**: None
 
 ## Summary
 
-A leaf adapter for integrating locally-hosted OpenAI-compatible language models with the Agents branch. Targets self-hosted inference servers exposing the OpenAI API contract, starting with `gpt-oss:20b` as the reference model.
+> **Note:** This proposal originally described an HTTP-based OpenAI-compatible local leaf. During implementation the approach pivoted to **in-process inference via [LLamaSharp](https://github.com/SciSharp/LLamaSharp)** (.NET binding to llama.cpp), eliminating the need for an external server entirely. The implementation lives in `Coven.Agents.LLamaSharp`. The original proposal text is preserved below for historical context.
+
+A leaf adapter for integrating locally-hosted language models with the Agents branch. Originally targeted self-hosted inference servers exposing the OpenAI API contract; implemented as direct in-process GGUF model inference instead.
 
 ## Problem
 

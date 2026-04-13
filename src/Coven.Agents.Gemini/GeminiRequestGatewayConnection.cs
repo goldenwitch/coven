@@ -71,13 +71,13 @@ internal sealed class GeminiRequestGatewayConnection(
         await using Stream responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         GeminiGenerateContentResponse? body = await JsonSerializer.DeserializeAsync<GeminiGenerateContentResponse>(responseStream, _serializerOptions, cancellationToken).ConfigureAwait(false);
 
-        string responseId = string.IsNullOrWhiteSpace(body?.ResponseId) ? Guid.NewGuid().ToString("N") : body!.ResponseId!;
-        string model = string.IsNullOrWhiteSpace(body?.ModelVersion) ? _configuration.Model : body!.ModelVersion!;
+        string responseId = string.IsNullOrWhiteSpace(body?.ResponseId) ? Guid.NewGuid().ToString("N") : body.ResponseId;
+        string model = string.IsNullOrWhiteSpace(body?.ModelVersion) ? _configuration.Model : body.ModelVersion;
         DateTimeOffset timestamp = DateTimeOffset.UtcNow;
 
         if (body?.PromptFeedback is not null && !string.IsNullOrWhiteSpace(body.PromptFeedback.BlockReason))
         {
-            string reason = body.PromptFeedback.BlockReason!;
+            string reason = body.PromptFeedback.BlockReason;
             string? category = body.PromptFeedback.SafetyRatings?.FirstOrDefault()?.Category;
             GeminiLog.SafetyBlocked(_logger, reason, category);
 

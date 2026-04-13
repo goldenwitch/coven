@@ -16,6 +16,7 @@
     <ProjectReference Include="..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
     <ProjectReference Include="..\Coven.Agents.Gemini\Coven.Agents.Gemini.csproj" />
     <ProjectReference Include="..\Coven.Agents.Claude\Coven.Agents.Claude.csproj" />
+    <ProjectReference Include="..\Coven.Agents.LLamaSharp\Coven.Agents.LLamaSharp.csproj" />
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
   </ItemGroup>
 
