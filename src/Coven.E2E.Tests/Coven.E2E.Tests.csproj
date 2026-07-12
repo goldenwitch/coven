@@ -31,6 +31,7 @@
     <ProjectReference Include="..\Coven.Chat.Discord\Coven.Chat.Discord.csproj" />
     <ProjectReference Include="..\Coven.Agents\Coven.Agents.csproj" />
     <ProjectReference Include="..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
+    <ProjectReference Include="..\Coven.Agents.LLamaSharp\Coven.Agents.LLamaSharp.csproj" />
     <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
     <ProjectReference Include="..\Coven.Scriveners.FileScrivener\Coven.Scriveners.FileScrivener.csproj" />
     <ProjectReference Include="..\Coven.FileSystem\Coven.FileSystem.csproj" />

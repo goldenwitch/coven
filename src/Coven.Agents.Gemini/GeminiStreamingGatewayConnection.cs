@@ -125,16 +125,16 @@ internal sealed class GeminiStreamingGatewayConnection(
 
             if (!string.IsNullOrWhiteSpace(chunk?.ResponseId))
             {
-                responseId = chunk!.ResponseId!;
+                responseId = chunk.ResponseId;
             }
             if (!string.IsNullOrWhiteSpace(chunk?.ModelVersion))
             {
-                model = chunk!.ModelVersion!;
+                model = chunk.ModelVersion;
             }
 
             if (chunk?.PromptFeedback is not null && !string.IsNullOrWhiteSpace(chunk.PromptFeedback.BlockReason))
             {
-                string reason = chunk.PromptFeedback.BlockReason!;
+                string reason = chunk.PromptFeedback.BlockReason;
                 string? category = chunk.PromptFeedback.SafetyRatings?.FirstOrDefault()?.Category;
                 GeminiLog.SafetyBlocked(_logger, reason, category);
 
