@@ -11,7 +11,8 @@ namespace Coven.Core.Builder;
 internal sealed record DaemonScope(
     IServiceScope Scope,
     IReadOnlyList<IDaemon> Daemons,
-    CancellationTokenSource Cts) : IAsyncDisposable
+    CancellationTokenSource Cts,
+    Task<Exception>? FailureTask) : IAsyncDisposable
 {
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

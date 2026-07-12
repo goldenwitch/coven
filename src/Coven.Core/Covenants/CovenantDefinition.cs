@@ -29,14 +29,42 @@ internal sealed class CovenantDefinition : ICovenant
         where TTarget : Entry
     {
         ArgumentNullException.ThrowIfNull(map);
+        return AddLambdaRoute<TSource, TTarget>(_ => true, false, map);
+    }
+
+    /// <inheritdoc />
+    public ICovenant Route<TSource, TTarget>(Func<TSource, bool> shouldRoute, Func<TSource, CancellationToken, Task<TTarget>> map)
+        where TSource : Entry
+        where TTarget : Entry
+    {
+        ArgumentNullException.ThrowIfNull(shouldRoute);
+        ArgumentNullException.ThrowIfNull(map);
+
+        return AddLambdaRoute<TSource, TTarget>(shouldRoute, true, map);
+    }
+
+    private CovenantDefinition AddLambdaRoute<TSource, TTarget>(
+        Func<TSource, bool> shouldRoute,
+        bool hasRouteFilter,
+        Func<TSource, CancellationToken, Task<TTarget>> map)
+        where TSource : Entry
+        where TTarget : Entry
+    {
+        Func<TSource, bool> routeFilter = shouldRoute;
+        Func<TSource, CancellationToken, Task<TTarget>> routeMap = map;
 
         // Capture transformation in closure—no reflection at invocation
         async Task<Entry> InvokerAsync(Entry entry, CancellationToken ct)
         {
-            return await map((TSource)entry, ct);
+            return await routeMap((TSource)entry, ct);
         }
 
-        _routes.Add(new LambdaRouteDescriptor(typeof(TSource), typeof(TTarget), InvokerAsync));
+        bool Matches(Entry entry)
+        {
+            return routeFilter((TSource)entry);
+        }
+
+        _routes.Add(new LambdaRouteDescriptor(typeof(TSource), typeof(TTarget), Matches, hasRouteFilter, InvokerAsync));
         return this;
     }
 
@@ -46,6 +74,29 @@ internal sealed class CovenantDefinition : ICovenant
         where TTarget : Entry
         where TTransmuter : class, ITransmuter<TSource, TTarget>
     {
+        return AddTransmuterRoute<TSource, TTarget, TTransmuter>(_ => true, false);
+    }
+
+    /// <inheritdoc />
+    public ICovenant Route<TSource, TTarget, TTransmuter>(Func<TSource, bool> shouldRoute)
+        where TSource : Entry
+        where TTarget : Entry
+        where TTransmuter : class, ITransmuter<TSource, TTarget>
+    {
+        ArgumentNullException.ThrowIfNull(shouldRoute);
+
+        return AddTransmuterRoute<TSource, TTarget, TTransmuter>(shouldRoute, true);
+    }
+
+    private CovenantDefinition AddTransmuterRoute<TSource, TTarget, TTransmuter>(
+        Func<TSource, bool> shouldRoute,
+        bool hasRouteFilter)
+        where TSource : Entry
+        where TTarget : Entry
+        where TTransmuter : class, ITransmuter<TSource, TTarget>
+    {
+        Func<TSource, bool> routeFilter = shouldRoute;
+
         // Defer resolution until we have a service provider
         Func<Entry, CancellationToken, Task<Entry>> CreateInvoker(IServiceProvider sp)
         {
@@ -57,8 +108,13 @@ internal sealed class CovenantDefinition : ICovenant
             return InvokerAsync;
         }
 
+        bool Matches(Entry entry)
+        {
+            return routeFilter((TSource)entry);
+        }
+
         _routes.Add(new TransmuterRouteDescriptor(
-            typeof(TSource), typeof(TTarget), typeof(TTransmuter), CreateInvoker));
+            typeof(TSource), typeof(TTarget), Matches, hasRouteFilter, typeof(TTransmuter), CreateInvoker));
         return this;
     }
 
@@ -74,7 +130,11 @@ internal sealed class CovenantDefinition : ICovenant
 /// <summary>
 /// Base class for route descriptors.
 /// </summary>
-internal abstract record RouteDescriptor(Type SourceType, Type TargetType);
+internal abstract record RouteDescriptor(
+    Type SourceType,
+    Type TargetType,
+    Func<Entry, bool> ShouldRoute,
+    bool HasRouteFilter);
 
 /// <summary>
 /// A route defined by an async lambda transformation.
@@ -82,8 +142,10 @@ internal abstract record RouteDescriptor(Type SourceType, Type TargetType);
 internal sealed record LambdaRouteDescriptor(
     Type SourceType,
     Type TargetType,
+    Func<Entry, bool> ShouldRoute,
+    bool HasRouteFilter,
     Func<Entry, CancellationToken, Task<Entry>> Invoke)
-    : RouteDescriptor(SourceType, TargetType);
+    : RouteDescriptor(SourceType, TargetType, ShouldRoute, HasRouteFilter);
 
 /// <summary>
 /// A route defined by a DI-resolved transmuter.
@@ -91,9 +153,11 @@ internal sealed record LambdaRouteDescriptor(
 internal sealed record TransmuterRouteDescriptor(
     Type SourceType,
     Type TargetType,
+    Func<Entry, bool> ShouldRoute,
+    bool HasRouteFilter,
     Type TransmuterType,
     Func<IServiceProvider, Func<Entry, CancellationToken, Task<Entry>>> CreateInvoker)
-    : RouteDescriptor(SourceType, TargetType);
+    : RouteDescriptor(SourceType, TargetType, ShouldRoute, HasRouteFilter);
 
 /// <summary>
 /// A terminal declaration for a type that is explicitly not routed.

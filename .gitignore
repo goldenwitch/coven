@@ -71,3 +71,4 @@ data/
 # Codex CLI generated state
 **/.codex/
 
+.pr-diff-64.txt

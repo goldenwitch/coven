@@ -28,6 +28,10 @@ Concrete examples help ground the vocabulary above. Two samples demonstrate diff
   - File: `src/samples/01.DiscordAgent/Program.cs`
   - No `RouterBlock` class—routes are defined inline and validated at build time.
 
+**Sample 02 (Tool calling)**: Adds the FileSystem branch as an agent tool — Claude tool calls route through the covenant to a sandboxed filesystem daemon and back.
+  - File: `src/samples/02.ConsoleClaudeFileSystem/Program.cs`
+  - Companion library (`Coven.Agents.FileSystem`) supplies the tool definitions and transmuters; `RouteFileSystemTools()` wires them.
+
 - Branches: app logic targets Chat and Agents abstractions.
   - Chat branch types used by the router: `ChatEntry`, `ChatAfferent`, `ChatEfferentDraft` (from `Coven.Chat`).
   - Agents branch types used by the router: `AgentEntry`, `AgentPrompt`, `AgentResponse`, `AgentThought` (from `Coven.Agents`).

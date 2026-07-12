@@ -12,5 +12,7 @@ public enum Status
     /// <summary>Actively running.</summary>
     Running,
     /// <summary>Completed successfully and cannot be restarted.</summary>
-    Completed
+    Completed,
+    /// <summary>Encountered a fatal error and cannot continue until shut down.</summary>
+    Failed
 }

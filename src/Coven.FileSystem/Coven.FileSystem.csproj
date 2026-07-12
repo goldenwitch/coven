@@ -2,20 +2,19 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <RootNamespace>Coven.FileSystem</RootNamespace>
     <IsPackable>true</IsPackable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>$(MSBuildProjectName)</PackageId>
-    <Description>Spell contracts, schema generation, and spellbooks for Coven.</Description>
+    <Description>FileSystem branch for Coven — entry types and branch manifest.</Description>
     <Authors>Coven</Authors>
-    <PackageTags>coven;agents;spell;schema;tools</PackageTags>
+    <PackageTags>coven;filesystem;branch</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Coven.Core/Coven.Core.csproj" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
   </ItemGroup>
-
-  
 
 </Project>

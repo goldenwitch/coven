@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Coven.Testing.Harness" />
+    <InternalsVisibleTo Include="Coven.Core.Tests" />
   </ItemGroup>
 
   <ItemGroup>

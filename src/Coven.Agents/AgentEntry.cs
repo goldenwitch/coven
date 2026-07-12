@@ -18,6 +18,9 @@ namespace Coven.Agents;
 [JsonDerivedType(typeof(AgentEfferentThoughtChunk), nameof(AgentEfferentThoughtChunk))]
 [JsonDerivedType(typeof(AgentAfferentThoughtChunk), nameof(AgentAfferentThoughtChunk))]
 [JsonDerivedType(typeof(AgentStreamCompleted), nameof(AgentStreamCompleted))]
+[JsonDerivedType(typeof(AgentToolCall), nameof(AgentToolCall))]
+[JsonDerivedType(typeof(AgentToolResult), nameof(AgentToolResult))]
+[JsonDerivedType(typeof(AgentToolFailure), nameof(AgentToolFailure))]
 public abstract record AgentEntry(string Sender) : Entry;
 
 /// <summary>
@@ -51,3 +54,13 @@ public sealed record AgentAfferentThoughtChunk(string Sender, string Text) : Age
 
 /// <summary>Marks completion of a streaming sequence.</summary>
 public sealed record AgentStreamCompleted(string Sender) : AgentEntryDraft(Sender);
+
+// Tool interaction entries
+/// <summary>Agent requests a tool call. Carries correlation ID for result matching.</summary>
+public sealed record AgentToolCall(string Sender, string CorrelationId, string ToolName, string ArgumentsJson) : AgentEntry(Sender);
+
+/// <summary>Tool call result routed back to the agent.</summary>
+public sealed record AgentToolResult(string Sender, string CorrelationId, string Result) : AgentEntry(Sender);
+
+/// <summary>Tool call failure routed back to the agent.</summary>
+public sealed record AgentToolFailure(string Sender, string CorrelationId, string Error) : AgentEntry(Sender);

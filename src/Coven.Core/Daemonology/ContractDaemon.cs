@@ -104,7 +104,11 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
             {
                 (Status.Stopped, Status.Running) => true,
                 (Status.Running, Status.Completed) => true,
+                (Status.Stopped, Status.Failed) => true,
+                (Status.Running, Status.Failed) => true,
+                (Status.Failed, Status.Completed) => true,
                 (Status.Completed, Status.Running) => false, // Cannot restart
+                (Status.Failed, Status.Running) => false, // Cannot restart after failure
                 (Status.Stopped, Status.Completed) => false, // Cannot shutdown without starting
                 _ => false
             };
@@ -137,6 +141,12 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
 
         try
         {
+            if (Status is Status.Stopped or Status.Running)
+            {
+                Status = Status.Failed;
+                await _scrivener.WriteAsync(new StatusChanged(Status.Failed), cancellationToken);
+            }
+
             await _scrivener.WriteAsync(new FailureOccurred(error), cancellationToken);
         }
         finally

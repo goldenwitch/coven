@@ -12,28 +12,19 @@ namespace Coven.Agents.Claude;
 /// </summary>
 internal sealed class ClaudeScrivener : TappedScrivener<ClaudeEntry>
 {
-    private readonly IClaudeGatewayConnection _gateway;
     private readonly ILogger _logger;
 
     public ClaudeScrivener(
         [FromKeyedServices("Coven.InternalClaudeScrivener")] IScrivener<ClaudeEntry> inner,
-        IClaudeGatewayConnection gateway,
         ILogger<ClaudeScrivener> logger)
         : base(inner)
     {
-        ArgumentNullException.ThrowIfNull(gateway);
         ArgumentNullException.ThrowIfNull(logger);
-        _gateway = gateway;
         _logger = logger;
     }
 
     public override async Task<long> WriteAsync(ClaudeEntry entry, CancellationToken cancellationToken = default)
     {
-        if (entry is ClaudeEfferent outgoing)
-        {
-            await _gateway.SendAsync(outgoing, cancellationToken).ConfigureAwait(false);
-        }
-
         long pos = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);
         ClaudeLog.ClaudeScrivenerAppended(_logger, entry.GetType().Name, pos);
         return pos;

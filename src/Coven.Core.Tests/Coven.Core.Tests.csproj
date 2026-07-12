@@ -25,6 +25,8 @@
 
   <ItemGroup>
     <ProjectReference Include="../Coven.Core/Coven.Core.csproj" />
+    <ProjectReference Include="../Coven.Agents.FileSystem/Coven.Agents.FileSystem.csproj" />
+    <ProjectReference Include="../Coven.Agents.Claude/Coven.Agents.Claude.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,171 +1,135 @@
-# Agent-Spellcasting Integration
+# Agent Tool Calls
 
-> **Status**: Draft  
+> **Status**: Revised  
 > **Created**: 2026-01-30  
-> **Depends on**: [Spellcasting Branch](spellcasting-branch.md), [Metagraph](metagraph.md)
+> **Revised**: 2026-02-09
 
 ---
 
 ## Summary
 
-This proposal describes how the **Agents branch** integrates with the **Spellcasting branch** via covenant routes. Agent leaves write tool call entries; covenants route them to Spellcasting; results route back.
+Agents write tool call entries to their journal. The covenant routes them to the correct tool branch. Results route back. **Companion libraries** provide the types and transmuters that make this work.
 
 ---
 
-## Vocabulary
+## Agent Entry Types
 
-| Term | Definition |
-|------|------------|
-| **Branch** | Abstraction layer with typed journals + services (Chat, Agents, Spellcasting) |
-| **Leaf** | Integration translating a branch to an external system (OpenAI, Gemini) |
-| **Covenant** | Declarative routes between branch journals |
-
----
-
-## New Agent Entry Types
-
-The Agents branch needs new entry types for tool interactions:
+The Agents branch adds three entry types for tool interactions:
 
 ```
 ENTRY AgentEntry (extended)
 
-  -- Existing types
+  -- Existing
   AgentPrompt { sender, text }
   AgentResponse { sender, text }
   AgentThought { sender, text }
-  -- ... streaming chunks ...
-  
-  -- New: Tool interaction
+
+  -- Tool interaction
   AgentToolCall { correlation-id, tool-name, arguments }
   AgentToolResult { correlation-id, result }
-  AgentToolFault { correlation-id, error }
+  AgentToolFailure { correlation-id, error }
 ```
 
-These entries flow through the Agents journal like any other `AgentEntry` subtype.
+`AgentToolCall` carries the tool name and serialized arguments. The correlation ID ties a call to its result.
 
 ---
 
-## Entry Flow
+## Flow
 
-When the LLM requests a tool call, the agent leaf:
+When the LLM requests a tool call:
 
-1. Matches tool name to capability (from build-time configuration)
-2. Deserializes LLM arguments
-3. Assigns a correlation ID
-4. Writes an `AgentToolCall` entry to the Agents journal
+1. Agent leaf receives tool call from the LLM (tool name + JSON arguments)
+2. Agent writes `AgentToolCall` to the agents journal
+3. Covenant routes `AgentToolCall` → branch efferent entry (via companion transmuter)
+4. Branch leaf daemon processes the efferent entry, writes afferent result to the branch journal
+5. Covenant routes branch afferent entry → `AgentToolResult` (via companion transmuter)
+6. Agent leaf receives `AgentToolResult`, feeds back to LLM
+7. LLM continues
 
 ```
-LEAF OpenAIAgentLeaf
-  ON LLM-response contains tool_calls:
-    FOR each tool-call:
-      cap = configured-capabilities[tool-call.name]
-      WRITE AgentToolCall {
-        correlation-id: new-guid(),
-        tool-name: tool-call.name,
-        arguments: tool-call.arguments
-      } to AgentEntry journal
+┌──────────────┐   AgentToolCall    ┌──────────────┐
+│ Agents       │ ─────────────────▶ │ FileSystem   │
+│ (journal)    │    [transmuter]    │ (journal)    │
+│              │ ◀───────────────── │              │
+└──────────────┘  AgentToolResult   └──────────────┘
+                    [transmuter]
 ```
+
+The transmuters live in the companion library. They convert between agent entry types and branch entry types.
 
 ---
 
-## Covenant Routes
+## Synchronous Tool Semantics
 
-The outer covenant connects Agents to Spellcasting:
+From the LLM's perspective, tool calls are **synchronous within a turn**. The model expects results before generating the next response.
 
-```
-COVENANT
-  CONNECT agents
-  CONNECT spellcasting
-  
-  -- Tool dispatch
-  ROUTE AgentToolCall → SpellInvocation
-  
-  -- Result gathering  
-  ROUTE SpellResult → AgentToolResult
-  ROUTE SpellFault → AgentToolFault
-```
+The agent leaf writes `AgentToolCall`, then waits. When `AgentToolResult` appears in the agents journal (routed back by the covenant), the leaf matches it by correlation ID and resumes.
 
-The transformation from `AgentToolCall` to `SpellInvocation` deserializes the arguments into the appropriate spell type based on `tool-name`.
+Timeouts produce an `AgentToolFailure`, not an exception.
 
 ---
 
-## Dispatch and Wait
+## Correlation Matching
 
-The agent leaf writes a tool call and waits for its result before continuing the LLM conversation.
+The agent leaf tracks pending tool calls by correlation ID:
 
-### Synchronous Tool Semantics
+1. Write `AgentToolCall` with `correlation-id: new-guid()`
+2. Tail the agents journal for `AgentToolResult` or `AgentToolFailure` matching that ID
+3. On match, resume the LLM conversation with the result
 
-From the LLM's perspective, tool calls are **synchronous within a turn**:
-
-1. LLM requests tool call
-2. Leaf writes `AgentToolCall` entry
-3. Covenant routes to Spellcasting, result routes back
-4. Leaf receives `AgentToolResult`, feeds to LLM
-5. LLM continues
-
-This matches how LLM tool calling works—the model expects results before generating the next response.
-
-### Correlation-Based Matching
-
-The leaf maintains pending requests keyed by correlation ID. When `AgentToolResult` arrives (routed back by the covenant), the leaf matches it to the pending request and resumes the LLM conversation.
-
-Timeouts produce a fault result, not an exception—the leaf handles it like any other tool failure.
-
-### Journal Flow
-
-```
-┌─────────────┐    AgentToolCall    ┌─────────────────┐
-│ Agents      │ ──────────────────▶ │ Spellcasting    │
-│ (journal)   │                     │ (boundary)      │
-│             │ ◀────────────────── │                 │
-└─────────────┘  AgentToolResult    └─────────────────┘
-```
-
-1. Leaf writes `AgentToolCall` to Agents journal
-2. Covenant routes to `SpellInvocation` on Spellcasting boundary
-3. Inner covenant dispatches to substrate, result written
-4. Inner covenant gathers result to `SpellResult` on boundary
-5. Outer covenant routes to `AgentToolResult` on Agents journal
-6. Leaf tails Agents journal, sees result, continues
+Multiple concurrent tool calls (across different conversations) each have unique correlation IDs.
 
 ---
 
-## Usage Example
+## Companion Library Role
 
-```
-BUILD-COVEN
-  chat = UseDiscordChat(config)
-  agents = UseOpenAIAgents(agentConfig)
-  spellcasting = UseSpellcasting()
-  
-  COVENANT
-    CONNECT chat
-    CONNECT agents
-    CONNECT spellcasting
-    
-    -- Chat ↔ Agents
-    ROUTE ChatAfferent → AgentPrompt
-    ROUTE AgentResponse → ChatEfferentDraft
-    
-    -- Agents ↔ Spellcasting
-    ROUTE AgentToolCall → SpellInvocation
-    ROUTE SpellResult → AgentToolResult
-    ROUTE SpellFault → AgentToolFault
-```
+The companion library (e.g., `Coven.Agents.FileSystem`) provides:
 
-The outer covenant connects branches. Each branch's internal structure is opaque.
+1. **Tool definitions** — `ToolDefinition[]` so the agent leaf can register tools with the LLM
+2. **Forward transmuters** — convert `AgentToolCall` → branch efferent entry (e.g., `FileRead`)
+3. **Return transmuters** — convert branch afferent entry (e.g., `FileContent`) → `AgentToolResult`
+
+The forward transmuter inspects `AgentToolCall.ToolName` to determine if it handles this call. Non-matching transmuters return null (skip).
+
+See [Spellcasting](spellcasting-branch.md) for companion library structure.
+
+---
+
+## Build-Time Example
+
+```csharp
+services.BuildCoven(coven =>
+{
+    var agents = coven.UseOpenAIAgents(agentConfig);
+    var filesystem = coven.UseFileSystem(fs => fs.UsePosix(root: "/workspace"));
+
+    coven.Covenant()
+        .Connect(agents)
+        .Connect(filesystem)
+        .Routes(c =>
+        {
+            // Forward: agent tool calls → filesystem efferent entries
+            c.Route<AgentToolCall, FileRead, AgentToolCallToFileRead>();
+            c.Route<AgentToolCall, FileWrite, AgentToolCallToFileWrite>();
+
+            // Return: filesystem afferent entries → agent tool results
+            c.Route<FileContent, AgentToolResult, FileContentToAgentToolResult>();
+            c.Route<FileFailure, AgentToolFailure, FileFailureToAgentToolFailure>();
+        });
+});
+```
 
 ---
 
 ## Scope
 
 **In scope:**
-- `AgentToolCall`, `AgentToolResult`, `AgentToolFault` entry types
-- Covenant routes between Agents and Spellcasting
+- `AgentToolCall`, `AgentToolResult`, `AgentToolFailure` entry types
 - Correlation-based result matching in agent leaves
+- Covenant routes between agents and tool branches
 
 **Out of scope:**
-- Parallel tool execution
+- Parallel tool execution within a single LLM turn
 - Tool call streaming (tool calls complete atomically)
 - Agent-to-agent tool delegation
 
@@ -173,13 +137,10 @@ The outer covenant connects branches. Each branch's internal structure is opaque
 
 ## Checklist
 
-- [ ] `AgentToolCall` entry type with correlation ID
-- [ ] `AgentToolResult` entry type
-- [ ] `AgentToolFault` entry type
-- [ ] `AgentToolCall → SpellInvocation` transformation
-- [ ] `SpellResult → AgentToolResult` transformation
-- [ ] `SpellFault → AgentToolFault` transformation
-- [ ] OpenAI leaf: handle `tool_calls` in streaming response
+- [ ] `AgentToolCall` entry type with correlation ID, tool name, arguments
+- [ ] `AgentToolResult` entry type with correlation ID, result
+- [ ] `AgentToolFailure` entry type with correlation ID, error
+- [ ] OpenAI leaf: write `AgentToolCall` on LLM tool_calls
 - [ ] OpenAI leaf: correlation-based await for results
-- [ ] Timeout handling producing fault result
+- [ ] Timeout → `AgentToolFailure`
 - [ ] Integration test: full tool call round-trip
