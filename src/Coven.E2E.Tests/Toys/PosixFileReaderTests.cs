@@ -160,6 +160,8 @@ public sealed class PosixFileReaderTests : IDisposable
     [Fact]
     public async Task ReadPathTraversalReturnsAccessDenied()
     {
+        WriteFile("still-safe.txt", "safe after denial");
+
         await using E2ETestHost host = BuildHost();
         await host.StartAsync();
 
@@ -169,6 +171,121 @@ public sealed class PosixFileReaderTests : IDisposable
             "[AccessDenied]", TimeSpan.FromSeconds(5));
 
         Assert.Contains("[AccessDenied]", output);
+
+        await host.Console.SendInputAsync("still-safe.txt");
+
+        string recoveryOutput = await host.Console.WaitForOutputContainingAsync(
+            "safe after denial", TimeSpan.FromSeconds(5));
+
+        Assert.Contains("safe after denial", recoveryOutput);
+    }
+
+    /// <summary>
+    /// A symlink inside the sandbox cannot redirect reads to a file outside the root.
+    /// </summary>
+    [Fact]
+    public async Task ReadThroughParentSymlinkReturnsAccessDenied()
+    {
+        string outsideDir = Path.Combine(Path.GetTempPath(), $"coven-posix-outside-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(outsideDir);
+        File.WriteAllText(Path.Combine(outsideDir, "secret.txt"), "outside sandbox");
+
+        try
+        {
+            string linkPath = Path.Combine(_tempDir, "linked");
+
+            try
+            {
+                Directory.CreateSymbolicLink(linkPath, outsideDir);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return;
+            }
+            catch (IOException)
+            {
+                return;
+            }
+
+            WriteFile("inside.txt", "inside sandbox");
+
+            await using E2ETestHost host = BuildHost();
+            await host.StartAsync();
+
+            await host.Console.SendInputAsync("linked/secret.txt");
+
+            string output = await host.Console.WaitForOutputContainingAsync(
+                "[AccessDenied]", TimeSpan.FromSeconds(5));
+
+            Assert.Contains("[AccessDenied]", output);
+
+            await host.Console.SendInputAsync("inside.txt");
+
+            string recoveryOutput = await host.Console.WaitForOutputContainingAsync(
+                "inside sandbox", TimeSpan.FromSeconds(5));
+
+            Assert.Contains("inside sandbox", recoveryOutput);
+        }
+        finally
+        {
+            try { Directory.Delete(outsideDir, recursive: true); }
+            catch { /* best-effort cleanup */ }
+        }
+    }
+
+    /// <summary>
+    /// On case-sensitive platforms, a sibling path differing only by case must still be rejected.
+    /// </summary>
+    [Fact]
+    public async Task ReadSiblingPathDifferingOnlyByCaseReturnsAccessDeniedOnLinux()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        string parentDir = Directory.GetParent(_tempDir)!.FullName;
+        string rootName = Path.GetFileName(_tempDir);
+        string siblingName = rootName.ToUpperInvariant();
+        if (string.Equals(rootName, siblingName, StringComparison.Ordinal))
+        {
+            siblingName = rootName.ToLowerInvariant();
+        }
+
+        string siblingDir = Path.Combine(parentDir, siblingName);
+        Directory.CreateDirectory(siblingDir);
+        File.WriteAllText(Path.Combine(siblingDir, "secret.txt"), "case sibling");
+
+        try
+        {
+            WriteFile("inside-linux.txt", "linux safe file");
+
+            await using E2ETestHost host = BuildHost();
+            await host.StartAsync();
+
+            await host.Console.SendInputAsync($"../{siblingName}/secret.txt");
+
+            string output = await host.Console.WaitForOutputContainingAsync(
+                "[AccessDenied]", TimeSpan.FromSeconds(5));
+
+            Assert.Contains("[AccessDenied]", output);
+
+            await host.Console.SendInputAsync("inside-linux.txt");
+
+            string recoveryOutput = await host.Console.WaitForOutputContainingAsync(
+                "linux safe file", TimeSpan.FromSeconds(5));
+
+            Assert.Contains("linux safe file", recoveryOutput);
+        }
+        finally
+        {
+            try { Directory.Delete(siblingDir, recursive: true); }
+            catch { /* best-effort cleanup */ }
+        }
     }
 
     // ── Journal tests ────────────────────────────────────────────────────

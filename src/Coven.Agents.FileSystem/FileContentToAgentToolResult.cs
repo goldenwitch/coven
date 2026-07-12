@@ -14,6 +14,6 @@ internal sealed class FileContentToAgentToolResult : ITransmuter<FileContent, Ag
     public Task<AgentToolResult> Transmute(FileContent Input, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(new AgentToolResult("system", Input.CorrelationId, Input.Content));
+        return Task.FromResult(new AgentToolResult(FileSystemCompanionRouting.Sender, Input.CorrelationId, Input.Content));
     }
 }

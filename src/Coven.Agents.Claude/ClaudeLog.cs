@@ -18,6 +18,9 @@ internal static partial class ClaudeLog
     [LoggerMessage(Level = LogLevel.Debug, Message = "Claude outbound send succeeded")]
     public static partial void OutboundSendSucceeded(ILogger logger);
 
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Claude requested unregistered tool {ToolName} (tool_use {ToolUseId}); returning error tool_result")]
+    public static partial void UnknownToolRequested(ILogger logger, string toolName, string toolUseId);
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "Claude stream line: {Line}")]
     public static partial void StreamLine(ILogger logger, string line);
 
@@ -58,6 +61,19 @@ internal static partial class ClaudeLog
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Agents→Claude pump failed")]
     public static partial void AgentsToClaudePumpFailed(ILogger logger, Exception exception);
+
+    // Claude gateway send pump
+    [LoggerMessage(Level = LogLevel.Trace, Message = "Claude gateway observed outbound message at position {Position}")]
+    public static partial void ClaudeGatewayObserved(ILogger logger, long position);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Claude gateway pump completed")]
+    public static partial void ClaudeGatewayPumpCompleted(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "Claude gateway pump canceled")]
+    public static partial void ClaudeGatewayPumpCanceled(ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Claude gateway pump failed")]
+    public static partial void ClaudeGatewayPumpFailed(ILogger logger, Exception exception);
 
     // Scrivener
     [LoggerMessage(Level = LogLevel.Trace, Message = "Claude scrivener appended {EntryType} at position {Position}")]

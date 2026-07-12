@@ -32,6 +32,11 @@ internal sealed class ClaudeAgentSession(
 
     private Task? _claudeToAgentsPump;
     private Task? _agentsToClaudePump;
+    private Task? _gatewayPump;
+
+    internal Task Completion => _claudeToAgentsPump is not null && _agentsToClaudePump is not null && _gatewayPump is not null
+        ? Task.WhenAll(_claudeToAgentsPump, _agentsToClaudePump, _gatewayPump)
+        : Task.CompletedTask;
 
     public async Task StartAsync()
     {
@@ -121,17 +126,45 @@ internal sealed class ClaudeAgentSession(
                 throw;
             }
         }, ct);
+
+        _gatewayPump = Task.Run(async () =>
+        {
+            try
+            {
+                await foreach ((long position, ClaudeEntry entry) in _claudeJournal.TailAsync(0, ct))
+                {
+                    if (entry is not ClaudeEfferent outgoing)
+                    {
+                        continue;
+                    }
+
+                    ClaudeLog.ClaudeGatewayObserved(_logger, position);
+                    await _gateway.SendAsync(outgoing, position, ct).ConfigureAwait(false);
+                }
+
+                ClaudeLog.ClaudeGatewayPumpCompleted(_logger);
+            }
+            catch (OperationCanceledException)
+            {
+                ClaudeLog.ClaudeGatewayPumpCanceled(_logger);
+            }
+            catch (Exception ex)
+            {
+                ClaudeLog.ClaudeGatewayPumpFailed(_logger, ex);
+                throw;
+            }
+        }, ct);
     }
 
     public async ValueTask DisposeAsync()
     {
         try
         {
-            if (_claudeToAgentsPump is not null && _agentsToClaudePump is not null)
+            if (_claudeToAgentsPump is not null && _agentsToClaudePump is not null && _gatewayPump is not null)
             {
                 try
                 {
-                    await Task.WhenAll(_claudeToAgentsPump, _agentsToClaudePump).ConfigureAwait(false);
+                    await Completion.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
@@ -143,6 +176,7 @@ internal sealed class ClaudeAgentSession(
         {
             _claudeToAgentsPump = null;
             _agentsToClaudePump = null;
+            _gatewayPump = null;
             GC.SuppressFinalize(this);
         }
     }

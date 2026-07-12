@@ -20,4 +20,18 @@ public class ContractDaemonFailureTests
         Assert.IsType<InvalidOperationException>(ex);
         Assert.Equal("boom", ex.Message);
     }
+
+    [Fact]
+    public async Task FailTransitionsDaemonToFailed()
+    {
+        InMemoryScrivener<DaemonEvent> scrivener = new();
+        TestDaemon daemon = new(scrivener);
+
+        Task waitForFailed = daemon.WaitFor(Status.Failed);
+
+        await daemon.TriggerFailure(new InvalidOperationException("boom"));
+        await waitForFailed;
+
+        Assert.Equal(Status.Failed, daemon.Status);
+    }
 }

@@ -35,7 +35,10 @@ internal sealed class PosixFileSystemDaemon(
             {
                 await _processTask.ConfigureAwait(false);
             }
-            catch (OperationCanceledException) { }
+            catch (OperationCanceledException)
+            {
+                // Normal shutdown after cooperative cancellation.
+            }
         }
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
     }
@@ -68,7 +71,10 @@ internal sealed class PosixFileSystemDaemon(
                 }
             }
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            // Normal shutdown after cooperative cancellation.
+        }
         catch (Exception ex)
         {
             await Fail(ex, ct).ConfigureAwait(false);

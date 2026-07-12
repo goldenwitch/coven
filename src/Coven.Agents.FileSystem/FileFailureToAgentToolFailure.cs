@@ -14,6 +14,9 @@ internal sealed class FileFailureToAgentToolFailure : ITransmuter<FileFailure, A
     public Task<AgentToolFailure> Transmute(FileFailure Input, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        return Task.FromResult(new AgentToolFailure("system", Input.CorrelationId, $"{Input.FailureKind}: {Input.Message}"));
+        return Task.FromResult(new AgentToolFailure(
+            FileSystemCompanionRouting.Sender,
+            Input.CorrelationId,
+            $"Tool '{FileSystemCompanionRouting.ReadFileToolName}' call '{Input.CorrelationId}' failed: {Input.FailureKind}: {Input.Message}"));
     }
 }

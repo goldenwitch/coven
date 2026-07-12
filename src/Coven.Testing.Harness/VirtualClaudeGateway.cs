@@ -155,7 +155,7 @@ public sealed class VirtualClaudeGateway : IClaudeGatewayConnection
     }
 
     /// <inheritdoc />
-    public async Task SendAsync(ClaudeEfferent outgoing, CancellationToken cancellationToken)
+    public async Task SendAsync(ClaudeEfferent outgoing, long outgoingPosition, CancellationToken cancellationToken)
     {
         IScriptedClaudeResponse response;
         lock (_lock)

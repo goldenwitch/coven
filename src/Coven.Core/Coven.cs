@@ -27,7 +27,9 @@ internal class Coven : ICoven
         CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<T, TOutput>(input, null, cancellationToken);
+            return await CovenExecutionScope.RunWithFailurePropagationAsync(
+                scope,
+                _board.PostWork<T, TOutput>(input, null, cancellationToken)).ConfigureAwait(false);
         }
         finally
         {
@@ -48,7 +50,9 @@ internal class Coven : ICoven
         CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<T, TOutput>(input, tags, cancellationToken);
+            return await CovenExecutionScope.RunWithFailurePropagationAsync(
+                scope,
+                _board.PostWork<T, TOutput>(input, tags, cancellationToken)).ConfigureAwait(false);
         }
         finally
         {
@@ -69,7 +73,9 @@ internal class Coven : ICoven
         CovenExecutionScope.SetCurrentScope(scope);
         try
         {
-            return await _board.PostWork<Empty, TOutput>(new Empty(), null, cancellationToken);
+            return await CovenExecutionScope.RunWithFailurePropagationAsync(
+                scope,
+                _board.PostWork<Empty, TOutput>(new Empty(), null, cancellationToken)).ConfigureAwait(false);
         }
         finally
         {

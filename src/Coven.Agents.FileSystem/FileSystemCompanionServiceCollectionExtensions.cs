@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using Coven.FileSystem;
-using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -22,13 +20,22 @@ public static class FileSystemCompanionServiceCollectionExtensions
         // Register tool definitions so agent leaves can discover them
         foreach (ToolDefinition tool in FileSystemTools.All)
         {
+            if (services.Any(sd =>
+                    sd.ServiceType == typeof(ToolDefinition) &&
+                    sd.ImplementationInstance is ToolDefinition existing &&
+                    string.Equals(existing.Name, tool.Name, StringComparison.Ordinal)))
+            {
+                continue;
+            }
+
             services.AddSingleton(tool);
         }
 
         // Register transmuters for covenant routing
-        services.TryAddScoped<ITransmuter<AgentToolCall, FileRead>, AgentToolCallToFileRead>();
-        services.TryAddScoped<ITransmuter<FileContent, AgentToolResult>, FileContentToAgentToolResult>();
-        services.TryAddScoped<ITransmuter<FileFailure, AgentToolFailure>, FileFailureToAgentToolFailure>();
+        services.TryAddScoped<AgentToolCallToFileRead>();
+        services.TryAddScoped<InvalidReadFileCallToAgentToolFailure>();
+        services.TryAddScoped<FileContentToAgentToolResult>();
+        services.TryAddScoped<FileFailureToAgentToolFailure>();
 
         return services;
     }

@@ -141,12 +141,13 @@ internal sealed class CovenantBuilder : ICovenantBuilder
             route.SourceType,
             route.TargetType,
             (sp, ct) => RunPumpAsync<TSourceJournal, TTargetJournal>(
-                sp, route.SourceType, getInvoker(sp), ct));
+                sp, route.SourceType, route.ShouldRoute, getInvoker(sp), ct));
     }
 
     private static async Task RunPumpAsync<TSourceJournal, TTargetJournal>(
         IServiceProvider sp,
         Type sourceLeafType,
+        Func<Entry, bool> shouldRoute,
         Func<Entry, CancellationToken, Task<Entry>> invoke,
         CancellationToken ct)
         where TSourceJournal : Entry
@@ -158,6 +159,11 @@ internal sealed class CovenantBuilder : ICovenantBuilder
         await foreach ((long _, TSourceJournal entry) in source.TailAsync(0, ct))
         {
             if (entry.GetType() != sourceLeafType)
+            {
+                continue;
+            }
+
+            if (!shouldRoute(entry))
             {
                 continue;
             }
@@ -221,12 +227,11 @@ internal sealed class CovenantBuilder : ICovenantBuilder
         // Rule 2: Each source type may have only one route
         foreach ((Type source, List<RouteDescriptor> routes) in routesBySource)
         {
-            if (routes.Count > 1)
+            if (routes.Count > 1 && routes.Any(route => !route.HasRouteFilter))
             {
                 errors.Add(
-                    $"{source.Name} has multiple routes. Each source type may have only one route.\n" +
-                    $"  The covenant describes the canonical path. For side-effects, use scrivener\n" +
-                    $"  decorators or imbuing transmuters.");
+                    $"{source.Name} has multiple routes. Multiple routes for the same source require explicit route filters on every route.\n" +
+                    $"  Leave only one unfiltered route, or add predicates so each route declares exactly which entries it handles.");
             }
         }
 
@@ -252,8 +257,7 @@ internal sealed class CovenantBuilder : ICovenantBuilder
                 bool isRegistered = false;
                 foreach (ServiceDescriptor sd in _services)
                 {
-                    if (sd.ServiceType == transmuter.TransmuterType ||
-                        sd.ImplementationType == transmuter.TransmuterType)
+                    if (sd.ServiceType == transmuter.TransmuterType)
                     {
                         isRegistered = true;
                         break;

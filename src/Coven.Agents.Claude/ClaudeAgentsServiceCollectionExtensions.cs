@@ -49,6 +49,11 @@ public static class ClaudeAgentsServiceCollectionExtensions
         ClaudeRegistration registration = new();
         configure?.Invoke(registration);
 
+        if (registration.StreamingEnabled && registration.ToolsEnabled)
+        {
+            throw new InvalidOperationException("Claude agents do not support tools in streaming mode. Remove EnableStreaming() or EnableTools().");
+        }
+
         // Journals
         services.TryAddScoped<IScrivener<AgentEntry>, InMemoryScrivener<AgentEntry>>();
         services.AddKeyedScoped<IScrivener<ClaudeEntry>, InMemoryScrivener<ClaudeEntry>>("Coven.InternalClaudeScrivener");
@@ -61,6 +66,7 @@ public static class ClaudeAgentsServiceCollectionExtensions
         }
         else
         {
+            services.AddScoped(_ => registration);
             services.TryAddScoped<IClaudeGatewayConnection, ClaudeRequestGatewayConnection>();
         }
 

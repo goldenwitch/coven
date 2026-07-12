@@ -17,7 +17,8 @@ internal sealed class ClaudeRequestGatewayConnection(
     ILogger<ClaudeRequestGatewayConnection> logger,
     IClaudeTranscriptBuilder transcriptBuilder,
     ITransmuter<ClaudeClientConfig, ClaudeRequestOptions> responseOptionsTransmuter,
-    IEnumerable<ToolDefinition> tools) : IClaudeGatewayConnection, IAsyncDisposable
+    IEnumerable<ToolDefinition> tools,
+    ClaudeRegistration registration) : IClaudeGatewayConnection, IAsyncDisposable
 {
     private static readonly JsonSerializerOptions _serializerOptions = new()
     {
@@ -30,7 +31,7 @@ internal sealed class ClaudeRequestGatewayConnection(
     private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     private readonly IClaudeTranscriptBuilder _transcriptBuilder = transcriptBuilder ?? throw new ArgumentNullException(nameof(transcriptBuilder));
     private readonly ITransmuter<ClaudeClientConfig, ClaudeRequestOptions> _responseOptionsTransmuter = responseOptionsTransmuter ?? throw new ArgumentNullException(nameof(responseOptionsTransmuter));
-    private readonly List<ClaudeToolDefinition> _tools = BuildToolDefinitions(tools);
+    private readonly List<ClaudeToolDefinition> _tools = registration.ToolsEnabled ? BuildToolDefinitions(tools) : [];
     private readonly HttpClient _httpClient = CreateHttpClient(configuration);
 
     public Task ConnectAsync()
@@ -39,11 +40,11 @@ internal sealed class ClaudeRequestGatewayConnection(
         return Task.CompletedTask;
     }
 
-    public async Task SendAsync(ClaudeEfferent outgoing, CancellationToken cancellationToken)
+    public async Task SendAsync(ClaudeEfferent outgoing, long outgoingPosition, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        List<ClaudeMessage> messages = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
+        List<ClaudeMessage> messages = await _transcriptBuilder.BuildAsync(outgoing, outgoingPosition, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         ClaudeLog.OutboundSendStart(_logger, messages.Count);
 
         ClaudeRequestOptions options = await _responseOptionsTransmuter.Transmute(_configuration, cancellationToken).ConfigureAwait(false);
@@ -76,19 +77,36 @@ internal sealed class ClaudeRequestGatewayConnection(
             List<ClaudeContentBlock> toolUseBlocks = ExtractToolUseBlocks(messagesResponse);
             if (toolUseBlocks.Count > 0)
             {
-                // Write tool use entries to journal (session pump will route via covenant)
+                // Write tool use entries to journal (session pump will route via covenant).
+                // Unregistered tool names get an immediate error tool_result instead of a
+                // journal round-trip — nothing downstream routes them, and waiting would hang.
                 long? firstToolUsePos = null;
                 List<string> pendingToolUseIds = [];
+                List<ClaudeContentBlock> toolResultBlocks = [];
                 foreach (ClaudeContentBlock block in toolUseBlocks)
                 {
-                    string toolUseId = block.Id ?? Guid.NewGuid().ToString("N");
+                    string toolUseId = block.Id ?? throw new InvalidOperationException("Claude returned a tool_use block without an id.");
+                    string toolName = block.Name ?? throw new InvalidOperationException("Claude returned a tool_use block without a name.");
+                    if (!_tools.Any(t => string.Equals(t.Name, toolName, StringComparison.Ordinal)))
+                    {
+                        ClaudeLog.UnknownToolRequested(_logger, toolName, toolUseId);
+                        toolResultBlocks.Add(new ClaudeContentBlock
+                        {
+                            Type = "tool_result",
+                            ToolUseId = toolUseId,
+                            Content = $"Unknown tool '{toolName}'. Only the provided tools may be used.",
+                            IsError = true
+                        });
+                        continue;
+                    }
+
                     string argumentsJson = block.Input.HasValue
                         ? block.Input.Value.GetRawText()
                         : "{}";
                     ClaudeToolUse toolUseEntry = new(
                         Sender: "claude",
                         ToolUseId: toolUseId,
-                        ToolName: block.Name ?? "unknown",
+                        ToolName: toolName,
                         ArgumentsJson: argumentsJson,
                         MessageId: messageId,
                         Timestamp: timestamp,
@@ -99,12 +117,10 @@ internal sealed class ClaudeRequestGatewayConnection(
                 }
 
                 // Append assistant message with tool_use content to conversation
-                List<ClaudeContentBlock> assistantContent = [.. messagesResponse.Content!
-                    .Where(b => !string.Equals(b.Type, "thinking", StringComparison.OrdinalIgnoreCase))];
+                List<ClaudeContentBlock> assistantContent = [.. messagesResponse.Content!];
                 messages.Add(new ClaudeMessage { Role = "assistant", Content = ClaudeMessageContent.FromBlocks(assistantContent) });
 
                 // Wait for all tool results (routed back via covenant → session pump)
-                List<ClaudeContentBlock> toolResultBlocks = [];
                 foreach (string toolUseId in pendingToolUseIds)
                 {
                     (_, ClaudeToolResult result) = await _journal.WaitForAsync<ClaudeToolResult>(
@@ -124,7 +140,7 @@ internal sealed class ClaudeRequestGatewayConnection(
                 messages.Add(new ClaudeMessage { Role = "user", Content = ClaudeMessageContent.FromBlocks(toolResultBlocks) });
 
                 // Continue loop — send again with tool results
-                if (++toolRoundTrips >= maxToolRoundTrips)
+                if (++toolRoundTrips > maxToolRoundTrips)
                 {
                     throw new InvalidOperationException(
                         $"Claude tool call loop exceeded {maxToolRoundTrips} round-trips. Terminating to prevent infinite loop.");

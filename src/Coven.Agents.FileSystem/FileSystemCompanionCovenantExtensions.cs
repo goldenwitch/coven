@@ -19,7 +19,8 @@ public static class FileSystemCompanionCovenantExtensions
     public static ICovenant RouteFileSystemTools(this ICovenant covenant)
     {
         return covenant
-            .Route<AgentToolCall, FileRead, AgentToolCallToFileRead>()
+            .Route<AgentToolCall, FileRead, AgentToolCallToFileRead>(FileSystemCompanionRouting.IsValidReadFileCall)
+            .Route<AgentToolCall, AgentToolFailure, InvalidReadFileCallToAgentToolFailure>(FileSystemCompanionRouting.IsInvalidReadFileCall)
             .Route<FileContent, AgentToolResult, FileContentToAgentToolResult>()
             .Route<FileFailure, AgentToolFailure, FileFailureToAgentToolFailure>();
     }

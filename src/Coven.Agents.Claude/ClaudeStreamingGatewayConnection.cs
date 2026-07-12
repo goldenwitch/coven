@@ -37,11 +37,11 @@ internal sealed class ClaudeStreamingGatewayConnection(
         return Task.CompletedTask;
     }
 
-    public async Task SendAsync(ClaudeEfferent outgoing, CancellationToken cancellationToken)
+    public async Task SendAsync(ClaudeEfferent outgoing, long outgoingPosition, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        List<ClaudeMessage> messages = await _transcriptBuilder.BuildAsync(outgoing, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
+        List<ClaudeMessage> messages = await _transcriptBuilder.BuildAsync(outgoing, outgoingPosition, _configuration.HistoryClip, cancellationToken).ConfigureAwait(false);
         ClaudeLog.OutboundSendStart(_logger, messages.Count);
 
         ClaudeRequestOptions options = await _responseOptionsTransmuter.Transmute(_configuration, cancellationToken).ConfigureAwait(false);

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Runtime.ExceptionServices;
+using Coven.Core.Daemonology;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Coven.Core.Builder;
@@ -36,20 +38,77 @@ internal static class CovenExecutionScope
         CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
 
         List<IDaemon> daemons = [.. scope.ServiceProvider.GetServices<IDaemon>()];
-        DaemonScope daemonScope = new(scope, daemons, cts);
+        DaemonScope daemonScope = new(scope, daemons, cts, CreateFailureTask(daemons, cts.Token));
 
         try
         {
             // Start daemons as part of scope entry
             await StartDaemonsInOrderAsync(daemons, cts.Token).ConfigureAwait(false);
+            await ThrowIfDaemonFailedAsync(daemonScope, CancellationToken.None).ConfigureAwait(false);
             return daemonScope;
         }
         catch
         {
+            await ShutdownDaemonsAsync(daemons.AsEnumerable().Reverse(), CancellationToken.None).ConfigureAwait(false);
             cts.Dispose();
-            scope.Dispose();
+
+            if (scope is IAsyncDisposable asyncDisposable)
+            {
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                scope.Dispose();
+            }
+
             throw;
         }
+    }
+
+    internal static async Task<T> RunWithFailurePropagationAsync<T>(DaemonScope? daemonScope, Task<T> operation)
+    {
+        if (daemonScope?.FailureTask is not Task<Exception> failureTask)
+        {
+            return await operation.ConfigureAwait(false);
+        }
+
+        Task completed = await Task.WhenAny(operation, failureTask).ConfigureAwait(false);
+        if (completed == failureTask)
+        {
+            if (failureTask.IsCanceled)
+            {
+                return await operation.ConfigureAwait(false);
+            }
+
+            if (!daemonScope.Cts.IsCancellationRequested)
+            {
+                await daemonScope.Cts.CancelAsync().ConfigureAwait(false);
+            }
+
+            Exception failure = await failureTask.ConfigureAwait(false);
+            ExceptionDispatchInfo.Capture(failure).Throw();
+            throw new InvalidOperationException("Unreachable.");
+        }
+
+        T result = await operation.ConfigureAwait(false);
+        await ThrowIfDaemonFailedAsync(daemonScope, CancellationToken.None).ConfigureAwait(false);
+        return result;
+    }
+
+    internal static async Task ThrowIfDaemonFailedAsync(DaemonScope? daemonScope, CancellationToken ct)
+    {
+        if (daemonScope is null)
+        {
+            return;
+        }
+
+        if (daemonScope.FailureTask is { IsCompletedSuccessfully: true } failureTask)
+        {
+            Exception failure = await failureTask.ConfigureAwait(false);
+            ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+
+        await ThrowIfDaemonFailedAsync(daemonScope.Daemons, ct).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -95,12 +154,16 @@ internal static class CovenExecutionScope
     private static async Task StartDaemonsInOrderAsync(List<IDaemon> daemons, CancellationToken ct)
     {
         List<IDaemon> started = [];
+        IDaemon? currentDaemon = null;
         try
         {
             foreach (IDaemon daemon in daemons)
             {
+                currentDaemon = daemon;
                 await daemon.Start(ct).ConfigureAwait(false);
                 started.Add(daemon);
+                await ThrowIfDaemonFailedAsync(started, CancellationToken.None).ConfigureAwait(false);
+                currentDaemon = null;
             }
         }
         catch (Exception ex)
@@ -119,8 +182,10 @@ internal static class CovenExecutionScope
                 }
             }
 
-            Type failedDaemon = daemons[started.Count].GetType();
-            List<Type> rolledBack = [.. started.Select(d => d.GetType())];
+            Type failedDaemon = currentDaemon?.GetType() ?? started.LastOrDefault()?.GetType() ?? typeof(IDaemon);
+            List<Type> rolledBack = currentDaemon is not null && started.Count > 0 && ReferenceEquals(started[^1], currentDaemon)
+                ? [.. started.Take(started.Count - 1).Select(d => d.GetType())]
+                : [.. started.Select(d => d.GetType())];
             throw new DaemonStartupException(
                 "Scope activation failed: daemon startup error",
                 ex,
@@ -147,6 +212,26 @@ internal static class CovenExecutionScope
         }
     }
 
+    private static Task<Exception>? CreateFailureTask(IEnumerable<IDaemon> daemons, CancellationToken ct)
+    {
+        Task<Exception>[] waits = [.. daemons.OfType<ContractDaemon>().Select(daemon => daemon.WaitForFailure(ct))];
+        return waits.Length == 0 ? null : Task.WhenAny(waits).Unwrap();
+    }
+
+    private static async Task ThrowIfDaemonFailedAsync(IEnumerable<IDaemon> daemons, CancellationToken ct)
+    {
+        foreach (IDaemon daemon in daemons)
+        {
+            if (daemon is not ContractDaemon contractDaemon || daemon.Status != Status.Failed)
+            {
+                continue;
+            }
+
+            Exception failure = await contractDaemon.WaitForFailure(ct).ConfigureAwait(false);
+            ExceptionDispatchInfo.Capture(failure).Throw();
+        }
+    }
+
     #region Backwards compatibility for sync callers
 
     /// <summary>
@@ -160,7 +245,7 @@ internal static class CovenExecutionScope
             ?? throw new InvalidOperationException("Coven DI: IServiceScopeFactory not available on the root provider.");
         IServiceScope scope = scopeFactory.CreateScope();
         // Store as DaemonScope with empty daemon list for CurrentProvider access
-        _currentScope.Value = new DaemonScope(scope, [], new CancellationTokenSource());
+        _currentScope.Value = new DaemonScope(scope, [], new CancellationTokenSource(), null);
         return scope;
     }
 

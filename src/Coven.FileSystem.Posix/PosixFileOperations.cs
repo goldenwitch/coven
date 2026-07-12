@@ -53,27 +53,63 @@ internal sealed class PosixFileOperations(
 
     private string ResolvePath(string path)
     {
-        string resolved = Path.GetFullPath(Path.Combine(_normalizedRoot, path));
+        string candidate = Path.GetFullPath(Path.Combine(_normalizedRoot, path));
+        string relativePath = Path.GetRelativePath(_normalizedRoot, candidate);
 
-        // Resolve symlinks to prevent sandbox escape via symbolic links
-        if (File.Exists(resolved) || Directory.Exists(resolved))
+        if (Path.IsPathRooted(relativePath) || EscapesRoot(relativePath))
         {
-            FileSystemInfo info = File.Exists(resolved)
-                ? new FileInfo(resolved)
-                : new DirectoryInfo(resolved);
-            FileSystemInfo? target = info.ResolveLinkTarget(returnFinalTarget: true);
-            if (target is not null)
+            PosixFileSystemLog.PathValidationFailed(_logger, path, candidate, _normalizedRoot);
+            throw new UnauthorizedAccessException(
+                $"Path '{path}' resolves outside the configured root '{_normalizedRoot}'.");
+        }
+
+        string resolved = ResolveSymlinks(relativePath);
+        if (IsWithinRoot(resolved))
+        {
+            return resolved;
+        }
+
+        PosixFileSystemLog.PathValidationFailed(_logger, path, resolved, _normalizedRoot);
+        throw new UnauthorizedAccessException(
+            $"Path '{path}' resolves outside the configured root '{_normalizedRoot}'.");
+    }
+
+    private string ResolveSymlinks(string relativePath)
+    {
+        string current = _normalizedRoot.TrimEnd(Path.DirectorySeparatorChar);
+        string[] segments = relativePath.Split(
+            [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar],
+            StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (string segment in segments)
+        {
+            current = Path.GetFullPath(Path.Combine(current, segment));
+
+            FileSystemInfo? info = GetExistingPathInfo(current);
+            if (info?.ResolveLinkTarget(returnFinalTarget: true) is FileSystemInfo target)
             {
-                resolved = Path.GetFullPath(target.FullName);
+                current = Path.GetFullPath(target.FullName);
             }
         }
 
-        return resolved.StartsWith(_normalizedRoot, _pathComparison)
-            || string.Equals(resolved, _normalizedRoot.TrimEnd(Path.DirectorySeparatorChar), _pathComparison)
-            ? resolved
-            : throw new UnauthorizedAccessException(
-                $"Path '{path}' resolves outside the configured root '{_normalizedRoot}'.");
+        return current;
     }
+
+    private static FileSystemInfo? GetExistingPathInfo(string path)
+        => File.Exists(path)
+            ? new FileInfo(path)
+            : Directory.Exists(path)
+                ? new DirectoryInfo(path)
+                : null;
+
+    private static bool EscapesRoot(string relativePath)
+        => relativePath == ".."
+            || relativePath.StartsWith($"..{Path.DirectorySeparatorChar}", StringComparison.Ordinal)
+            || relativePath.StartsWith($"..{Path.AltDirectorySeparatorChar}", StringComparison.Ordinal);
+
+    private bool IsWithinRoot(string path)
+        => path.StartsWith(_normalizedRoot, _pathComparison)
+            || string.Equals(path, _normalizedRoot.TrimEnd(Path.DirectorySeparatorChar), _pathComparison);
 
     private static string NormalizeRoot(string root)
     {

@@ -40,7 +40,7 @@ services.AddClaudeAgents(cfg, registration =>
 | `TopK` | | Top-k sampling parameter |
 | `SystemPrompt` | | System instruction prepended to conversations |
 | `StopSequences` | | List of sequences that stop generation |
-| `HistoryClip` | | Max transcript items to include (default unlimited) |
+| `HistoryClip` | | Max transcript items to include (defaults to unlimited when unset) |
 | `ExtendedThinking` | | Extended thinking configuration |
 
 ### Extended Thinking

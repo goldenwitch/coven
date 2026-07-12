@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 
-using System.Text.Json;
 using Coven.FileSystem;
 using Coven.Transmutation;
 
 namespace Coven.Agents.FileSystem;
 
 /// <summary>
-/// Forward transmuter: converts AgentToolCall → FileRead.
-/// Returns null (via exception filtering at the covenant level) when the tool name doesn't match.
+/// Forward transmuter: converts a validated read_file AgentToolCall into a FileRead.
 /// </summary>
 internal sealed class AgentToolCallToFileRead : ITransmuter<AgentToolCall, FileRead>
 {
@@ -17,17 +15,9 @@ internal sealed class AgentToolCallToFileRead : ITransmuter<AgentToolCall, FileR
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        return !string.Equals(Input.ToolName, "read_file", StringComparison.Ordinal)
-            ? throw new InvalidOperationException(
-                $"AgentToolCallToFileRead cannot handle tool '{Input.ToolName}'.")
-            : Task.FromResult(new FileRead(Input.CorrelationId, ExtractPath(Input.ArgumentsJson)));
-    }
-
-    private static string ExtractPath(string argumentsJson)
-    {
-        using JsonDocument doc = JsonDocument.Parse(argumentsJson);
-        return doc.RootElement.TryGetProperty("path", out JsonElement pathElement)
-            ? pathElement.GetString() ?? throw new ArgumentException("Tool argument 'path' is null.")
-            : throw new ArgumentException("Tool argument 'path' is required.");
+        return FileSystemCompanionRouting.TryExtractPath(Input.ArgumentsJson, out string path, out string error)
+            ? Task.FromResult(new FileRead(Input.CorrelationId, path))
+            : throw new InvalidOperationException(
+                $"Invariant violation: read_file call '{Input.CorrelationId}' reached {nameof(AgentToolCallToFileRead)} without a valid path. {error}");
     }
 }

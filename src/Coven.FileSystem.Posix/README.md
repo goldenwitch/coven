@@ -38,6 +38,11 @@ services.BuildCoven(c =>
 - Write `FileRead` entries into the journal and assert on the resulting `FileContent` / `FileFailure` entries.
 - Verify sandbox confinement by requesting paths with `..` segments and expecting `FileFailure`.
 
+## Security Notes
+
+- Sandbox checks are enforced after canonical path resolution and per-component symlink resolution, so parent-directory symlinks cannot tunnel reads outside the configured root.
+- Prefix checks are OS-aware: Windows paths compare case-insensitively, while Linux/macOS comparisons stay case-sensitive to avoid same-prefix escapes that differ only by case.
+
 ## See Also
 
 - Branch types: `Coven.FileSystem`.

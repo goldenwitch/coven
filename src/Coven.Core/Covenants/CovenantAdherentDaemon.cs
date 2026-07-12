@@ -50,17 +50,18 @@ internal sealed class CovenantAdherentDaemon(
 
     private async Task RunPumpsAsync(CancellationToken ct)
     {
-        Task[] tasks = [.. _covenant.Pumps.Select(pump => pump.CreatePump(_services, ct))];
+        Task[] tasks = [];
 
         try
         {
+            tasks = [.. _covenant.Pumps.Select(pump => pump.CreatePump(_services, ct))];
             await Task.WhenAll(tasks);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
             // Normal shutdown — not an error.
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // At least one pump faulted. Cancel all remaining pumps.
             if (_cts is not null)
@@ -72,12 +73,10 @@ internal sealed class CovenantAdherentDaemon(
             Exception? firstFault = tasks
                 .Where(t => t.IsFaulted)
                 .Select(t => t.Exception!.InnerException ?? t.Exception)
-                .FirstOrDefault();
+                .FirstOrDefault()
+                ?? ex;
 
-            if (firstFault is not null)
-            {
-                await Fail(firstFault, CancellationToken.None).ConfigureAwait(false);
-            }
+            await Fail(firstFault, CancellationToken.None).ConfigureAwait(false);
         }
     }
 }

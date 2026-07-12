@@ -3,6 +3,7 @@
 using Coven.Core;
 using Coven.Core.Builder;
 using Coven.Core.Covenants;
+using Coven.Transmutation;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
@@ -19,11 +20,21 @@ public class CovenantValidationTests
     // Sample entry types for testing
     private sealed record SourceEntry : TestJournalEntry;
 
+    private sealed record ConditionalSourceEntry(int Choice) : TestJournalEntry;
+
     private sealed record TargetEntry : TestJournalEntry;
+
+    private sealed record AlternateTargetEntry : TestJournalEntry;
 
     private sealed record UnroutedEntry : TestJournalEntry;
 
     private sealed record ConsumedEntry : TestJournalEntry;
+
+    private sealed class RouteTransmuter : ITransmuter<SourceEntry, TargetEntry>
+    {
+        public Task<TargetEntry> Transmute(SourceEntry Input, CancellationToken cancellationToken = default)
+            => Task.FromResult(new TargetEntry());
+    }
 
     [Fact]
     public void CovenantWithAllRoutesAndTerminalsSucceeds()
@@ -203,6 +214,77 @@ public class CovenantValidationTests
                 {
                     c.Route<SourceEntry, TargetEntry>((e, ct) => Task.FromResult(new TargetEntry()));
                 });
+        });
+    }
+
+    [Fact]
+    public void CovenantWithMultipleFilteredRoutesForSameSourceSucceeds()
+    {
+        ServiceCollection services = new();
+        BranchManifest branch = new(
+            "TestBranch",
+            JournalEntryType: typeof(TestJournalEntry),
+            Produces: new HashSet<Type> { typeof(ConditionalSourceEntry) },
+            Consumes: new HashSet<Type> { typeof(TargetEntry), typeof(AlternateTargetEntry) },
+            RequiredDaemons: []);
+
+        services.BuildCoven(coven =>
+        {
+            coven.Covenant()
+                .Connect(branch)
+                .Routes(c =>
+                {
+                    c.Route<ConditionalSourceEntry, TargetEntry>(entry => entry.Choice == 0, (entry, ct) => Task.FromResult(new TargetEntry()));
+                    c.Route<ConditionalSourceEntry, AlternateTargetEntry>(entry => entry.Choice != 0, (entry, ct) => Task.FromResult(new AlternateTargetEntry()));
+                });
+        });
+    }
+
+    [Fact]
+    public void TransmuterRouteRequiresConcreteRegistration()
+    {
+        ServiceCollection services = new();
+        services.AddTransient<ITransmuter<SourceEntry, TargetEntry>, RouteTransmuter>();
+
+        BranchManifest branch = new(
+            "TestBranch",
+            JournalEntryType: typeof(TestJournalEntry),
+            Produces: new HashSet<Type> { typeof(SourceEntry) },
+            Consumes: new HashSet<Type> { typeof(TargetEntry) },
+            RequiredDaemons: []);
+
+        CovenantValidationException exception = Assert.Throws<CovenantValidationException>(() =>
+        {
+            services.BuildCoven(coven =>
+            {
+                coven.Covenant()
+                    .Connect(branch)
+                    .Routes(c => c.Route<SourceEntry, TargetEntry, RouteTransmuter>());
+            });
+        });
+
+        Assert.Contains(nameof(RouteTransmuter), exception.Message);
+        Assert.Contains("service container", exception.Message);
+    }
+
+    [Fact]
+    public void TransmuterRouteSucceedsWithConcreteRegistration()
+    {
+        ServiceCollection services = new();
+        services.AddTransient<RouteTransmuter>();
+
+        BranchManifest branch = new(
+            "TestBranch",
+            JournalEntryType: typeof(TestJournalEntry),
+            Produces: new HashSet<Type> { typeof(SourceEntry) },
+            Consumes: new HashSet<Type> { typeof(TargetEntry) },
+            RequiredDaemons: []);
+
+        services.BuildCoven(coven =>
+        {
+            coven.Covenant()
+                .Connect(branch)
+                .Routes(c => c.Route<SourceEntry, TargetEntry, RouteTransmuter>());
         });
     }
 }

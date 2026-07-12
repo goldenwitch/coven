@@ -117,6 +117,8 @@ internal sealed class ClaudeContentBlock
     public string? Type { get; set; }
     public string? Text { get; set; }
     public string? Thinking { get; set; }
+    public string? Signature { get; set; }
+    public string? Data { get; set; }
     // Tool use (response from Claude)
     public string? Id { get; set; }
     public string? Name { get; set; }
