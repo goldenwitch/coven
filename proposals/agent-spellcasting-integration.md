@@ -85,7 +85,7 @@ Multiple concurrent tool calls (across different conversations) each have unique
 
 The companion library (e.g., `Coven.Agents.FileSystem`) provides:
 
-1. **Tool definitions** — `SpellDefinition[]` so the agent leaf can register tools with the LLM
+1. **Tool definitions** — `ToolDefinition[]` so the agent leaf can register tools with the LLM
 2. **Forward transmuters** — convert `AgentToolCall` → branch efferent entry (e.g., `FileRead`)
 3. **Return transmuters** — convert branch afferent entry (e.g., `FileContent`) → `AgentToolResult`
 

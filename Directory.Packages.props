@@ -36,11 +36,14 @@
     <PackageVersion Include="Coven.Core" Version="2.0.1" />
     <PackageVersion Include="Coven.Core.Streaming" Version="2.0.1" />
     <PackageVersion Include="Coven.Transmutation" Version="2.0.1" />
-    <PackageVersion Include="Coven.Spellcasting" Version="2.0.1" />
     <PackageVersion Include="Coven.Chat" Version="2.0.1" />
     <PackageVersion Include="Coven.Chat.Console" Version="2.0.1" />
     <PackageVersion Include="Coven.Chat.Discord" Version="2.0.1" />
     <PackageVersion Include="Coven.Agents" Version="2.0.1" />
     <PackageVersion Include="Coven.Agents.OpenAI" Version="2.0.1" />
+    <PackageVersion Include="Coven.Agents.Claude" Version="2.0.1" />
+    <PackageVersion Include="Coven.Agents.FileSystem" Version="2.0.1" />
+    <PackageVersion Include="Coven.FileSystem" Version="2.0.1" />
+    <PackageVersion Include="Coven.FileSystem.Posix" Version="2.0.1" />
   </ItemGroup>
 </Project>

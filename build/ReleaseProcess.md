@@ -30,12 +30,15 @@ Package manifest
   - `Coven.Core` at `src/Coven.Core`
   - `Coven.Core.Streaming` at `src/Coven.Core.Streaming`
   - `Coven.Transmutation` at `src/Coven.Transmutation`
-  - `Coven.Spellcasting` at `src/Coven.Spellcasting`
   - `Coven.Chat` at `src/Coven.Chat`
   - `Coven.Chat.Console` at `src/Coven.Chat.Console`
   - `Coven.Chat.Discord` at `src/Coven.Chat.Discord`
   - `Coven.Agents` at `src/Coven.Agents`
   - `Coven.Agents.OpenAI` at `src/Coven.Agents.OpenAI`
+  - `Coven.Agents.Claude` at `src/Coven.Agents.Claude`
+  - `Coven.Agents.FileSystem` at `src/Coven.Agents.FileSystem`
+  - `Coven.FileSystem` at `src/Coven.FileSystem`
+  - `Coven.FileSystem.Posix` at `src/Coven.FileSystem.Posix`
 
 
 Promotion to stable

@@ -8,7 +8,7 @@
 
 ## Summary
 
-**Spellcasting** is Coven's pattern for tool invocation. The `Coven.Spellcasting` package is a slim **utility library** providing `SpellDefinition` and `SchemaGen`. It is not a branch.
+**Spellcasting** is Coven's pattern for tool invocation. There is no `Coven.Spellcasting` package — tool definitions live in `Coven.Agents` (`ToolDefinition`), and each tool capability is modeled as an ordinary branch.
 
 Each tool capability (FileSystem, Compute, ImageGen) is its own **branch** — defining entry types the same way Chat defines `ChatAfferent`/`ChatEfferent`. Each branch has **leaves** that translate those entries to concrete backends (POSIX, Windows, DALL-E). **Companion libraries** bridge agents to tool branches, keeping types scoped to exactly where they're needed.
 
@@ -37,8 +37,8 @@ Each tool capability (FileSystem, Compute, ImageGen) is its own **branch** — d
 
 Types are surfaced only in the exact package that needs them:
 
-- **Branch packages** (`Coven.Spellcasting.FileSystem`) own entry types. They don't know about agents.
-- **Leaf packages** (`Coven.Spellcasting.FileSystem.Posix`) own daemons that back a branch. They don't know about agents.
+- **Branch packages** (`Coven.FileSystem`) own entry types. They don't know about agents.
+- **Leaf packages** (`Coven.FileSystem.Posix`) own daemons that back a branch. They don't know about agents.
 - **Agent packages** (`Coven.Agents.OpenAI`) own agent entry types. They don't know about tool branches.
 - **Companion libraries** (`Coven.Agents.FileSystem`) reference agent and branch packages, providing the transmuters.
 
@@ -48,31 +48,21 @@ If you don't use a branch, you don't have its types. If you don't bridge an agen
 
 ## Package Structure
 
-Four tiers per tool capability:
+Three tiers per tool capability:
 
 | Tier | Example Package | Contains | References |
 |------|----------------|----------|------------|
-| **Branch** | `Coven.Spellcasting.FileSystem` | Entry types (`FileRead`, `FileContent`, etc.), `BranchManifest` | `Coven.Core` |
-| **Leaf** | `Coven.Spellcasting.FileSystem.Posix` | Daemon (`PosixFSDaemon`), `UseFileSystem().UsePosix()` | Branch package |
+| **Branch** | `Coven.FileSystem` | Entry types (`FileRead`, `FileContent`, etc.), `BranchManifest` | `Coven.Core` |
+| **Leaf** | `Coven.FileSystem.Posix` | Daemon (`PosixFileSystemDaemon`), `UsePosixFileSystem()` | Branch package |
 | **Companion** | `Coven.Agents.FileSystem` | Tool definitions, transmuters | `Coven.Agents` + branch package |
-| **Utility** | `Coven.Spellcasting` | `SpellDefinition`, `SchemaGen` | `Coven.Core` |
 
 The companion bridges agents to the branch, not to a specific leaf. `Coven.Agents.FileSystem` provides transmuters from `AgentToolCall` → `FileRead` regardless of whether POSIX or Windows is backing the FileSystem branch.
 
 ---
 
-## What Coven.Spellcasting Provides
+## Tool Definitions
 
-A slim utility package:
-
-| Type | Purpose |
-|------|---------|
-| `SpellDefinition` | Tool name + description + input/output JSON schemas |
-| `SchemaGen` | Generate JSON schemas from CLR types |
-
-No journal. No daemon. No branch manifest. No `ISpell`. No `Spellbook`.
-
-Companion libraries use `SpellDefinition` to describe their tools. Agent leaves consume `SpellDefinition` to format LLM tool registrations.
+`ToolDefinition` (in `Coven.Agents`) carries tool name + description + JSON input schema. Companion libraries register `ToolDefinition` instances in DI to describe their tools; agent leaves consume them to format LLM tool registrations. Schema generation from CLR types (`SchemaGen`) is future work.
 
 ---
 
@@ -80,19 +70,19 @@ Companion libraries use `SpellDefinition` to describe their tools. Agent leaves 
 
 A companion library bridges agents to a tool branch. It provides:
 
-1. **Tool definitions** — `SpellDefinition[]` describing available operations
+1. **Tool definitions** — `ToolDefinition[]` describing available operations
 2. **Transmuters** — route `AgentToolCall` → branch efferent entries, and branch afferent entries → `AgentToolResult`
 
 ```
 Coven.Agents.FileSystem
-  ├── FileSystemTools              → SpellDefinition[] for FileRead, FileWrite, etc.
+  ├── FileSystemTools              → ToolDefinition[] for FileRead, FileWrite, etc.
   ├── AgentToolCallToFileRead      → transmuter
   ├── AgentToolCallToFileWrite     → transmuter
   ├── FileContentToAgentToolResult → transmuter
   └── FileFailureToAgentToolFailure → transmuter
 ```
 
-Each transmuter returns null when the tool name doesn't match, so multiple routes from `AgentToolCall` coexist cleanly.
+Routes carry predicates (`Route<TSource, TTarget, TTransmuter>(shouldRoute)`), so multiple routes from `AgentToolCall` coexist cleanly — each route declares exactly which tool calls it handles, and transmuters stay pure.
 
 ---
 
@@ -143,15 +133,15 @@ services.BuildCoven(coven =>
 
 ## Checklist
 
-- [ ] Delete `ISpellContract`, `ISpell`, `Spellbook`, `SpellbookBuilder` (replaced by companion pattern)
-- [ ] Slim `Coven.Spellcasting` to `SpellDefinition` + `SchemaGen`
-- [ ] `Coven.Spellcasting.FileSystem` branch package with entry types
-- [ ] `Coven.Spellcasting.FileSystem.Posix` leaf with daemon, `UseFileSystem().UsePosix()`
-- [ ] `Coven.Spellcasting.Compute` branch package with entry types
-- [ ] `Coven.Spellcasting.Compute.Posix` leaf with daemon, `UseCompute().UsePosix()`
-- [ ] `Coven.Spellcasting.ImageGen` branch package with entry types
-- [ ] `Coven.Spellcasting.ImageGen.Dalle` leaf with daemon, `UseImageGen().UseDalle()`
-- [ ] `Coven.Agents.FileSystem` companion with tool definitions and transmuters
+- [x] Delete `ISpellContract`, `ISpell`, `Spellbook`, `SpellbookBuilder` (replaced by companion pattern)
+- [x] `ToolDefinition` in `Coven.Agents` (the `Coven.Spellcasting` utility package was deleted instead of slimmed)
+- [x] `Coven.FileSystem` branch package with entry types
+- [x] `Coven.FileSystem.Posix` leaf with daemon, `UsePosixFileSystem()` (read-only so far)
+- [ ] `Coven.Compute` branch package with entry types
+- [ ] `Coven.Compute.Posix` leaf with daemon, `UseCompute().UsePosix()`
+- [ ] `Coven.ImageGen` branch package with entry types
+- [ ] `Coven.ImageGen.Dalle` leaf with daemon, `UseImageGen().UseDalle()`
+- [x] `Coven.Agents.FileSystem` companion with tool definitions and transmuters
 - [ ] `Coven.Agents.Compute` companion with tool definitions and transmuters
 - [ ] `Coven.Agents.ImageGen` companion with tool definitions and transmuters
-- [ ] Integration test: agent → companion → branch → leaf → branch → companion → agent round-trip
+- [x] Integration test: agent → companion → branch → leaf → branch → companion → agent round-trip

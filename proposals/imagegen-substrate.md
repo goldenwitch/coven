@@ -12,7 +12,7 @@ Branch for AI image generation. Defines efferent entries (`ImageGen`) and affere
 
 Initial leaf: OpenAI DALL-E. Additional providers (local models, other APIs) are future leaves.
 
-Branch package: `Coven.Spellcasting.ImageGen`  
+Branch package: `Coven.ImageGen`  
 Companion: `Coven.Agents.ImageGen` (see [Spellcasting](spellcasting-branch.md))
 
 ---

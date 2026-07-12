@@ -10,7 +10,7 @@
 
 Branch for file operations. Defines efferent entries (`FileRead`, `FileWrite`) and afferent entries (`FileContent`, `FileFailure`). Leaves translate these to concrete backends.
 
-Branch package: `Coven.Spellcasting.FileSystem`  
+Branch package: `Coven.FileSystem` (implemented)  
 Companion: `Coven.Agents.FileSystem` (see [Spellcasting](spellcasting-branch.md))
 
 ---
@@ -49,7 +49,7 @@ All carry `CorrelationId` for matching.
 Each leaf extends `ContractDaemon`, tails `IScrivener<FileSystemEntry>`, processes efferent entries, writes afferent results:
 
 ```
-DAEMON PosixFSDaemon
+DAEMON PosixFileSystemDaemon
   tails: IScrivener<FileSystemEntry>
   
   ON FileRead { correlation-id, path }:
@@ -66,9 +66,9 @@ DAEMON PosixFSDaemon
 
 | Leaf | Backend | Package |
 |------|---------|--------|
-| `PosixFSDaemon` | Local disk via `System.IO` (POSIX) | `Coven.Spellcasting.FileSystem.Posix` |
-| `WindowsFSDaemon` | Local disk via `System.IO` (Windows) | `Coven.Spellcasting.FileSystem.Windows` |
-| `MockFSDaemon` | In-memory (testing) | `Coven.Spellcasting.FileSystem.Mock` |
+| `PosixFileSystemDaemon` | Local disk via `System.IO` (POSIX) | `Coven.FileSystem.Posix` (implemented, read-only) |
+| `WindowsFileSystemDaemon` | Local disk via `System.IO` (Windows) | `Coven.FileSystem.Windows` |
+| `MockFileSystemDaemon` | In-memory (testing) | `Coven.FileSystem.Mock` |
 
 Leaves filter by path scope. A leaf rooted at `/workspace` ignores paths outside that prefix.
 
@@ -77,7 +77,7 @@ Leaves filter by path scope. A leaf rooted at `/workspace` ignores paths outside
 ## Checklist
 
 - [ ] `FileSystemEntry` hierarchy with `[JsonPolymorphic]`
-- [ ] `PosixFSDaemon` extends `ContractDaemon`
+- [x] `PosixFileSystemDaemon` extends `ContractDaemon`
 - [ ] `MockFSDaemon` for testing
 - [ ] Path scoping configuration
 - [ ] `Coven.Agents.FileSystem` companion with tool definitions and transmuters

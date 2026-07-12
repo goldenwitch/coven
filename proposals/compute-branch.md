@@ -10,7 +10,7 @@
 
 Branch for command execution. Defines efferent entries (`ShellExec`) and afferent entries (`ShellOutput`, `ShellFailure`). Leaves translate these to concrete backends.
 
-Branch package: `Coven.Spellcasting.Compute`  
+Branch package: `Coven.Compute`  
 Companion: `Coven.Agents.Compute` (see [Spellcasting](spellcasting-branch.md))
 
 ---
@@ -59,9 +59,9 @@ DAEMON PosixShellDaemon
 
 | Leaf | Backend | Package |
 |------|---------|--------|
-| `PosixShellDaemon` | `Process.Start` (POSIX) | `Coven.Spellcasting.Compute.Posix` |
-| `WindowsShellDaemon` | `Process.Start` (Windows) | `Coven.Spellcasting.Compute.Windows` |
-| `MockShellDaemon` | Scripted responses (testing) | `Coven.Spellcasting.Compute.Mock` |
+| `PosixShellDaemon` | `Process.Start` (POSIX) | `Coven.Compute.Posix` |
+| `WindowsShellDaemon` | `Process.Start` (Windows) | `Coven.Compute.Windows` |
+| `MockShellDaemon` | Scripted responses (testing) | `Coven.Compute.Mock` |
 
 Leaves can filter by command allowlist or working directory scope.
 
