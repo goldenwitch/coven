@@ -1,0 +1,74 @@
+vine 1.2.0
+title: Durable Scrivener - Journal Contract to Distributed Semantics
+prefix: scriv
+---
+[durable-scrivener] Durable Scrivener (planning)
+Lift IScrivener from an implicit in-memory contract to a formalized journal contract with a durable single-node implementation and a path to distributed semantics. Geas Arcana invariant #1 (re-derivability: world state reconstructs from journal alone) is the driving consumer; Coven audit found the current contract is only true of InMemoryScrivener.
+-> contract
+-> contract-tests
+-> segment-log
+-> hydration
+-> cursors
+-> dedup
+-> retire-filescrivener
+-> sequencer
+-> replication
+-> geas-integration
+> Contract before code: every guarantee gets written down and enforced by a shared test suite before any new implementation lands
+> Multi-match fan-out (Tee dispatch) is a hard requirement; every consumer owns an independent cursor - fan-out is never designed away
+> Delivery model: at-least-once plus idempotent effects, not exactly-once transport
+@guidance text/markdown ./unrepresentable-covenants.md
+@guidance text/markdown file:///D:/git/geasarcana/02-verbs-and-journal.md
+---
+[contract] Journal Contract v1 (planning)
+Promote implicit guarantees to documented IScrivener contract: dense monotonic positions from 1, long-range positions (remove int.MaxValue list ceiling), tail semantics (infinite, non-completing, restartable from position), WaitForAsync scan-from semantics, snapshot-vs-live ReadBackward, thread safety for concurrent writers, completion/disposal behavior, genesis + schema-version entry convention, tombstone convention (undo appends, never rewrites).
+> Positions stay dense and monotonic per journal - this is the load-bearing decision that forces a single position authority per journal
+> Genesis/schema-version and tombstones adopted from the Geas journal design so the contract serves it natively
+> WaitFor semantics split: level-triggered replay becomes explicit; edge-triggered waits become cursor-based (fixes ContractDaemon WaitFor/WaitForFailure replaying history)
+---
+[contract-tests] Cross-Implementation Contract Suite (notstarted)
+One test suite that every IScrivener implementation must pass: InMemory, durable, distributed. Position density, concurrent write ordering, tail-from-position, backward snapshot isolation, capacity, dispose/completion. This is the forcing function the abstraction never had - a second real implementation validated against the first.
+-> contract
+---
+[cursors] Durable Consumer Cursors (planning)
+Per-consumer named cursors (pump id, daemon id) persisted alongside the journal. Pumps tail from cursor, not from 0. Retell/replay becomes an explicit operation (new consumer or cursor reset), never an accident of process restart. Daemon-event journal moves to cursor-based waits.
+-> contract
+> Cursor ownership follows the Tee model: every fan-out consumer has its own cursor; exclusive On groups share one
+---
+[segment-log] Single-Node Durable Scrivener (notstarted)
+Append-only segmented log (JSONL segments + index), fsync policy configurable (per-write for canon journals, batched for telemetry), atomic segment rotation. Write path returns position only after durability per policy. No silent drop on shutdown - flush failures scream.
+-> contract
+-> contract-tests
+> JSONL per Geas journal schema so geas canon --replay reads the raw log without an export step
+---
+[hydration] Startup Hydration + Crash Recovery (notstarted)
+On open: scan segments, verify genesis + schema major, rebuild index, truncate torn tail writes (last-line partial JSON), resume position sequence. Kill -9 during write must recover to a consistent prefix. Recovery is loud: torn writes logged, never silently skipped.
+-> segment-log
+---
+[dedup] Idempotent Pumps (planning)
+At-least-once delivery means restart replays entries after the last durable cursor checkpoint. Transmuter effects must be idempotent or deduplicated: target-journal write dedup keyed on (source journal, source position, route id). Decide whether dedup lives in the pump (covenant machinery) or the scrivener write path.
+-> cursors
+> Prefer pump-level dedup: scriveners stay dumb logs; covenant machinery owns exactly-once-effect
+---
+[retire-filescrivener] Retire FileScrivener + FlusherDaemon (notstarted)
+Current FileScrivener is an in-memory delegator with a write-behind sink: no hydration, no replay, silent buffer drop on shutdown. Superseded by segment-log. Delete per guidelines/coding.md; migrate FileScrivenerConsole toy to the durable scrivener as its smoke test.
+-> segment-log
+-> hydration
+---
+[sequencer] Distributed Position Authority (planning)
+Dense monotonic positions require a single sequencer per journal. Design the minimal authority: single-writer lease (one node owns append for a journal, others forward), fencing tokens on lease transfer, no multi-master position assignment ever.
+-> contract
+> Rejected: sparse/vector positions and CRDT merge - Geas source-scoped contradiction is content at the semantic layer, but position order stays total
+---
+[replication] Replicated Journal Backend (planning)
+Replicate the segment log: leader append + follower sync, read-your-writes on leader, followers serve tails with bounded lag. Decision gate first: build minimal replication vs adapt an existing log (NATS JetStream / Kafka / Redis Streams) behind the same contract suite. Adopt if the contract tests pass unmodified; build only if adapters distort the contract.
+-> sequencer
+-> segment-log
+-> contract-tests
+> The contract suite is the adopt-vs-build referee - whichever backend passes it without contract exceptions wins
+---
+[geas-integration] Geas Journal on Durable Scrivener (notstarted)
+Geas world folder journal.jsonl backed by the durable scrivener: genesis entry, schema geas/1, tombstone undo, canon --replay as the re-derivability audit running the hydration path. First external consumer; its journal audit benchmark doubles as Coven's durability acceptance test.
+-> hydration
+-> cursors
+@guidance text/markdown file:///D:/git/geasarcana/00-machine.md
