@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Core.Daemonology;
 using Coven.Transmutation;
 using Coven.Core.Streaming;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,12 @@ internal sealed class OpenAIAgentSession(
 
     private Task? _openAIToAgentsPump;
     private Task? _agentsToOpenAIPump;
+
+    // Faults as soon as either pump does, so the daemon can report it rather than leaving the
+    // caller waiting on a turn that is already dead.
+    internal Task Completion => _openAIToAgentsPump is not null && _agentsToOpenAIPump is not null
+        ? DaemonPumps.WhenAllOrFirstFault(_openAIToAgentsPump, _agentsToOpenAIPump)
+        : Task.CompletedTask;
 
     public async Task StartAsync()
     {
@@ -131,7 +138,7 @@ internal sealed class OpenAIAgentSession(
             {
                 try
                 {
-                    await Task.WhenAll(_openAIToAgentsPump, _agentsToOpenAIPump).ConfigureAwait(false);
+                    await Completion.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

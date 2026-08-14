@@ -99,6 +99,16 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
                 return false;
             }
 
+            // A daemon that never reached Running has nothing to complete, so shutting it
+            // down is a no-op rather than an error. This is the normal path when Start()
+            // throws partway: the scope rolls back and IAsyncDisposable also calls
+            // Shutdown(), and throwing here would replace the real startup error — a model
+            // that failed to load, a rejected API key — with a complaint about the cleanup.
+            if (Status == Status.Stopped && newStatus == Status.Completed)
+            {
+                return false;
+            }
+
             // Validate transition
             bool isValid = (Status, newStatus) switch
             {
@@ -109,7 +119,6 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
                 (Status.Failed, Status.Completed) => true,
                 (Status.Completed, Status.Running) => false, // Cannot restart
                 (Status.Failed, Status.Running) => false, // Cannot restart after failure
-                (Status.Stopped, Status.Completed) => false, // Cannot shutdown without starting
                 _ => false
             };
 

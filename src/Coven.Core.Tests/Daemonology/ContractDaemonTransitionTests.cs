@@ -22,14 +22,47 @@ public class ContractDaemonTransitionTests
     }
 
     [Fact]
-    public async Task ShutdownWithoutStartThrows()
+    public async Task ShutdownWithoutStartIsANoOp()
     {
-        // Intent: A daemon must be started before it can be shut down.
-        // Stopped → Completed is not a valid transition.
+        // Intent: Shutting down a daemon that never ran is harmless, not an error.
+        //
+        // This reverses an earlier rule that threw on Stopped → Completed to enforce
+        // "cannot shut down without starting". That rule fired on the one path that matters
+        // most: when Start() throws partway, the daemon is left Stopped, and both the scope's
+        // rollback and IAsyncDisposable then call Shutdown(). The throw replaced the real
+        // startup error — a GGUF that failed to load, a rejected key — with a complaint about
+        // the cleanup, which is the last thing anyone needs while diagnosing a failed start.
+        //
+        // Nothing was being protected: a never-started daemon holds nothing to release.
         InMemoryScrivener<DaemonEvent> scrivener = new();
         TestDaemon daemon = new(scrivener);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => daemon.Shutdown());
+        await daemon.Shutdown();
+
+        // Still Stopped, not Completed: it never ran, so there is nothing to have completed.
+        Assert.Equal(Status.Stopped, daemon.Status);
+    }
+
+    [Fact]
+    public async Task ShutdownAfterAFailedStartPreservesTheFailure()
+    {
+        // Intent: cleanup must not overwrite the reason the daemon failed. A daemon that
+        // failed during startup stays Failed through Shutdown, so WaitForFailure still
+        // reports the cause.
+        InMemoryScrivener<DaemonEvent> scrivener = new();
+        TestDaemon daemon = new(scrivener);
+
+        await daemon.Start();
+        await daemon.TriggerFailure(new InvalidOperationException("model failed to load"));
+
+        Assert.Equal(Status.Failed, daemon.Status);
+
+        await daemon.Shutdown();
+
+        Assert.Equal(Status.Completed, daemon.Status);
+
+        Exception recorded = await daemon.WaitForFailure().WaitAsync(TimeSpan.FromSeconds(5));
+        Assert.Equal("model failed to load", recorded.Message);
     }
 
     [Fact]

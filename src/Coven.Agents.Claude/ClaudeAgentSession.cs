@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Core.Daemonology;
 using Coven.Core.Streaming;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
@@ -34,8 +35,11 @@ internal sealed class ClaudeAgentSession(
     private Task? _agentsToClaudePump;
     private Task? _gatewayPump;
 
+    // WhenAllOrFirstFault, not Task.WhenAll: the two journal-tailing pumps only end on
+    // cancellation, so WhenAll would never observe a gateway pump fault and the daemon would
+    // never fail — leaving a dead turn looking like a slow one.
     internal Task Completion => _claudeToAgentsPump is not null && _agentsToClaudePump is not null && _gatewayPump is not null
-        ? Task.WhenAll(_claudeToAgentsPump, _agentsToClaudePump, _gatewayPump)
+        ? DaemonPumps.WhenAllOrFirstFault(_claudeToAgentsPump, _agentsToClaudePump, _gatewayPump)
         : Task.CompletedTask;
 
     public async Task StartAsync()

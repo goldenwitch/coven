@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Core.Daemonology;
 using Coven.Core.Streaming;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
@@ -32,6 +33,12 @@ internal sealed class GeminiAgentSession(
 
     private Task? _geminiToAgentsPump;
     private Task? _agentsToGeminiPump;
+
+    // Faults as soon as either pump does, so the daemon can report it rather than leaving the
+    // caller waiting on a turn that is already dead.
+    internal Task Completion => _geminiToAgentsPump is not null && _agentsToGeminiPump is not null
+        ? DaemonPumps.WhenAllOrFirstFault(_geminiToAgentsPump, _agentsToGeminiPump)
+        : Task.CompletedTask;
 
     public async Task StartAsync()
     {
@@ -129,7 +136,7 @@ internal sealed class GeminiAgentSession(
             {
                 try
                 {
-                    await Task.WhenAll(_geminiToAgentsPump, _agentsToGeminiPump).ConfigureAwait(false);
+                    await Completion.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {

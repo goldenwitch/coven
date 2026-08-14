@@ -246,7 +246,29 @@ internal sealed class CovenantBuilder : ICovenantBuilder
             }
         }
 
-        // Rule 4: Transmuter types must be registered in DI
+        // Rule 4: Every route endpoint must belong to a connected manifest.
+        // Pump construction resolves each endpoint to a journal via the manifests; an
+        // unknown type would otherwise surface as a bare KeyNotFoundException from a
+        // dictionary lookup, naming the type but not what to do about it.
+        HashSet<Type> declared = [.. allProduced, .. allConsumed];
+        foreach (RouteDescriptor route in definition.Routes)
+        {
+            if (!declared.Contains(route.SourceType))
+            {
+                errors.Add(
+                    $"{route.SourceType.Name} is routed from, but no connected branch declares it.\n" +
+                    $"  Either connect the branch that produces {route.SourceType.Name}, or remove the route.");
+            }
+
+            if (!declared.Contains(route.TargetType))
+            {
+                errors.Add(
+                    $"{route.TargetType.Name} is routed to, but no connected branch declares it.\n" +
+                    $"  Either connect the branch that consumes {route.TargetType.Name}, or remove the route.");
+            }
+        }
+
+        // Rule 5: Transmuter types must be registered in DI
         // (This is a warning-level check; we can't verify at build time without resolving)
         // The runtime will fail fast if a transmuter is not registered.
         foreach (RouteDescriptor route in definition.Routes)

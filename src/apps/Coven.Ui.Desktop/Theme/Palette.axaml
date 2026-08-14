@@ -1,0 +1,69 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    The palette is a DMC floss card, and the numbers are kept in the names on purpose: these
+    are real thread colours, and anyone stitching the same design should be able to buy them.
+    Hex values are the standard DMC-to-RGB conversions.
+
+      792  Cornflower Blue Dark        #555B7B   primary
+      3826 Golden Brown                #AD7239   secondary, rendered as foil
+      801  Coffee Brown Dark           #653919   accent, rendered as construction paper
+      3755 Baby Blue                   #92B4CE   the quieter blue — visited, disabled, hover
+      422  Hazelnut Brown Light        #C69F7B   rules and borders
+      167  Yellow Beige Very Dark      #A77C49   secondary text
+      3866 Mocha Ultra Very Light      #FAF6F0   the paper itself
+      Ecru                             #F0EADA   paper, one shade deeper
+  -->
+
+  <Color x:Key="Dmc792">#555B7B</Color>
+  <Color x:Key="Dmc3826">#AD7239</Color>
+  <Color x:Key="Dmc801">#653919</Color>
+  <Color x:Key="Dmc3755">#92B4CE</Color>
+  <Color x:Key="Dmc422">#C69F7B</Color>
+  <Color x:Key="Dmc167">#A77C49</Color>
+  <Color x:Key="Dmc3866">#FAF6F0</Color>
+  <Color x:Key="DmcEcru">#F0EADA</Color>
+
+  <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Dmc792}" />
+  <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Dmc3826}" />
+  <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Dmc801}" />
+  <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource Dmc167}" />
+  <SolidColorBrush x:Key="RuleBrush" Color="{StaticResource Dmc422}" />
+  <SolidColorBrush x:Key="QuietBlueBrush" Color="{StaticResource Dmc3755}" />
+  <SolidColorBrush x:Key="DmcEcruBrush" Color="{StaticResource DmcEcru}" />
+  <SolidColorBrush x:Key="InkBrush" Color="#3A2A1C" />
+  <SolidColorBrush x:Key="PaperInkBrush" Color="{StaticResource Dmc3866}" />
+
+  <!-- Primary sits a touch darker at the foot, so a button reads as pressed card stock. -->
+  <LinearGradientBrush x:Key="PrimaryFaceBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+    <GradientStop Offset="0" Color="#5F6689" />
+    <GradientStop Offset="1" Color="#4B5069" />
+  </LinearGradientBrush>
+
+  <!--
+    Stamped gold foil. The colour is DMC 3826 taken around a metal's tone curve rather than a
+    paint's: a deep bronze in shadow, a fast, narrow specular band where the sheet catches the
+    light, and a second weaker return lower down. The abrupt jumps are the point — metal has
+    hard highlights, and a smooth two-stop gradient always looks like plastic.
+  -->
+  <LinearGradientBrush x:Key="FoilBrush" StartPoint="0%,0%" EndPoint="85%,100%">
+    <GradientStop Offset="0.00" Color="#8A5522" />
+    <GradientStop Offset="0.16" Color="#B67C3C" />
+    <GradientStop Offset="0.33" Color="#E4B466" />
+    <GradientStop Offset="0.40" Color="#F7DC9E" />
+    <GradientStop Offset="0.46" Color="#D9A24C" />
+    <GradientStop Offset="0.62" Color="#AD7239" />
+    <GradientStop Offset="0.79" Color="#C98F45" />
+    <GradientStop Offset="1.00" Color="#7E4E20" />
+  </LinearGradientBrush>
+
+  <LinearGradientBrush x:Key="FoilPressedBrush" StartPoint="0%,0%" EndPoint="85%,100%">
+    <GradientStop Offset="0.00" Color="#6F441B" />
+    <GradientStop Offset="0.30" Color="#A76B33" />
+    <GradientStop Offset="0.42" Color="#D2A55E" />
+    <GradientStop Offset="0.60" Color="#96602F" />
+    <GradientStop Offset="1.00" Color="#68401A" />
+  </LinearGradientBrush>
+
+</ResourceDictionary>

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Core.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
 
@@ -29,6 +30,12 @@ internal sealed class LLamaSharpAgentSession(
 
     private Task? _llamaSharpToAgentsPump;
     private Task? _agentsToLLamaSharpPump;
+
+    // Faults as soon as either pump does, so the daemon can report it rather than leaving the
+    // caller waiting on a turn that is already dead.
+    internal Task Completion => _llamaSharpToAgentsPump is not null && _agentsToLLamaSharpPump is not null
+        ? DaemonPumps.WhenAllOrFirstFault(_llamaSharpToAgentsPump, _agentsToLLamaSharpPump)
+        : Task.CompletedTask;
 
     public async Task StartAsync()
     {
@@ -106,11 +113,15 @@ internal sealed class LLamaSharpAgentSession(
             {
                 try
                 {
-                    await Task.WhenAll(_llamaSharpToAgentsPump, _agentsToLLamaSharpPump).ConfigureAwait(false);
+                    await Completion.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     // cooperative shutdown
+                }
+                catch (Exception)
+                {
+                    // Already reported by the daemon's monitor; disposal must still finish.
                 }
             }
         }

@@ -1,0 +1,205 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Coven.Ui.Desktop.ViewModels"
+        xmlns:hf="using:Coven.Ui.Desktop.HuggingFace"
+        x:Class="Coven.Ui.Desktop.Views.ModelBrowserWindow"
+        x:DataType="vm:ModelBrowserViewModel"
+        Title="Download a local model"
+        Icon="/Assets/coven.ico"
+        Width="1080" Height="660"
+        MinWidth="820" MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+  <DockPanel LastChildFill="True" Margin="16">
+
+    <!-- Search -->
+    <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+      <TextBox Grid.Column="0"
+               Text="{Binding SearchText}"
+               PlaceholderText="Search Hugging Face for GGUF models — try 'llama 3 instruct' or 'qwen'">
+        <TextBox.KeyBindings>
+          <KeyBinding Gesture="Enter" Command="{Binding SearchCommand}" />
+        </TextBox.KeyBindings>
+      </TextBox>
+      <Button Grid.Column="1"
+              Classes="primary"
+              Content="Search"
+              MinWidth="90"
+              Margin="8,0,0,0"
+              IsDefault="True"
+              Command="{Binding SearchCommand}"
+              IsEnabled="{Binding !IsBusy}" />
+    </Grid>
+
+    <!-- Download bar -->
+    <Border DockPanel.Dock="Bottom" Margin="0,12,0,0">
+      <StackPanel Spacing="8">
+
+        <StackPanel Spacing="4" IsVisible="{Binding IsDownloading}">
+          <ProgressBar Minimum="0" Maximum="100" Value="{Binding DownloadPercent}" Height="6" />
+          <TextBlock Text="{Binding DownloadStatus}" FontSize="11" Classes="muted" />
+        </StackPanel>
+
+        <TextBlock Text="{Binding StatusText}" Classes="muted" TextWrapping="Wrap" />
+
+        <Grid ColumnDefinitions="*,Auto,Auto">
+          <TextBlock Grid.Column="0"
+                     FontSize="11" Classes="muted"
+                     VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis">
+            <Run Text="Saving to" />
+            <Run Text="{Binding ModelsDirectory}" />
+          </TextBlock>
+
+          <Button Grid.Column="1"
+                  Content="Cancel download"
+                  MinWidth="130"
+                  IsVisible="{Binding IsDownloading}"
+                  Command="{Binding CancelDownloadCommand}" />
+
+          <Button Grid.Column="2"
+                  Classes="primary"
+                  Content="Download"
+                  MinWidth="110"
+                  Margin="8,0,0,0"
+                  IsVisible="{Binding !IsDownloading}"
+                  Command="{Binding DownloadCommand}" />
+        </Grid>
+      </StackPanel>
+    </Border>
+
+    <!-- Results, models, and details -->
+    <Grid ColumnDefinitions="1*,12,1*,12,1.4*">
+
+      <DockPanel Grid.Column="0" LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Classes="section" Text="Repositories" Margin="0,0,0,6" />
+        <ListBox ItemsSource="{Binding Results}" SelectedItem="{Binding SelectedModel}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="hf:HuggingFaceModel">
+              <StackPanel Margin="0,3">
+                <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding Owner}" FontSize="11" Classes="muted" />
+                  <TextBlock Text="·" FontSize="11" Classes="muted" />
+                  <TextBlock FontSize="11" Classes="muted">
+                    <Run Text="{Binding Downloads}" />
+                    <Run Text="downloads" />
+                  </TextBlock>
+                  <Border IsVisible="{Binding IsGated}"
+                          Background="{DynamicResource SecondaryBrush}"
+                          CornerRadius="3" Padding="4,0">
+                    <TextBlock Text="gated" FontSize="10"
+                               Foreground="{DynamicResource PaperInkBrush}" />
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <DockPanel Grid.Column="2" LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Classes="section" Text="Models" Margin="0,0,0,6" />
+        <ListBox ItemsSource="{Binding Files}" SelectedItem="{Binding SelectedFile}">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="hf:HuggingFaceDownload">
+              <StackPanel Margin="0,3">
+                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" />
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <TextBlock Text="{Binding Quantization}" FontSize="11" Classes="muted" />
+                  <TextBlock Text="·" FontSize="11" Classes="muted" />
+                  <TextBlock Text="{Binding TotalBytes, Converter={StaticResource ByteSizeConverter}}"
+                             FontSize="11" Classes="muted" />
+                  <!-- Split models download as a set; saying so up front avoids the
+                       impression that one part is a smaller alternative. -->
+                  <Border IsVisible="{Binding IsSplit}"
+                          Background="#33808080" CornerRadius="3" Padding="4,0">
+                    <TextBlock Text="multi-part" FontSize="10" Opacity="0.8" />
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+
+      <!-- Details for the current selection -->
+      <DockPanel Grid.Column="4" LastChildFill="True">
+        <TextBlock DockPanel.Dock="Top" Classes="section" Text="Details" Margin="0,0,0,6" />
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="12">
+
+            <TextBlock Text="Select a repository to see what the model is and what it needs." Classes="muted" TextWrapping="Wrap" FontSize="12"
+                       IsVisible="{Binding !HasSelection}" />
+
+            <TextBlock Text="Loading model card…" Classes="muted" FontSize="12"
+                       IsVisible="{Binding IsLoadingDetail}" />
+
+            <!-- What the model is -->
+            <StackPanel Spacing="6" IsVisible="{Binding Detail, Converter={x:Static ObjectConverters.IsNotNull}}">
+              <TextBlock Text="{Binding Detail.Summary}"
+                         TextWrapping="Wrap" FontSize="12" LineHeight="17"
+                         IsVisible="{Binding Detail.HasSummary}" />
+
+              <ItemsControl ItemsSource="{Binding Detail.Tags}" Margin="0,2,0,0">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="x:String">
+                    <Border Background="#22808080" CornerRadius="3" Padding="5,1" Margin="0,0,4,4">
+                      <TextBlock Text="{Binding}" FontSize="10" Opacity="0.85" />
+                    </Border>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding Detail.ParameterLabel}" FontSize="11" Classes="muted" />
+                <TextBlock Text="{Binding Detail.ContextLabel}" FontSize="11" Classes="muted" />
+                <TextBlock Text="{Binding Detail.Architecture}" FontSize="11" Classes="muted" />
+              </StackPanel>
+
+              <TextBlock FontSize="11" Classes="muted">
+                <Run Text="License:" />
+                <Run Text="{Binding Detail.License}" />
+              </TextBlock>
+            </StackPanel>
+
+            <!-- What it takes to run -->
+            <Border IsVisible="{Binding Hardware, Converter={x:Static ObjectConverters.IsNotNull}}"
+                    Background="#18808080" CornerRadius="6" Padding="10">
+              <StackPanel Spacing="6">
+
+                <Border HorizontalAlignment="Left" CornerRadius="3" Padding="6,1"
+                        Background="{Binding Hardware.Tier, Converter={StaticResource HardwareTierBrushConverter}}">
+                  <TextBlock Text="{Binding Hardware.TierLabel}" FontSize="11" FontWeight="SemiBold" />
+                </Border>
+
+                <TextBlock Text="{Binding Hardware.Recommendation}"
+                           TextWrapping="Wrap" FontSize="12" LineHeight="17" />
+
+                <TextBlock Text="{Binding MemoryText}" FontSize="11" Classes="muted" TextWrapping="Wrap" />
+
+                <TextBlock Text="{Binding Hardware.BitsPerWeightLabel}" FontSize="11" Classes="muted" />
+
+                <TextBlock Text="Estimates. Real use rises with context length and falls with GPU offload."
+                           FontSize="10" Classes="muted" TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+
+            <!-- Whole model, or a set of parts -->
+            <TextBlock Text="{Binding CompletenessText}"
+                       TextWrapping="Wrap" FontSize="12" Opacity="0.8"
+                       IsVisible="{Binding HasSelection}" />
+
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+
+    </Grid>
+  </DockPanel>
+</Window>

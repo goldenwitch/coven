@@ -1,0 +1,231 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+  <!--
+    Every surface in the application is one of three materials: pressed paper for anything
+    that holds content, construction paper for the accent, stamped foil for the secondary
+    action. Flat fills are used only where a material would compete with text.
+  -->
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource PaperBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource MutedBrush}" />
+  </Style>
+
+  <!-- Section headings, stamped in the accent so a form reads as a set of labelled panels. -->
+  <Style Selector="TextBlock.section">
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <Style Selector="TextBlock.wordmark">
+    <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+
+  <!-- Default button: a card cut from the same paper, lifted off the page by its rule. -->
+  <Style Selector="Button">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PaperSunkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <Style Selector="Button:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource DmcEcruBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+  </Style>
+
+  <Style Selector="Button:disabled /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PaperSunkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource QuietBlueBrush}" />
+  </Style>
+
+  <!-- Primary action: DMC 792, the darkest blue on the card. -->
+  <Style Selector="Button.primary">
+    <Setter Property="Background" Value="{DynamicResource PrimaryFaceBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource PaperInkBrush}" />
+    <Setter Property="BorderBrush" Value="#3F4457" />
+  </Style>
+
+  <Style Selector="Button.primary /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource PaperInkBrush}" />
+  </Style>
+
+  <Style Selector="Button.primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#666E93" />
+    <Setter Property="BorderBrush" Value="#3F4457" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource PaperInkBrush}" />
+  </Style>
+
+  <Style Selector="Button.primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="#454A61" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource PaperInkBrush}" />
+  </Style>
+
+  <!--
+    Secondary action, stamped in foil. This one carries its own template because the effect is
+    two layers: the metallic gradient beneath, and the rolled grain over it. A single
+    Background cannot hold both, and the grain has to tile at a fixed size rather than stretch
+    with the button.
+  -->
+  <Style Selector="Button.foil">
+    <Setter Property="Padding" Value="14,6" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="#2E1B08" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="Face"
+                CornerRadius="4"
+                BorderThickness="1"
+                BorderBrush="#7E4E20"
+                Background="{DynamicResource FoilBrush}">
+          <Panel>
+            <Border Name="Grain"
+                    CornerRadius="4"
+                    Opacity="0.55"
+                    Background="{DynamicResource FoilGrainBrush}" />
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="Center"
+                              VerticalContentAlignment="Center" />
+          </Panel>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="Button.foil:pointerover /template/ Border#Grain">
+    <Setter Property="Opacity" Value="0.25" />
+  </Style>
+
+  <Style Selector="Button.foil:pressed /template/ Border#Face">
+    <Setter Property="Background" Value="{DynamicResource FoilPressedBrush}" />
+  </Style>
+
+  <Style Selector="Button.foil:disabled /template/ Border#Face">
+    <Setter Property="Opacity" Value="0.45" />
+  </Style>
+
+  <!-- Written on, so the palest paper, ruled in hazelnut and underlined in blue when live. -->
+  <Style Selector="TextBox">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource QuietBlueBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource PrimaryBrush}" />
+  </Style>
+
+  <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource MutedBrush}" />
+  </Style>
+
+  <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="ComboBox">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource InkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="4" />
+  </Style>
+
+  <Style Selector="ComboBox:pointerover /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource PaperSunkBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource PrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource QuietBlueBrush}" />
+  </Style>
+
+  <Style Selector="ListBox">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+  </Style>
+
+  <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource QuietBlueBrush}" />
+    <Setter Property="TextElement.Foreground" Value="{DynamicResource InkBrush}" />
+  </Style>
+
+  <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource PaperSunkBrush}" />
+  </Style>
+
+  <!--
+    Transcript bubbles. The agent speaks on plain paper; the user's turns are the primary
+    blue, and anything the application says about itself is on construction paper — three
+    materials rather than three tints, so the difference survives a glance.
+  -->
+  <Style Selector="Border.bubble">
+    <Setter Property="Background" Value="{DynamicResource PaperRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="Border.bubble.user">
+    <Setter Property="Background" Value="{DynamicResource IndigoWeaveBrush}" />
+    <Setter Property="BorderBrush" Value="#3F4457" />
+  </Style>
+
+  <Style Selector="Border.bubble.user TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource PaperInkBrush}" />
+  </Style>
+
+  <Style Selector="Border.bubble.system">
+    <Setter Property="Background" Value="{DynamicResource ConstructionBrush}" />
+    <Setter Property="BorderBrush" Value="#3F2510" />
+  </Style>
+
+  <Style Selector="Border.bubble.system TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource PaperInkBrush}" />
+  </Style>
+
+  <Style Selector="Expander">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+  </Style>
+
+  <!-- Progress is foil filling a channel of sunk paper. -->
+  <Style Selector="ProgressBar">
+    <Setter Property="Background" Value="{DynamicResource PaperSunkBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource SecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource RuleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="3" />
+  </Style>
+
+  <Style Selector="ProgressBar /template/ Border#PART_Indicator">
+    <Setter Property="Background" Value="{DynamicResource FoilBrush}" />
+  </Style>
+
+</Styles>

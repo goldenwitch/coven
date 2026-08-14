@@ -72,3 +72,7 @@ data/
 **/.codex/
 
 .pr-diff-64.txt
+
+# A Windows shortcut stores absolute paths, so one is only ever valid on the machine that
+# made it. Coven.cmd is the launcher that ships; a .lnk pointing at it is personal.
+/Coven.lnk
