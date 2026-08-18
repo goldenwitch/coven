@@ -29,24 +29,6 @@ internal static class LocalBackend
     private static string? _description;
 
     /// <summary>
-    /// The most recent error llama.cpp reported, or <see langword="null"/> if it has reported
-    /// none.
-    /// </summary>
-    /// <remarks>
-    /// LLamaSharp raises a bare <c>Failed to load model '&lt;path&gt;'</c>, which names the
-    /// file and nothing else. The actual reason — an unknown architecture, a missing tensor,
-    /// an allocation that would not fit — is only ever stated by llama.cpp itself, so it is
-    /// kept here to be attached to whatever the user is shown.
-    /// </remarks>
-    public static string? LastNativeError => NativeErrorCapture.Last;
-
-    /// <summary>
-    /// Clears the recorded error before a fresh load, so a previous failure is never
-    /// reported against a new attempt.
-    /// </summary>
-    public static void ForgetLastError() => NativeErrorCapture.Reset();
-
-    /// <summary>
     /// Registers the backend preference once and reports which library was selected.
     /// </summary>
     /// <returns>

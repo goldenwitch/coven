@@ -307,7 +307,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
     private static string DescribeFailure(Exception error)
     {
         string described = ExceptionText.Describe(error);
-        string? native = LocalBackend.LastNativeError;
+        string? native = NativeErrorCapture.Last;
 
         if (string.IsNullOrWhiteSpace(native) ||
             described.Contains(native, StringComparison.Ordinal))

@@ -84,7 +84,7 @@ internal sealed class CovenSession : IAsyncDisposable
         if (settings.Provider == AgentProvider.Local)
         {
             // Any error still recorded belongs to the previous model.
-            LocalBackend.ForgetLastError();
+            NativeErrorCapture.Reset();
             backend = LocalBackend.EnsureConfigured();
         }
 

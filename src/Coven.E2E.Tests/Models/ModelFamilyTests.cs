@@ -103,6 +103,9 @@ public sealed class ModelFamilyTests
     [InlineData("claude-3-5-sonnet-latest", "claude-*sonnet*", true)]
     [InlineData("claude-3-5-haiku-latest", "claude-*sonnet*", false)]
     [InlineData("model.gguf", "*.gguf", true)]
+    // A dot is a literal, not "any character". A regular expression does the matching now,
+    // so this is what would break first if the pattern stopped being escaped.
+    [InlineData("modelXgguf", "*.gguf", false)]
     [InlineData("exact", "exact", true)]
     [InlineData("exact-plus", "exact", false)]
     [InlineData("o7-mini", "o#*", true)]

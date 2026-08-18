@@ -19,7 +19,7 @@ internal sealed class DiscordChatDaemon(
         _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _session = _sessionFactory.Create(_sessionCts.Token);
         await _session.StartAsync().ConfigureAwait(false);
-        _sessionMonitor = MonitorSessionAsync(_session, _sessionCts.Token);
+        _sessionMonitor = MonitorSession(_session.Completion, _sessionCts);
 
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
@@ -50,31 +50,6 @@ internal sealed class DiscordChatDaemon(
         }
 
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Reports a pump fault as a daemon failure. Without this a dropped gateway connection or
-    /// a send error is swallowed and the bot goes quiet with no indication why.
-    /// </summary>
-    private async Task MonitorSessionAsync(DiscordChatSession session, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await session.Completion.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // Cooperative shutdown.
-        }
-        catch (Exception ex)
-        {
-            if (_sessionCts is not null)
-            {
-                await _sessionCts.CancelAsync().ConfigureAwait(false);
-            }
-
-            await Fail(ex, CancellationToken.None).ConfigureAwait(false);
-        }
     }
 
     public async ValueTask DisposeAsync()

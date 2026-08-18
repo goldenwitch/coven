@@ -165,6 +165,43 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
     }
 
     /// <summary>
+    /// Reports a session's pump fault as a daemon failure.
+    /// </summary>
+    /// <param name="sessionCompletion">The session's completion task.</param>
+    /// <param name="lifetime">
+    /// The session's lifetime source. Cancelled when a fault is seen, so the surviving pumps
+    /// stop rather than running on behind a session that has already failed.
+    /// </param>
+    /// <remarks>
+    /// Without this the fault is swallowed: the pumps stop, the daemon stays
+    /// <see cref="Status.Running"/>, and the caller waits indefinitely on a turn that is
+    /// already dead. Cancellation through <paramref name="lifetime"/> is cooperative shutdown
+    /// rather than failure, and is ignored.
+    /// </remarks>
+    protected async Task MonitorSession(Task sessionCompletion, CancellationTokenSource lifetime)
+    {
+        ArgumentNullException.ThrowIfNull(sessionCompletion);
+        ArgumentNullException.ThrowIfNull(lifetime);
+
+        try
+        {
+            await sessionCompletion.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // Cooperative shutdown.
+        }
+        catch (Exception ex)
+        {
+            await lifetime.CancelAsync().ConfigureAwait(false);
+
+            // Not the caller's token: the failure must be recorded even though the session's
+            // own lifetime was just cancelled above.
+            await Fail(ex, CancellationToken.None).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
     /// Releases resources held by the daemon.
     /// </summary>
     public void Dispose()

@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 
+using System.Collections.Concurrent;
+using System.Text;
+using System.Text.RegularExpressions;
+
 namespace Coven.Agents;
 
 /// <summary>
@@ -115,71 +119,47 @@ public static class ModelFamilies
     }
 
     /// <summary>
-    /// Case-insensitive glob match where <c>*</c> matches any run of characters and
-    /// <c>#</c> matches a single digit.
+    /// Case-insensitive whole-string match where <c>*</c> matches any run of characters and
+    /// <c>#</c> matches a single digit. Every other character is literal.
     /// </summary>
     public static bool Matches(string value, string pattern)
     {
         ArgumentNullException.ThrowIfNull(value);
         ArgumentNullException.ThrowIfNull(pattern);
 
-        return MatchCore(value, 0, pattern, 0);
+        return _matchers.GetOrAdd(pattern, Compile).IsMatch(value);
     }
 
-    private static bool MatchCore(string value, int valueIndex, string pattern, int patternIndex)
+    /// <summary>
+    /// Patterns come from a fixed table and from user overrides, so the set is small and
+    /// long-lived; compiling each one once is cheaper than rebuilding it per model per
+    /// listing.
+    /// </summary>
+    private static readonly ConcurrentDictionary<string, Regex> _matchers = new(StringComparer.Ordinal);
+
+    /// <summary>
+    /// Translates a pattern into an anchored regular expression.
+    /// </summary>
+    /// <remarks>
+    /// The matching itself is left to <see cref="Regex"/> rather than hand-written: a
+    /// wildcard matcher is deceptively easy to get subtly wrong, and a naive one backtracks
+    /// exponentially on patterns like <c>*a*a*a*</c>.
+    /// </remarks>
+    private static Regex Compile(string pattern)
     {
-        while (patternIndex < pattern.Length)
+        StringBuilder expression = new("^");
+        foreach (char token in pattern)
         {
-            if (pattern[patternIndex] == '*')
+            _ = token switch
             {
-                // Collapse runs of '*' before exploring suffixes.
-                while (patternIndex < pattern.Length && pattern[patternIndex] == '*')
-                {
-                    patternIndex++;
-                }
-
-                if (patternIndex == pattern.Length)
-                {
-                    return true;
-                }
-
-                for (int probe = valueIndex; probe <= value.Length; probe++)
-                {
-                    if (MatchCore(value, probe, pattern, patternIndex))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            if (valueIndex >= value.Length)
-            {
-                return false;
-            }
-
-            if (pattern[patternIndex] == '#')
-            {
-                if (!char.IsAsciiDigit(value[valueIndex]))
-                {
-                    return false;
-                }
-
-                valueIndex++;
-                patternIndex++;
-                continue;
-            }
-
-            if (char.ToLowerInvariant(value[valueIndex]) != char.ToLowerInvariant(pattern[patternIndex]))
-            {
-                return false;
-            }
-
-            valueIndex++;
-            patternIndex++;
+                '*' => expression.Append(".*"),
+                '#' => expression.Append("[0-9]"),
+                _ => expression.Append(Regex.Escape(token.ToString())),
+            };
         }
 
-        return valueIndex == value.Length;
+        return new Regex(
+            expression.Append('$').ToString(),
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     }
 }
