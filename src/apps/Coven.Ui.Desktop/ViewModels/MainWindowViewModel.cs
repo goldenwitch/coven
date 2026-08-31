@@ -22,9 +22,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
     private readonly SessionManager _manager;
     private readonly CancellationTokenSource _cts = new();
 
-    private readonly Lock _chunkLock = new();
-    private readonly StringBuilder _pendingChunks = new();
-    private bool _flushScheduled;
+    private readonly StreamingTurn _turn = new();
 
     private readonly Lock _tailLock = new();
     private CancellationTokenSource? _tailCts;
@@ -154,6 +152,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
         }
 
         InputText = string.Empty;
+        _turn.Open();
         Messages.Add(new ChatMessageViewModel("you", text, isUser: true));
         StatusText = "Waiting for the agent…";
         StartResponseWatchdog();
@@ -272,10 +271,9 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
         IsReasoningVisible = false;
         _streamingMessage = null;
 
-        lock (_chunkLock)
-        {
-            _pendingChunks.Clear();
-        }
+        // A rebuilt session starts a fresh turn; anything the old one left buffered belongs
+        // to a conversation that no longer exists.
+        _turn.Open();
 
         Messages.Add(new ChatMessageViewModel("system", systemMessage, isUser: false));
     }
@@ -341,19 +339,9 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
 
         if (outbound.Kind == UiOutboundKind.Chunk)
         {
-            bool schedule = false;
-            lock (_chunkLock)
-            {
-                _pendingChunks.Append(outbound.Text);
-                if (!_flushScheduled)
-                {
-                    _flushScheduled = true;
-                    schedule = true;
-                }
-            }
-
-            // Coalesce: a post per token would starve the UI thread on long responses.
-            if (schedule)
+            // Refused outright once the turn is finalized, which is what keeps a fragment
+            // that overtook its own response from opening a second message.
+            if (_turn.Append(outbound.Text))
             {
                 Dispatcher.UIThread.Post(FlushChunks);
             }
@@ -372,13 +360,7 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
 
     private void FlushChunks()
     {
-        string pending;
-        lock (_chunkLock)
-        {
-            pending = _pendingChunks.ToString();
-            _pendingChunks.Clear();
-            _flushScheduled = false;
-        }
+        string pending = _turn.Drain();
 
         if (pending.Length == 0)
         {
@@ -398,6 +380,10 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IDisposabl
 
     private void FinalizeMessage(string text)
     {
+        // Closes the turn before anything else: the caller has already drained, so every
+        // fragment from here on belongs to a response that is finished.
+        _turn.Close();
+
         if (string.IsNullOrWhiteSpace(text) && _streamingMessage is null)
         {
             // The turn completed but produced no content — a stream that yielded nothing the

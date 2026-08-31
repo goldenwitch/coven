@@ -28,11 +28,20 @@ internal sealed class UiChatScrivener : TappedScrivener<UiChatEntry>
     }
 
     /// <summary>
-    /// Sends renderable entries to the UI channel and appends all entries to the inner
-    /// scrivener; logs the append with the assigned position.
+    /// Appends every entry to the inner scrivener, then sends the renderable ones to the UI
+    /// channel; logs the append with the assigned position.
     /// </summary>
+    /// <remarks>
+    /// The append comes first on purpose. Publishing first means a UI callback that throws
+    /// takes the entry with it — never appended, so neither durable nor replayable, which is
+    /// the opposite of "journal or it did not happen". Writing first also matches the other
+    /// chat scriveners.
+    /// </remarks>
     public override async Task<long> WriteAsync(UiChatEntry entry, CancellationToken cancellationToken = default)
     {
+        long position = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);
+        UiChatLog.ScrivenerAppended(_logger, entry.GetType().Name, position);
+
         switch (entry)
         {
             case UiChatEfferent efferent:
@@ -48,8 +57,6 @@ internal sealed class UiChatScrivener : TappedScrivener<UiChatEntry>
                 break;
         }
 
-        long position = await WriteInnerAsync(entry, cancellationToken).ConfigureAwait(false);
-        UiChatLog.ScrivenerAppended(_logger, entry.GetType().Name, position);
         return position;
     }
 }

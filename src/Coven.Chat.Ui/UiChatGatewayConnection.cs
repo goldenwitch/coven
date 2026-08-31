@@ -19,6 +19,17 @@ internal sealed class UiChatGatewayConnection(
 
     private Task? _inputPump;
 
+    /// <summary>
+    /// The input pump, so the session supervises it alongside its journal pumps.
+    /// </summary>
+    /// <remarks>
+    /// Left out, a fault in <see cref="IUiChannel.ReadInputAsync"/> or in the journal write
+    /// below kills the input path while the daemon stays Running: the interface accepts
+    /// messages that go nowhere, and the fault only surfaces during shutdown when
+    /// <see cref="DrainAsync"/> finally observes it.
+    /// </remarks>
+    internal Task Completion => _inputPump ?? Task.CompletedTask;
+
     public Task ConnectAsync(CancellationToken cancellationToken)
     {
         _inputPump = Task.Run(async () =>
@@ -85,6 +96,12 @@ internal sealed class UiChatGatewayConnection(
             catch (OperationCanceledException)
             {
                 // Expected on cooperative cancellation.
+            }
+            catch (Exception)
+            {
+                // Already reported through the session's supervision, which observes this
+                // pump while the daemon is running. Re-throwing here would turn a fault that
+                // has been handled into a second failure out of disposal.
             }
         }
     }

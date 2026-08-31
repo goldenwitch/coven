@@ -60,6 +60,14 @@ public sealed class LocalModelCatalog(string modelsDirectory) : IModelCatalog
                 continue;
             }
 
+            // Nor can a projector hold a conversation. It sits next to a vision model as a
+            // companion file, and offering it as a chat model is the same kind of dead end
+            // as offering a trailing shard. The Hugging Face grouping already excludes these.
+            if (GgufShards.IsAuxiliary(path))
+            {
+                continue;
+            }
+
             long sizeBytes;
             DateTimeOffset modified;
             try

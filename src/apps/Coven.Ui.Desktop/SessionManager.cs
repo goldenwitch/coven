@@ -136,7 +136,10 @@ internal sealed class SessionManager(SettingsStore store, AppSettings settings) 
                 return new SessionApplyResult(SessionChangeKind.None);
             }
 
-            if (_current is not null && _current.TryApplyModel(updated.ActiveModel))
+            // Only a live ritual can carry the next turn. A session whose ritual has already
+            // died still answers TryApplyModel quite happily, which would report HotModel,
+            // skip the rebuild, and leave the interface faulted with no way back.
+            if (_current is { IsRunning: true } && _current.TryApplyModel(updated.ActiveModel))
             {
                 await NoticeAsync(UiNoticeLevel.Info, $"Model changed to {updated.ActiveModel}.").ConfigureAwait(false);
                 return new SessionApplyResult(SessionChangeKind.HotModel);

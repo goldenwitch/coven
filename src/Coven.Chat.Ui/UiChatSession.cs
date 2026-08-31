@@ -27,10 +27,11 @@ internal sealed class UiChatSession(
     private Task? _uiToChatPump;
     private Task? _chatToUiPump;
 
-    // Faults as soon as either pump does, so the daemon can report it rather than leaving the
-    // interface waiting on a turn that is already dead.
+    // Faults as soon as any pump does, so the daemon can report it rather than leaving the
+    // interface waiting on a turn that is already dead. The gateway's input pump is included:
+    // it is the path the user's own messages travel, and it can fail on its own.
     internal Task Completion => _uiToChatPump is not null && _chatToUiPump is not null
-        ? DaemonPumps.WhenAllOrFirstFault(_uiToChatPump, _chatToUiPump)
+        ? DaemonPumps.WhenAllOrFirstFault(_uiToChatPump, _chatToUiPump, _gateway.Completion)
         : Task.CompletedTask;
 
     public async Task StartAsync()

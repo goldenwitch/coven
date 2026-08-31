@@ -56,6 +56,37 @@ public sealed class LocalModelTests
         }
     }
 
+    /// <summary>
+    /// A projector sits beside a vision model as a companion file and cannot hold a
+    /// conversation, so it must not be offered as a selectable chat model. The Hugging Face
+    /// grouping already excludes these; a folder scan has to reach the same answer.
+    /// </summary>
+    [Fact]
+    public async Task AuxiliaryProjectorsAreNotOfferedAsModels()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"coven-models-{Guid.NewGuid():N}");
+        string nested = Path.Combine(root, "unsloth", "Some-VL-GGUF");
+        Directory.CreateDirectory(nested);
+
+        try
+        {
+            string model = Path.Combine(nested, "some-vl-model.Q4_K_M.gguf");
+            await File.WriteAllTextAsync(model, "not a real model");
+            await File.WriteAllTextAsync(Path.Combine(nested, "mmproj-F16.gguf"), "projector");
+            await File.WriteAllTextAsync(Path.Combine(nested, "mmproj-BF16.gguf"), "projector");
+
+            LocalModelCatalog catalog = new(root);
+            IReadOnlyList<ModelDescriptor> models = await catalog.ListAsync(new ModelCatalogRequest());
+
+            ModelDescriptor found = Assert.Single(models);
+            Assert.Equal(model, found.Id);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
     /// <summary>Local models stream but expose no tools — the leaf has no tool support.</summary>
     [Fact]
     public void LocalFamilyAdvertisesStreamingOnly()

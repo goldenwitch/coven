@@ -7,6 +7,7 @@ using Coven.Chat;
 using Coven.Chat.Ui;
 using Coven.Core.Covenants;
 using Coven.Testing.Harness;
+using Coven.Ui.Desktop.ViewModels;
 using Coven.Ui.Shell;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -148,6 +149,107 @@ public sealed class UiChatTests
 
         Assert.NotEmpty(chunks);
         Assert.Contains("Streaming", string.Concat(chunks.Select(c => c.Text)), StringComparison.Ordinal);
+        Assert.Contains("pieces.", finalized.Text, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Holding the chunk route back proves the ordering the interface has to survive: chunks
+    /// and the finalized response are separate routes with independent cursors, so a fragment
+    /// really can arrive after the message it belongs to. Rendered naively it would open a
+    /// second streaming message under a finished response, which is what
+    /// <see cref="StreamingTurn"/> exists to prevent.
+    /// </summary>
+    [Fact]
+    public async Task AFragmentDelayedPastItsResponseIsRefusedByTheTurn()
+    {
+        UiChannel channel = new();
+        ConcurrentQueue<UiOutbound> received = new();
+        channel.Outbound += received.Enqueue;
+
+        // Gates the chunk route until the finalized message has been observed. A task
+        // completion source rather than a delay, so the ordering is forced, not raced.
+        TaskCompletionSource release = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await using E2ETestHost host = new E2ETestHostBuilder()
+            .UseVirtualClaude()
+            .ConfigureServices(services => services.AddSingleton<IUiChannel>(channel))
+            .ConfigureCoven(coven =>
+            {
+                BranchManifest chat = coven.UseUiChat(UiConfig, reg => reg.EnableStreaming());
+                BranchManifest agents = coven.UseClaudeAgents(ClaudeConfig, reg => reg.EnableStreaming());
+                BranchManifest shell = coven.UseUiShell(reg => reg.EnableReasoning());
+
+                coven.Covenant()
+                    .Connect(chat)
+                    .Connect(agents)
+                    .Connect(shell)
+                    .Routes(c =>
+                    {
+                        c.Route<ChatAfferent, AgentPrompt>(
+                            (msg, ct) => Task.FromResult(new AgentPrompt(msg.Sender, msg.Text)));
+
+                        c.Route<AgentResponse, ChatEfferent>(
+                            (r, ct) => Task.FromResult(new ChatEfferent("assistant", r.Text)));
+
+                        c.Route<AgentAfferentChunk, ChatChunk>(async (chunk, ct) =>
+                        {
+                            await release.Task.WaitAsync(ct).ConfigureAwait(false);
+                            return new ChatChunk("assistant", chunk.Text);
+                        });
+
+                        c.Route<AgentThought, UiThought>(
+                            (t, ct) => Task.FromResult(new UiThought(t.Sender, t.Text)));
+
+                        c.Terminal<AgentAfferentThoughtChunk>();
+                        c.Terminal<UiNotice>();
+                    });
+            })
+            .Build();
+
+        host.Claude.EnqueueStreamingResponse(["Streaming ", "in ", "pieces."]);
+
+        await host.StartAsync();
+        await channel.SubmitAsync("Stream something.");
+
+        // The finalized message arrives first, because the chunks cannot move yet.
+        UiOutbound finalized = await WaitForAsync(
+            received,
+            o => o.Kind == UiOutboundKind.Message,
+            TimeSpan.FromSeconds(10));
+
+        Assert.DoesNotContain(received, o => o.Kind == UiOutboundKind.Chunk);
+
+        release.SetResult();
+
+        UiOutbound late = await WaitForAsync(
+            received,
+            o => o.Kind == UiOutboundKind.Chunk,
+            TimeSpan.FromSeconds(10));
+
+        // The transport really did deliver a fragment after the response it belongs to.
+        List<UiOutbound> order = [.. received];
+        Assert.True(
+            order.IndexOf(finalized) < order.IndexOf(late),
+            "expected the finalized message ahead of the late fragment");
+
+        // Replayed through the boundary exactly as the view model drives it, the late
+        // fragment contributes nothing rather than starting a second message.
+        StreamingTurn turn = new();
+        turn.Open();
+        foreach (UiOutbound outbound in order)
+        {
+            if (outbound.Kind == UiOutboundKind.Chunk)
+            {
+                turn.Append(outbound.Text);
+                continue;
+            }
+
+            turn.Drain();
+            turn.Close();
+        }
+
+        Assert.True(turn.IsClosed);
+        Assert.Equal(string.Empty, turn.Drain());
         Assert.Contains("pieces.", finalized.Text, StringComparison.Ordinal);
     }
 

@@ -155,6 +155,32 @@ public sealed class SessionRebuildTests
     }
 
     /// <summary>
+    /// A session is only eligible for the in-place model change while its ritual is running.
+    /// </summary>
+    /// <remarks>
+    /// The hot path is gated on this rather than on the session merely existing. A session
+    /// whose ritual has died still answers <c>TryApplyModel</c> quite happily, which would
+    /// report a hot change, skip the rebuild, and leave the interface faulted with no way
+    /// back: input is already disabled, and nothing would ever start a new ritual.
+    /// </remarks>
+    [Fact]
+    public async Task ASessionWithNoLiveRitualIsNotEligibleForTheHotPath()
+    {
+        AppSettings settings = Baseline();
+        settings.Provider = AgentProvider.Anthropic;
+
+        UiChannel channel = new();
+        SessionContext context = new();
+
+        await using CovenSession session = CovenSession.Create(settings, channel, context);
+
+        // Never started, so there is no ritual to carry the next turn — even though the
+        // provider is the one that supports changing model in place.
+        Assert.False(session.IsRunning);
+        Assert.True(session.TryApplyModel("claude-opus-4-20250514"));
+    }
+
+    /// <summary>
     /// Only Anthropic can change model in place, matching what
     /// <see cref="SessionManager.RequiresRebuild"/> promises the user.
     /// </summary>

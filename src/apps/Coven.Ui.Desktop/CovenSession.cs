@@ -220,6 +220,13 @@ internal sealed class CovenSession : IAsyncDisposable
     }
 
     /// <summary>
+    /// Whether the ritual is still running. A session whose ritual has ended — normally or
+    /// through a daemon failure — still holds a host and a config object, so it stays usable
+    /// to talk to while being incapable of carrying a turn.
+    /// </summary>
+    public bool IsRunning => _ritual is { IsCompleted: false };
+
+    /// <summary>
     /// Changes the model without rebuilding, when the provider's configuration allows it.
     /// </summary>
     /// <remarks>
@@ -248,11 +255,19 @@ internal sealed class CovenSession : IAsyncDisposable
     }
 
     /// <summary>Writes an application notice to the shell journal.</summary>
+    /// <remarks>
+    /// The journal comes from <see cref="SessionContext"/> rather than the host's services.
+    /// <c>UiEntry</c> is registered scoped and the live instance is the one
+    /// <see cref="UiHostBlock"/> publishes from inside the ritual scope; resolving it from the
+    /// root provider hands back a different instance that nothing is tailing — or throws
+    /// outright once scope validation is on. Either way the notice is never seen.
+    /// </remarks>
     public async Task NoticeAsync(UiNoticeLevel level, string text, CancellationToken cancellationToken = default)
     {
-        IScrivener<UiEntry>? journal = _host.Services.GetService<IScrivener<UiEntry>>();
+        IScrivener<UiEntry>? journal = _context.Journal;
         if (journal is null)
         {
+            // The ritual has not reached UiHostBlock yet, so there is nowhere to write.
             return;
         }
 

@@ -28,6 +28,23 @@ internal sealed class SessionContext
     private readonly List<Action<Exception>> _failureHandlers = [];
 
     private IScrivener<UiEntry>? _current;
+    private Exception? _failure;
+
+    /// <summary>
+    /// The journal published by the running ritual, or <see langword="null"/> before one
+    /// exists. This is the only instance the interface is tailing; anything written elsewhere
+    /// is never seen.
+    /// </summary>
+    public IScrivener<UiEntry>? Journal
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _current;
+            }
+        }
+    }
 
     /// <summary>
     /// Subscribes to journal publication. If a journal is already live, the handler is
@@ -50,14 +67,30 @@ internal sealed class SessionContext
         }
     }
 
-    /// <summary>Subscribes to session start failures.</summary>
+    /// <summary>
+    /// Subscribes to session failures. If one has already been reported, the handler is
+    /// invoked immediately.
+    /// </summary>
+    /// <remarks>
+    /// The replay is the point. The session is started on a background task before the view
+    /// model exists, so a failure that happens quickly — a bad key, a model that will not
+    /// load — is otherwise delivered to an empty handler list and lost, leaving a window that
+    /// looks idle rather than broken.
+    /// </remarks>
     public void SubscribeToFailure(Action<Exception> handler)
     {
         ArgumentNullException.ThrowIfNull(handler);
 
+        Exception? existing;
         lock (_gate)
         {
             _failureHandlers.Add(handler);
+            existing = _failure;
+        }
+
+        if (existing is not null)
+        {
+            handler(existing);
         }
     }
 
@@ -79,16 +112,20 @@ internal sealed class SessionContext
         }
     }
 
-    /// <summary>Clears the current journal so a rebuild does not replay a dead one.</summary>
+    /// <summary>
+    /// Clears the current journal and any recorded failure, so a rebuild neither replays a
+    /// dead journal nor inherits the previous session's error.
+    /// </summary>
     public void Clear()
     {
         lock (_gate)
         {
             _current = null;
+            _failure = null;
         }
     }
 
-    /// <summary>Reports that a session could not start.</summary>
+    /// <summary>Reports that a session failed, and retains it for late subscribers.</summary>
     public void Fail(Exception error)
     {
         ArgumentNullException.ThrowIfNull(error);
@@ -96,6 +133,9 @@ internal sealed class SessionContext
         Action<Exception>[] handlers;
         lock (_gate)
         {
+            // First one wins: later faults are usually consequences of the first, and the
+            // original is the one that explains the session.
+            _failure ??= error;
             handlers = [.. _failureHandlers];
         }
 
