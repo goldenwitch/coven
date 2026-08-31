@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>Application-level journal for Coven user interfaces (reasoning and notices).</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;ui;shell;journal</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
+  </ItemGroup>
+
+</Project>

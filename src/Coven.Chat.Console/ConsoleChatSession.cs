@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 
 using Coven.Core;
+using Coven.Core.Daemonology;
 using Coven.Transmutation;
 using Microsoft.Extensions.Logging;
 
@@ -25,6 +26,12 @@ internal sealed class ConsoleChatSession(
 
     private Task? _consoleToChatPump;
     private Task? _chatToConsolePump;
+
+    // Faults as soon as either pump does, so the daemon can report it rather than leaving the
+    // caller waiting on a turn that is already dead.
+    internal Task Completion => _consoleToChatPump is not null && _chatToConsolePump is not null
+        ? DaemonPumps.WhenAllOrFirstFault(_consoleToChatPump, _chatToConsolePump)
+        : Task.CompletedTask;
 
     public async Task StartAsync()
     {
@@ -107,11 +114,15 @@ internal sealed class ConsoleChatSession(
             {
                 try
                 {
-                    await Task.WhenAll(_consoleToChatPump, _chatToConsolePump).ConfigureAwait(false);
+                    await Completion.ConfigureAwait(false);
                 }
                 catch (OperationCanceledException)
                 {
                     // Expected during cooperative shutdown.
+                }
+                catch (Exception)
+                {
+                    // Already reported by the daemon's monitor; disposal must still finish.
                 }
             }
         }

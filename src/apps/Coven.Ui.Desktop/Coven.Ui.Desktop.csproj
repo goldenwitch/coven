@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Coven.Ui.Desktop</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Gives the executable its icon, which is what Explorer and any shortcut inherit. -->
+    <ApplicationIcon>Assets\coven.ico</ApplicationIcon>
+    <!-- Avalonia's XAML compiler and the MVVM source generators emit code this
+         repo's style analyzers were not written for. -->
+    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- The same icon again, as a resource, so windows can set it at runtime. -->
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Coven.E2E.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" />
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Avalonia.Themes.Fluent" />
+    <PackageReference Include="CommunityToolkit.Mvvm" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" />
+  </ItemGroup>
+
+  <!--
+    Local inference. Both native backends ship; LocalBackend picks one at runtime via
+    NativeLibraryConfig (CUDA preferred, CPU fallback). The CUDA payload is ~1 GB per
+    platform, so this is the bulk of the published output.
+  -->
+  <ItemGroup>
+    <PackageReference Include="LLamaSharp" />
+    <PackageReference Include="LLamaSharp.Backend.Cpu" />
+    <PackageReference Include="LLamaSharp.Backend.Cuda12" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Coven.Agents.Claude\Coven.Agents.Claude.csproj" />
+    <ProjectReference Include="..\..\Coven.Agents.OpenAI\Coven.Agents.OpenAI.csproj" />
+    <ProjectReference Include="..\..\Coven.Agents.Gemini\Coven.Agents.Gemini.csproj" />
+    <ProjectReference Include="..\..\Coven.Agents.LLamaSharp\Coven.Agents.LLamaSharp.csproj" />
+    <ProjectReference Include="..\..\Coven.Chat.Ui\Coven.Chat.Ui.csproj" />
+    <ProjectReference Include="..\..\Coven.Ui.Shell\Coven.Ui.Shell.csproj" />
+  </ItemGroup>
+
+</Project>

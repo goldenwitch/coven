@@ -18,6 +18,8 @@ Project overview: see [README](/README.md).
 - Chat (branch): [/src/Coven.Chat](/src/Coven.Chat/) ([README](/src/Coven.Chat/README.md))
 - Chat Console (leaf): [/src/Coven.Chat.Console](/src/Coven.Chat.Console/) ([README](/src/Coven.Chat.Console/README.md))
 - Chat Discord (leaf): [/src/Coven.Chat.Discord](/src/Coven.Chat.Discord/) ([README](/src/Coven.Chat.Discord/README.md))
+- Chat Ui (leaf): [/src/Coven.Chat.Ui](/src/Coven.Chat.Ui/) ([README](/src/Coven.Chat.Ui/README.md))
+- Ui Shell (journal): [/src/Coven.Ui.Shell](/src/Coven.Ui.Shell/) ([README](/src/Coven.Ui.Shell/README.md))
 
 - Agents (branch): [/src/Coven.Agents](/src/Coven.Agents/) ([README](/src/Coven.Agents/README.md))
 - Agents OpenAI (leaf): [/src/Coven.Agents.OpenAI](/src/Coven.Agents.OpenAI/) ([README](/src/Coven.Agents.OpenAI/README.md))
@@ -33,6 +35,9 @@ Project overview: see [README](/README.md).
 
 - Testing Harness: [/src/Coven.Testing.Harness](/src/Coven.Testing.Harness/)
 - Tests: [/src/Coven.Core.Tests](/src/Coven.Core.Tests/), [/src/Coven.Covenants.Tests](/src/Coven.Covenants.Tests/), [/src/Coven.E2E.Tests](/src/Coven.E2E.Tests/)
+
+## Apps
+- Coven.Ui.Desktop: [/src/apps/Coven.Ui.Desktop](/src/apps/Coven.Ui.Desktop/) ([README](/src/apps/Coven.Ui.Desktop/README.md))
 
 ## Samples
 - 01.DiscordAgent: [/src/samples/01.DiscordAgent](/src/samples/01.DiscordAgent/) ([README](/src/samples/01.DiscordAgent/README.md))

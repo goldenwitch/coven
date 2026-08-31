@@ -19,7 +19,7 @@ internal sealed class ClaudeAgentDaemon(
         _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _session = _sessionFactory.Create(_sessionCts.Token);
         await _session.StartAsync().ConfigureAwait(false);
-        _sessionMonitor = MonitorSessionAsync(_session, _sessionCts.Token);
+        _sessionMonitor = MonitorSession(_session.Completion, _sessionCts);
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
 
@@ -49,27 +49,6 @@ internal sealed class ClaudeAgentDaemon(
         }
 
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task MonitorSessionAsync(ClaudeAgentSession session, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await session.Completion.ConfigureAwait(false);
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
-        {
-            // cooperative shutdown
-        }
-        catch (Exception ex)
-        {
-            if (_sessionCts is not null)
-            {
-                await _sessionCts.CancelAsync().ConfigureAwait(false);
-            }
-
-            await Fail(ex, CancellationToken.None).ConfigureAwait(false);
-        }
     }
 
     public async ValueTask DisposeAsync()

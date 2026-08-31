@@ -99,6 +99,16 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
                 return false;
             }
 
+            // A daemon that never reached Running has nothing to complete, so shutting it
+            // down is a no-op rather than an error. This is the normal path when Start()
+            // throws partway: the scope rolls back and IAsyncDisposable also calls
+            // Shutdown(), and throwing here would replace the real startup error — a model
+            // that failed to load, a rejected API key — with a complaint about the cleanup.
+            if (Status == Status.Stopped && newStatus == Status.Completed)
+            {
+                return false;
+            }
+
             // Validate transition
             bool isValid = (Status, newStatus) switch
             {
@@ -109,7 +119,6 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
                 (Status.Failed, Status.Completed) => true,
                 (Status.Completed, Status.Running) => false, // Cannot restart
                 (Status.Failed, Status.Running) => false, // Cannot restart after failure
-                (Status.Stopped, Status.Completed) => false, // Cannot shutdown without starting
                 _ => false
             };
 
@@ -152,6 +161,43 @@ public abstract class ContractDaemon(IScrivener<DaemonEvent> scrivener) : IDaemo
         finally
         {
             _semaphoreSlim.Release();
+        }
+    }
+
+    /// <summary>
+    /// Reports a session's pump fault as a daemon failure.
+    /// </summary>
+    /// <param name="sessionCompletion">The session's completion task.</param>
+    /// <param name="lifetime">
+    /// The session's lifetime source. Cancelled when a fault is seen, so the surviving pumps
+    /// stop rather than running on behind a session that has already failed.
+    /// </param>
+    /// <remarks>
+    /// Without this the fault is swallowed: the pumps stop, the daemon stays
+    /// <see cref="Status.Running"/>, and the caller waits indefinitely on a turn that is
+    /// already dead. Cancellation through <paramref name="lifetime"/> is cooperative shutdown
+    /// rather than failure, and is ignored.
+    /// </remarks>
+    protected async Task MonitorSession(Task sessionCompletion, CancellationTokenSource lifetime)
+    {
+        ArgumentNullException.ThrowIfNull(sessionCompletion);
+        ArgumentNullException.ThrowIfNull(lifetime);
+
+        try
+        {
+            await sessionCompletion.ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
+        {
+            // Cooperative shutdown.
+        }
+        catch (Exception ex)
+        {
+            await lifetime.CancelAsync().ConfigureAwait(false);
+
+            // Not the caller's token: the failure must be recorded even though the session's
+            // own lifetime was just cancelled above.
+            await Fail(ex, CancellationToken.None).ConfigureAwait(false);
         }
     }
 

@@ -240,6 +240,86 @@ public class CovenantValidationTests
         });
     }
 
+    /// <summary>
+    /// A route whose target no connected branch declares is rejected with an actionable
+    /// message.
+    /// </summary>
+    /// <remarks>
+    /// Regression coverage: pump construction resolves each endpoint to a journal through the
+    /// manifests, so an undeclared target previously escaped validation and surfaced at ritual
+    /// start as a bare <see cref="KeyNotFoundException"/> naming the type but nothing else. It
+    /// is reachable from ordinary use — a branch that declares a type only under an optional
+    /// registration flag, routed to unconditionally.
+    /// </remarks>
+    [Fact]
+    public void CovenantWithUndeclaredRouteTargetThrowsValidationException()
+    {
+        ServiceCollection services = new();
+
+        // Consumes nothing, so the undeclared target is the only defect present.
+        BranchManifest branch = new(
+            "TestBranch",
+            JournalEntryType: typeof(TestJournalEntry),
+            Produces: new HashSet<Type> { typeof(SourceEntry) },
+            Consumes: new HashSet<Type>(),
+            RequiredDaemons: []);
+
+        CovenantValidationException exception = Assert.Throws<CovenantValidationException>(() =>
+        {
+            services.BuildCoven(coven =>
+            {
+                coven.Covenant()
+                    .Connect(branch)
+                    .Routes(c =>
+                    {
+                        // AlternateTargetEntry appears in no manifest.
+                        c.Route<SourceEntry, AlternateTargetEntry>(
+                            (e, ct) => Task.FromResult(new AlternateTargetEntry()));
+                    });
+            });
+        });
+
+        Assert.Contains("1 error", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(AlternateTargetEntry), exception.Message, StringComparison.Ordinal);
+        Assert.Contains("no connected branch declares it", exception.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// The same guarantee for the source side: routing from a type nothing declares is a
+    /// disconnected branch, not a silent no-op.
+    /// </summary>
+    [Fact]
+    public void CovenantWithUndeclaredRouteSourceThrowsValidationException()
+    {
+        ServiceCollection services = new();
+
+        // Produces nothing, so the undeclared source is the only defect present.
+        BranchManifest branch = new(
+            "TestBranch",
+            JournalEntryType: typeof(TestJournalEntry),
+            Produces: new HashSet<Type>(),
+            Consumes: new HashSet<Type> { typeof(TargetEntry) },
+            RequiredDaemons: []);
+
+        CovenantValidationException exception = Assert.Throws<CovenantValidationException>(() =>
+        {
+            services.BuildCoven(coven =>
+            {
+                coven.Covenant()
+                    .Connect(branch)
+                    .Routes(c =>
+                    {
+                        // UnroutedEntry is produced by no connected branch.
+                        c.Route<UnroutedEntry, TargetEntry>((e, ct) => Task.FromResult(new TargetEntry()));
+                    });
+            });
+        });
+
+        Assert.Contains("1 error", exception.Message, StringComparison.Ordinal);
+        Assert.Contains(nameof(UnroutedEntry), exception.Message, StringComparison.Ordinal);
+        Assert.Contains("no connected branch declares it", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void TransmuterRouteRequiresConcreteRegistration()
     {

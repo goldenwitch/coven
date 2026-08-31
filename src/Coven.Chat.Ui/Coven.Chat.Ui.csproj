@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>true</IsPackable>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <Description>In-process UI chat adapter for Coven (desktop and embedded clients).</Description>
+    <Authors>Coven</Authors>
+    <PackageTags>coven;agents;chat;ui;adapter</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Coven.Testing.Harness" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Coven.Chat\Coven.Chat.csproj" />
+    <ProjectReference Include="..\Coven.Core\Coven.Core.csproj" />
+    <ProjectReference Include="..\Coven.Transmutation\Coven.Transmutation.csproj" />
+  </ItemGroup>
+
+</Project>

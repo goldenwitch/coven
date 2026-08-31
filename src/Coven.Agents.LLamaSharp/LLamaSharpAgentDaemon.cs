@@ -12,12 +12,14 @@ internal sealed class LLamaSharpAgentDaemon(
     private readonly LLamaSharpAgentSessionFactory _sessionFactory = sessionFactory ?? throw new ArgumentNullException(nameof(sessionFactory));
     private CancellationTokenSource? _sessionCts;
     private LLamaSharpAgentSession? _session;
+    private Task? _sessionMonitor;
 
     public override async Task Start(CancellationToken cancellationToken)
     {
         _sessionCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _session = _sessionFactory.Create(_sessionCts.Token);
         await _session.StartAsync().ConfigureAwait(false);
+        _sessionMonitor = MonitorSession(_session.Completion, _sessionCts);
         await Transition(Status.Running, cancellationToken).ConfigureAwait(false);
     }
 
@@ -29,6 +31,23 @@ internal sealed class LLamaSharpAgentDaemon(
             await _session.DisposeAsync().ConfigureAwait(false);
             _session = null;
         }
+
+        if (_sessionMonitor is not null)
+        {
+            try
+            {
+                await _sessionMonitor.ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                // Cooperative shutdown.
+            }
+            finally
+            {
+                _sessionMonitor = null;
+            }
+        }
+
         await Transition(Status.Completed, cancellationToken).ConfigureAwait(false);
     }
 

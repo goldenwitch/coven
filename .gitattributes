@@ -1,0 +1,14 @@
+# cmd.exe cannot parse a batch file with LF-only line endings: it drops the first character
+# of every line, and the script fails in a way that looks nothing like a line-ending problem.
+# Checking these out as CRLF regardless of the cloning machine's core.autocrlf keeps a working
+# copy working.
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Shell scripts are the mirror image: CR is a syntax error to sh.
+*.sh text eol=lf
+
+# Icons and other binaries must never be line-ending converted.
+*.ico binary
+*.png binary
+*.gguf binary

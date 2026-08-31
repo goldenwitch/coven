@@ -1,0 +1,26 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="using:Coven.Ui.Desktop.Converters"
+             x:Class="Coven.Ui.Desktop.App"
+             RequestedThemeVariant="Default">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://Coven.Ui.Desktop/Theme/Palette.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <conv:BoolToAlignmentConverter x:Key="AlignmentConverter" />
+      <conv:ByteSizeConverter x:Key="ByteSizeConverter" />
+      <conv:RefreshLabelConverter x:Key="RefreshLabelConverter" />
+      <conv:HardwareTierBrushConverter x:Key="HardwareTierBrushConverter" />
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+    <!-- After Fluent, so the palette overrides it rather than the other way round. -->
+    <StyleInclude Source="avares://Coven.Ui.Desktop/Theme/Controls.axaml" />
+  </Application.Styles>
+
+</Application>

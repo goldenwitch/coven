@@ -1,0 +1,167 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Coven.Ui.Desktop.ViewModels"
+        xmlns:agents="using:Coven.Agents"
+        x:Class="Coven.Ui.Desktop.Views.OptionsWindow"
+        x:DataType="vm:OptionsViewModel"
+        Title="Options"
+        Icon="/Assets/coven.ico"
+        Width="620" Height="620"
+        MinWidth="520" MinHeight="520"
+        WindowStartupLocation="CenterOwner">
+
+  <DockPanel LastChildFill="True" Margin="16">
+
+    <!-- Buttons -->
+    <Border DockPanel.Dock="Bottom" Margin="0,16,0,0">
+      <Grid ColumnDefinitions="*,Auto,Auto">
+        <TextBlock Grid.Column="0"
+                   Text="{Binding StatusText}" Classes="muted"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   Margin="0,0,12,0" />
+        <Button Grid.Column="1"
+                Content="Cancel"
+                MinWidth="90"
+                Command="{Binding CancelCommand}" />
+        <Button Grid.Column="2"
+                Classes="primary"
+                Content="Save"
+                MinWidth="90"
+                Margin="8,0,0,0"
+                IsDefault="True"
+                Command="{Binding SaveCommand}" />
+      </Grid>
+    </Border>
+
+    <ScrollViewer>
+      <StackPanel Spacing="14">
+
+        <!-- Provider -->
+        <StackPanel Spacing="4">
+          <TextBlock Classes="section" Text="Provider" />
+          <ComboBox ItemsSource="{Binding Providers}"
+                    SelectedItem="{Binding SelectedProvider}"
+                    HorizontalAlignment="Stretch" />
+          <TextBlock Text="Each provider keeps its own API key and model."
+                     FontSize="11" Classes="muted" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- API key (hosted providers only) -->
+        <StackPanel Spacing="4" IsVisible="{Binding IsHostedProvider}">
+          <TextBlock Classes="section" Text="API key" />
+          <TextBox Text="{Binding ApiKey}"
+                   PasswordChar="•"
+                   RevealPassword="False"
+                   PlaceholderText="Paste the API key for the selected provider" />
+          <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap"
+                     IsVisible="{Binding SecretsAreEncrypted}"
+                     Text="Stored encrypted for your Windows account (DPAPI)." />
+          <TextBlock FontSize="11" TextWrapping="Wrap"
+                     Foreground="{DynamicResource SecondaryBrush}"
+                     IsVisible="{Binding !SecretsAreEncrypted}"
+                     Text="{Binding SecretStorageWarning}" />
+        </StackPanel>
+
+        <!-- Local model storage (local provider only) -->
+        <StackPanel Spacing="4" IsVisible="{Binding IsLocalProvider}">
+          <TextBlock Classes="section" Text="Models folder" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBox Grid.Column="0" Text="{Binding ModelsDirectory}" />
+            <Button Grid.Column="1" Content="Browse…" Margin="8,0,0,0"
+                    Command="{Binding BrowseFolderCommand}" />
+          </Grid>
+          <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap"
+                     Text="Scanned recursively for .gguf files, and used as the download target. Models are multiple gigabytes — point this at a drive with room." />
+
+          <TextBlock Classes="section" Text="Hugging Face token (optional)" Margin="0,8,0,0" />
+          <TextBox Text="{Binding HuggingFaceToken}"
+                   PasswordChar="•"
+                   RevealPassword="False"
+                   PlaceholderText="Only needed for gated or private repositories" />
+
+          <Grid ColumnDefinitions="Auto,*" Margin="0,8,0,0">
+            <Button Grid.Column="0" Content="Check backend" Command="{Binding ProbeBackendCommand}" />
+            <TextBlock Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
+                       FontSize="11" Classes="muted" TextWrapping="Wrap">
+              <Run Text="Inference backend:" />
+              <Run Text="{Binding BackendDescription}" />
+            </TextBlock>
+          </Grid>
+          <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap"
+                     Text="CUDA is used when a compatible NVIDIA GPU is present, otherwise CPU. The difference is large enough to decide whether a model feels usable." />
+        </StackPanel>
+
+        <!-- Models -->
+        <StackPanel Spacing="4">
+          <Grid ColumnDefinitions="*,Auto,Auto">
+            <TextBlock Grid.Column="0" Classes="section" Text="Model" VerticalAlignment="Center" />
+            <Button Grid.Column="1"
+                    Classes="foil"
+                    Content="Download a model…"
+                    Margin="0,0,8,0"
+                    IsVisible="{Binding IsLocalProvider}"
+                    Command="{Binding BrowseModelsCommand}" />
+            <Button Grid.Column="2"
+                    Content="{Binding IsLocalProvider, Converter={StaticResource RefreshLabelConverter}}"
+                    Command="{Binding RefreshModelsCommand}"
+                    IsEnabled="{Binding !IsLoadingModels}" />
+          </Grid>
+
+          <ComboBox ItemsSource="{Binding Models}"
+                    SelectedItem="{Binding SelectedModel}"
+                    HorizontalAlignment="Stretch"
+                    PlaceholderText="Refresh to list models from the provider">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="agents:ModelDescriptor">
+                <StackPanel Margin="0,2">
+                  <TextBlock Text="{Binding DisplayName}" />
+                  <TextBlock FontSize="11" Classes="muted">
+                    <Run Text="{Binding Family}" />
+                    <Run Text="·" />
+                    <Run Text="{Binding Id}" />
+                  </TextBlock>
+                </StackPanel>
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+
+          <TextBlock Text="Model id" FontSize="11" Classes="muted" Margin="0,6,0,0" />
+          <TextBox Text="{Binding ModelId}" />
+          <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap"
+                     IsVisible="{Binding IsHostedProvider}"
+                     Text="This field is what gets used. Picking from the list fills it in; you can also type an id the list does not have." />
+          <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap"
+                     IsVisible="{Binding IsLocalProvider}"
+                     Text="For local models this is the full path to a .gguf file. Picking from the list fills it in." />
+        </StackPanel>
+
+        <!-- System prompt -->
+        <StackPanel Spacing="4">
+          <TextBlock Classes="section" Text="System prompt" />
+          <TextBox Text="{Binding SystemPrompt}"
+                   AcceptsReturn="True"
+                   TextWrapping="Wrap"
+                   MinHeight="90" />
+        </StackPanel>
+
+        <!-- Reset warning -->
+        <Border IsVisible="{Binding WillResetConversation}"
+                Padding="10"
+                CornerRadius="6"
+                Background="{DynamicResource PaperSunkBrush}"
+                BorderBrush="{DynamicResource SecondaryBrush}"
+                BorderThickness="4,1,1,1">
+          <TextBlock TextWrapping="Wrap"
+                     Text="Saving these changes restarts the session and clears the current conversation. Changing only the model on Anthropic keeps it." />
+        </Border>
+
+        <TextBlock FontSize="11" Classes="muted" TextWrapping="Wrap">
+          <Run Text="Settings file:" />
+          <Run Text="{Binding SettingsPath}" />
+        </TextBlock>
+
+      </StackPanel>
+    </ScrollViewer>
+  </DockPanel>
+</Window>

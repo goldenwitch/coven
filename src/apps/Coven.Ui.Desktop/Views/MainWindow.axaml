@@ -1,0 +1,132 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Coven.Ui.Desktop.ViewModels"
+        x:Class="Coven.Ui.Desktop.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Coven"
+        Icon="/Assets/coven.ico"
+        Width="900" Height="680"
+        MinWidth="480" MinHeight="360">
+
+  <DockPanel LastChildFill="True">
+
+    <!-- Header -->
+    <Border DockPanel.Dock="Top"
+            Padding="12,8"
+            Background="{DynamicResource PaperSunkBrush}"
+            BorderThickness="0,0,0,1"
+            BorderBrush="{DynamicResource RuleBrush}">
+      <!--
+        Options is the only Auto column among the flexible ones, so it is measured at its full
+        width and can never be pushed off the edge; the text to its left is star-sized and
+        gives way instead, the status taking one share and the model two, the model being both
+        the longer and the one worth reading. The model line is a single TextBlock rather than
+        a StackPanel of them: a horizontal StackPanel measures its children unbounded, so a
+        TextBlock inside one never learns it has run out of room and TextTrimming never fires.
+      -->
+      <Grid ColumnDefinitions="Auto,*,2*,Auto">
+        <TextBlock Grid.Column="0"
+                   Classes="wordmark"
+                   Text="Coven"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="1"
+                   Classes="muted"
+                   Text="{Binding StatusText}"
+                   Margin="16,0"
+                   TextTrimming="CharacterEllipsis"
+                   VerticalAlignment="Center" />
+        <TextBlock Grid.Column="2"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Right"
+                   Margin="0,0,10,0"
+                   TextTrimming="CharacterEllipsis"
+                   ToolTip.Tip="{Binding ModelDetail}">
+          <Run Text="{Binding ProviderName}"
+               Foreground="{DynamicResource MutedBrush}" />
+          <Run Text="·"
+               Foreground="{DynamicResource RuleBrush}" />
+          <Run Text="{Binding ModelName}"
+               Foreground="{DynamicResource AccentBrush}" />
+        </TextBlock>
+        <Button Grid.Column="3"
+                Classes="foil"
+                Content="Options"
+                Command="{Binding OpenOptionsCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- Input -->
+    <Border DockPanel.Dock="Bottom"
+            Padding="12"
+            Background="{DynamicResource PaperSunkBrush}"
+            BorderThickness="0,1,0,0"
+            BorderBrush="{DynamicResource RuleBrush}">
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0"
+                 Text="{Binding InputText}"
+                 PlaceholderText="Ask something…"
+                 AcceptsReturn="False"
+                 VerticalAlignment="Center">
+          <TextBox.KeyBindings>
+            <KeyBinding Gesture="Enter" Command="{Binding SendCommand}" />
+          </TextBox.KeyBindings>
+        </TextBox>
+        <Button Grid.Column="1"
+                Classes="primary"
+                Content="Send"
+                Margin="8,0,0,0"
+                MinWidth="80"
+                IsDefault="True"
+                Command="{Binding SendCommand}" />
+      </Grid>
+    </Border>
+
+    <!-- Reasoning -->
+    <Expander DockPanel.Dock="Bottom"
+              Header="Reasoning"
+              Margin="12,0,12,4"
+              IsVisible="{Binding IsReasoningVisible}">
+      <ScrollViewer MaxHeight="180">
+        <ItemsControl ItemsSource="{Binding Thoughts}">
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="x:String">
+              <TextBlock Text="{Binding}"
+                         TextWrapping="Wrap"
+                         Opacity="0.75"
+                         Margin="0,0,0,8" />
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Expander>
+
+    <!-- Transcript -->
+    <ScrollViewer Name="TranscriptScroller" Padding="12">
+      <ItemsControl ItemsSource="{Binding Messages}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ChatMessageViewModel">
+            <Border Classes="bubble"
+                    Classes.user="{Binding IsUser}"
+                    Classes.system="{Binding IsSystem}"
+                    Margin="0,0,0,10"
+                    Padding="10,8"
+                    CornerRadius="8"
+                    HorizontalAlignment="{Binding IsUser, Converter={StaticResource AlignmentConverter}}"
+                    MaxWidth="620">
+              <StackPanel>
+                <TextBlock Text="{Binding Sender}"
+                           FontSize="11"
+                           FontWeight="SemiBold"
+                           Opacity="0.65"
+                           Margin="0,0,0,4" />
+                <TextBlock Text="{Binding Text}"
+                           TextWrapping="Wrap" />
+              </StackPanel>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+
+  </DockPanel>
+</Window>
